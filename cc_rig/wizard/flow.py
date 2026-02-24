@@ -66,11 +66,15 @@ def run_wizard(args: argparse.Namespace, io: IO | None = None) -> int:
     if getattr(args, "migrate", False):
         return _migrate(name, output_dir, io)
 
-    # Interactive flows: confirm output directory when not explicitly set
+    # Interactive flows: confirm output directory when not explicitly set.
+    # Skip this when the Textual TUI will handle it (output dir shown in ConfirmScreen).
     if not output_arg and not in_place:
-        output_dir = _confirm_output_dir(output_dir, io)
-        if output_dir is None:
-            return 0
+        from cc_rig.ui.textual_wizard import should_use_textual
+
+        if not should_use_textual(io):
+            output_dir = _confirm_output_dir(output_dir, io)
+            if output_dir is None:
+                return 0
 
     # Quick picker
     if getattr(args, "quick", False):
@@ -162,15 +166,18 @@ def _migrate(
     io.say("Scanning project directory...")
     detected = detect_project(output_dir)
 
-    if not detected.framework:
-        io.say("Could not detect framework. Use --template to specify manually.")
-        return 1
+    if detected.framework:
+        io.say(f"  Detected: {detected.language} / {detected.framework}")
+        template = detected.framework
+    else:
+        lang_msg = f" (detected language: {detected.language})" if detected.language else ""
+        io.say(f"  Could not auto-detect framework{lang_msg}.")
+        io.say("  Select a template manually:\n")
+        template = _ask_template(io)
 
-    io.say(f"  Detected: {detected.language} / {detected.framework}")
-    template = detected.framework
-    workflow = "standard"
+    workflow = _ask_workflow(io)
 
-    io.say(f"  Proposed: template={template}, workflow={workflow}")
+    io.say(f"\n  Proposed: template={template}, workflow={workflow}")
     if not confirm("Apply this setup?", io=io):
         io.say("Cancelled.")
         return 0
@@ -191,6 +198,11 @@ def _quick_flow(
     io: IO,
 ) -> int:
     """Quick picker: template + workflow, then generate."""
+    from cc_rig.ui.textual_wizard import should_use_textual
+
+    if should_use_textual(io):
+        return _quick_flow_textual(name, output_dir, io)
+
     template, workflow = run_quick(io)
     name = name or ask_input("Project name", output_dir.name, io=io)
     config = compute_defaults(
@@ -210,8 +222,13 @@ def _guided_flow(
 ) -> int:
     """Full guided wizard (A1) with optional expert mode (A2).
 
-    Uses a StepRunner for back-navigation support.
+    Uses Textual TUI when available, otherwise falls back to StepRunner.
     """
+    from cc_rig.ui.textual_wizard import should_use_textual
+
+    if should_use_textual(io):
+        return _guided_flow_textual(name, output_dir, io, expert=expert)
+
     from cc_rig.ui.banner import print_banner
     from cc_rig.wizard.stepper import StepAction, StepRunner
     from cc_rig.wizard.steps import (
@@ -270,6 +287,79 @@ def _guided_flow(
     action, state = runner.run(initial_state)
 
     if action == StepAction.CANCEL:
+        return 0
+
+    config = state.get("config")
+    if config is None:
+        io.say("No configuration built.")
+        return 1
+
+    return run_generation(config, output_dir, io)
+
+
+def _guided_flow_textual(
+    name: str,
+    output_dir: Path,
+    io: IO,
+    expert: bool = False,
+) -> int:
+    """Run the guided flow using the Textual full-screen TUI."""
+    from cc_rig.ui.textual_wizard import WizardApp
+
+    initial_state = {
+        "name": name,
+        "output_dir": output_dir,
+        "force_expert": expert,
+    }
+
+    app = WizardApp(initial_state=initial_state)
+    state = app.run()
+
+    if state is None:
+        io.say("Cancelled.")
+        return 0
+
+    # Handle launcher modes that exit the TUI for CLI input
+    mode = state.get("launcher_mode", "fresh")
+    if mode == "config":
+        config_name = ask_input("Config name or path", "", io=io)
+        if config_name:
+            return _config_load(config_name, name, output_dir, io)
+        io.say("No config specified.")
+        return 1
+    if mode == "file":
+        file_path = ask_input("Path to .json config file", "", io=io)
+        if file_path:
+            return _config_load(file_path, name, output_dir, io)
+        io.say("No file specified.")
+        return 1
+
+    config = state.get("config")
+    if config is None:
+        io.say("No configuration built.")
+        return 1
+
+    return run_generation(config, output_dir, io)
+
+
+def _quick_flow_textual(
+    name: str,
+    output_dir: Path,
+    io: IO,
+) -> int:
+    """Run the quick flow using the Textual full-screen TUI."""
+    from cc_rig.ui.textual_wizard import QuickWizardApp
+
+    initial_state = {
+        "name": name or "",
+        "output_dir": output_dir,
+    }
+
+    app = QuickWizardApp(initial_state=initial_state)
+    state = app.run()
+
+    if state is None:
+        io.say("Cancelled.")
         return 0
 
     config = state.get("config")

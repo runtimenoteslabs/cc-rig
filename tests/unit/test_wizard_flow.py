@@ -172,14 +172,25 @@ class TestMigrateFlow:
             '[project]\nname = "myapp"\n[project.dependencies]\nfastapi = ">=0.100"\n'
         )
 
-        io = _make_io(["y"])  # confirm apply
+        io = _make_io(["standard", "y"])  # pick workflow, confirm apply
         args = _make_args(migrate=True, output=str(project_dir))
         rc = run_wizard(args, io)
         assert rc == 0
         assert (project_dir / "CLAUDE.md").exists()
 
-    def test_migrate_fails_on_empty_dir(self, tmp_path):
-        io = _make_io([])
+    def test_migrate_no_detection_falls_back_to_picker(self, tmp_path):
+        # Empty dir: no framework detected, user picks template + workflow + confirms
+        # Inputs: "fastapi" (template), "standard" (workflow), "y" (confirm)
+        io = _make_io(["fastapi", "standard", "y"])
         args = _make_args(migrate=True, output=str(tmp_path))
         rc = run_wizard(args, io)
-        assert rc == 1
+        assert rc == 0
+        assert (tmp_path / "CLAUDE.md").exists()
+
+    def test_migrate_no_detection_user_cancels(self, tmp_path):
+        # Empty dir: no framework detected, user picks template + workflow, declines
+        io = _make_io(["fastapi", "standard", "n"])
+        args = _make_args(migrate=True, output=str(tmp_path))
+        rc = run_wizard(args, io)
+        assert rc == 0
+        assert not (tmp_path / "CLAUDE.md").exists()

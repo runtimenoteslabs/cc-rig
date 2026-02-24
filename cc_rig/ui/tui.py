@@ -58,6 +58,16 @@ def _has_rich() -> bool:
         return False
 
 
+def _has_textual() -> bool:
+    """Check if textual is importable."""
+    try:
+        import textual  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 def _has_prompt_toolkit() -> bool:
     """Check if prompt_toolkit is importable."""
     try:
@@ -80,4 +90,5 @@ def get_tui_backend() -> str:
 # Module-level cached values for consumers that import directly.
 TUI_BACKEND = _detect_backend()
 HAS_RICH = _has_rich()
+HAS_TEXTUAL = _has_textual()
 HAS_PROMPT_TOOLKIT = _has_prompt_toolkit()

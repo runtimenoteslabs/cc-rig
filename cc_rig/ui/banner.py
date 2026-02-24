@@ -13,6 +13,8 @@ BANNER = r"""
                       |___/
 """
 
+BANNER_COMPACT = "cc-rig"
+
 TAGLINE = "Project setup generator for Claude Code"
 
 
