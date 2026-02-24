@@ -56,7 +56,7 @@ pip install cc-rig
 ```
 
 - Python 3.9+. Zero external dependencies. Standard library only.
-- Optional: `pip install cc-rig[rich]` for colors, tables and progress bars. Auto-detected, falls back to stdlib ANSI if not installed.
+- Optional: `pip install cc-rig[rich]` for full-screen TUI wizard (arrow keys, radio buttons, checkboxes), colors, tables and progress bars. Auto-detected, falls back to stdlib ANSI if not installed.
 - Works best with Claude Code v2.1.50+. Older versions or missing installs get a warning, but cc-rig generates everything anyway.
 
 ---
@@ -65,7 +65,7 @@ pip install cc-rig
 
 ### Start a new project
 
-The interactive wizard walks you through it:
+The interactive wizard walks you through it. With Textual installed, you get a full-screen TUI with arrow-key navigation, radio buttons and checkboxes. Without it, you get numbered CLI prompts.
 
 ```bash
 cc-rig init

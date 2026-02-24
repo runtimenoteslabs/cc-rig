@@ -14,6 +14,12 @@ This guide walks you through setting up Claude Code with cc-rig for a new or exi
 pip install cc-rig
 ```
 
+For the full-screen TUI wizard (arrow keys, radio buttons, checkboxes):
+
+```bash
+pip install cc-rig[rich]
+```
+
 Verify:
 
 ```bash

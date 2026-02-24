@@ -2,6 +2,34 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [1.1.0] - 2026-02-25
+
+### Added
+
+**Textual Full-Screen TUI Wizard**
+- Full-screen interactive wizard using Textual when installed + TTY detected
+- 9 screens: Welcome, Basics, Template, Workflow, Review, Expert, Features, Harness, Confirm
+- Arrow-key navigation with RadioSet, SelectionList, and Checkbox widgets
+- Back-navigation across all screens, Cancel/Escape to exit
+- Branding header (cc-rig + step label) on every screen
+- Save Config button on ConfirmScreen (saves to `~/.cc-rig/configs/`)
+- QuickWizardApp for `--quick` flow (4 screens: Template, Workflow, Basics, Confirm)
+- In-wizard migrate mode: detection runs inline, falls back to template picker on failure
+- In-wizard quick mode: switches screen sequence without exiting TUI
+- Focus management: primary widget auto-focused on every screen for immediate keyboard use
+- Falls back to existing CLI stepper when Textual not installed or no TTY
+- `should_use_textual(io)` detection helper (skips TUI for test-injected IO)
+- `HAS_TEXTUAL` flag in `cc_rig/ui/tui.py`
+
+**Migrate Flow Improvements**
+- `--migrate` now falls back to template/workflow picker when framework detection fails (was hard error)
+- Workflow selection added to all migrate paths (was hardcoded to "standard")
+
+**Testing**
+- 15 async Textual pilot-based tests in `tests/unit/test_textual_wizard.py`
+- `pytest-asyncio` added to dev dependencies
+- Test count: 1288 → 1337
+
 ## [1.0.0] - 2026-02-22
 
 ### Added
