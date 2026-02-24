@@ -1,0 +1,225 @@
+"""Generate CLAUDE.md with cache-aware static-first ordering."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from cc_rig.config.project import ProjectConfig
+from cc_rig.templates import get_framework_content
+
+
+def generate_claude_md(
+    config: ProjectConfig,
+    output_dir: Path,
+) -> list[str]:
+    """Generate CLAUDE.md with sections ordered for prompt-cache efficiency.
+
+    Static sections first (rarely change), dynamic sections last.
+    Target line counts: speedrun ~60, standard ~80, spec-driven ~95,
+    gtd-lite ~95, verify-heavy ~105.
+    """
+    sections: list[str] = []
+
+    # ── Section 1: Project Identity (STATIC) ───────────────────────
+    sections.append(_section_project_identity(config))
+
+    # ── Section 2: Commands (STATIC) ───────────────────────────────
+    sections.append(_section_commands(config))
+
+    # ── Section 3: Guardrails (STATIC) ─────────────────────────────
+    sections.append(_section_guardrails(config))
+
+    # ── Section 4: Framework Rules (STATIC) ────────────────────────
+    sections.append(_section_framework_rules(config))
+
+    # ── Section 5: Agent Docs pointers (STATIC) ────────────────────
+    sections.append(_section_agent_docs(config))
+
+    # ── Section 5.5: Recommended Skills (STATIC, if any) ──────────
+    if config.recommended_skills:
+        sections.append(_section_recommended_skills(config))
+
+    # ── Section 6: Memory pointers (SEMI-STATIC, if enabled) ──────
+    if config.features.memory:
+        sections.append(_section_memory(config))
+
+    # ── Section 7: Spec Workflow (if enabled) ──────────────────────
+    if config.features.spec_workflow:
+        sections.append(_section_spec_workflow(config))
+
+    # ── Section 8: GTD (if enabled) ───────────────────────────────
+    if config.features.gtd:
+        sections.append(_section_gtd(config))
+
+    # ── Section 9: Worktree guidance (if enabled) ─────────────────
+    if config.features.worktrees:
+        sections.append(_section_worktrees(config))
+
+    # ── Section 10: Current Context (DYNAMIC — last for cache) ────
+    sections.append(_section_current_context(config))
+
+    content = "\n".join(sections)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "CLAUDE.md").write_text(content)
+
+    return ["CLAUDE.md"]
+
+
+# ── Section builders ───────────────────────────────────────────────
+
+
+def _section_project_identity(config: ProjectConfig) -> str:
+    name = config.project_name or "my-project"
+    desc = config.project_desc or f"A {config.framework} project"
+    return (
+        f"# {name}\n"
+        f"\n"
+        f"{desc}\n"
+        f"\n"
+        f"- **Stack**: {config.language} / {config.framework}\n"
+        f"- **Type**: {config.project_type}\n"
+        f"- **Source**: `{config.source_dir}/`  "
+        f"**Tests**: `{config.test_dir}/`\n"
+    )
+
+
+def _section_commands(config: ProjectConfig) -> str:
+    lines = ["## Commands\n"]
+    if config.test_cmd:
+        lines.append(f"- **Test**: `{config.test_cmd}`")
+    if config.lint_cmd:
+        lines.append(f"- **Lint**: `{config.lint_cmd}`")
+    if config.format_cmd:
+        lines.append(f"- **Format**: `{config.format_cmd}`")
+    if config.typecheck_cmd:
+        lines.append(f"- **Typecheck**: `{config.typecheck_cmd}`")
+    if config.build_cmd:
+        lines.append(f"- **Build**: `{config.build_cmd}`")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _section_guardrails(config: ProjectConfig) -> str:
+    return (
+        "## Guardrails\n"
+        "\n"
+        "- Run tests before committing. Run lint before pushing.\n"
+        "- Never commit .env, credentials, or secrets.\n"
+        "- Never push directly to main/master.\n"
+        "- Never run destructive commands (rm -rf /, DROP TABLE).\n"
+        "- Prefer editing existing files over creating new ones.\n"
+        "- Keep commits small and focused. One concern per commit.\n"
+    )
+
+
+def _section_framework_rules(config: ProjectConfig) -> str:
+    content = get_framework_content(config.framework)
+    rules = content.get("rules", "")
+
+    # Templates already include "## Framework Rules (FrameworkName)" heading
+    if rules.startswith("## "):
+        return f"{rules}\n"
+    return f"## Framework Rules\n\n{rules}\n"
+
+
+def _section_agent_docs(config: ProjectConfig) -> str:
+    return (
+        "## Agent Docs\n"
+        "\n"
+        "Read these files for project-specific guidance:\n"
+        "- `agent_docs/architecture.md` — system design\n"
+        "- `agent_docs/conventions.md` — coding standards\n"
+        "- `agent_docs/testing.md` — test patterns\n"
+        "- `agent_docs/deployment.md` — deploy process\n"
+        "- `agent_docs/cache-friendly-workflow.md` — prompt cache tips\n"
+    )
+
+
+def _section_recommended_skills(config: ProjectConfig) -> str:
+    lines = [
+        "## Recommended Skills\n",
+        "Install community skills to enhance Claude Code:\n",
+    ]
+    # Group by SDLC phase, show top skills with install commands
+    by_phase: dict[str, list[str]] = {}
+    for skill in config.recommended_skills:
+        phase = skill.sdlc_phase or "other"
+        by_phase.setdefault(phase, []).append(f"`{skill.install}`")
+
+    for phase in ("coding", "testing", "review", "security", "database", "devops", "planning"):
+        cmds = by_phase.get(phase, [])
+        if cmds:
+            lines.append(f"- **{phase.title()}**: {cmds[0]}")
+            for cmd in cmds[1:]:
+                lines.append(f"  - {cmd}")
+
+    lines.append("")
+    lines.append("See `docs/recommended-skills.md` for the full catalog.\n")
+    return "\n".join(lines)
+
+
+def _section_memory(config: ProjectConfig) -> str:
+    return (
+        "## Memory\n"
+        "\n"
+        "Project memory is stored in `memory/`. Load files via Read "
+        "tool when context is needed.\n"
+        "- `memory/decisions.md` — architectural decisions\n"
+        "- `memory/patterns.md` — discovered patterns\n"
+        "- `memory/gotchas.md` — known issues and surprises\n"
+        "- `memory/people.md` — team ownership\n"
+        "- `memory/session-log.md` — brief session history\n"
+        "- See `memory/MEMORY-README.md` for usage instructions.\n"
+    )
+
+
+def _section_spec_workflow(config: ProjectConfig) -> str:
+    return (
+        "## Spec Workflow\n"
+        "\n"
+        "Use `/spec-create` to interview the user and produce a spec "
+        "document in `specs/`.\n"
+        "Use `/spec-execute` to pick a task from the spec and "
+        "implement it with validation.\n"
+        "Specs live in `specs/` as markdown. Each spec has "
+        "acceptance criteria and task breakdown.\n"
+    )
+
+
+def _section_gtd(config: ProjectConfig) -> str:
+    return (
+        "## GTD System\n"
+        "\n"
+        "Task management follows Getting Things Done:\n"
+        "- `tasks/inbox.md` — quick capture, unprocessed items\n"
+        "- `tasks/todo.md` — actionable tasks with context\n"
+        "- `tasks/someday.md` — deferred ideas\n"
+        "\n"
+        "Use `/gtd-capture` to add items, `/gtd-process` to triage, "
+        "`/daily-plan` for morning review.\n"
+    )
+
+
+def _section_worktrees(config: ProjectConfig) -> str:
+    return (
+        "## Worktrees\n"
+        "\n"
+        "Use `/worktree <task>` to spawn a parallel-worker agent "
+        "in an isolated git worktree.\n"
+        "The parallel-worker runs with `isolation: worktree` and "
+        "`background: true`.\n"
+        "Each worktree gets its own branch. Merge results back via PR.\n"
+    )
+
+
+def _section_current_context(config: ProjectConfig) -> str:
+    return (
+        "## Current Context\n"
+        "\n"
+        "_This section is updated each session. "
+        "Everything above is static._\n"
+        "\n"
+        "- **Current task**: (none)\n"
+        "- **Branch**: main\n"
+    )

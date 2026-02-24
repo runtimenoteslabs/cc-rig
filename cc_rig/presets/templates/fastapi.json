@@ -1,0 +1,67 @@
+{
+  "name": "fastapi",
+  "language": "python",
+  "framework": "fastapi",
+  "project_type": "api",
+  "tool_commands": {
+    "test": "pytest",
+    "lint": "ruff check .",
+    "format": "ruff format .",
+    "typecheck": "mypy .",
+    "build": ""
+  },
+  "source_dir": "app",
+  "test_dir": "tests",
+  "recommended_skills": [
+    {
+      "name": "modern-python",
+      "sdlc_phase": "coding",
+      "source": "trailofbits/skills",
+      "install": "npx skills add trailofbits/skills --skill modern-python",
+      "description": "Modern Python with uv, ruff, ty, pytest"
+    },
+    {
+      "name": "property-based-testing",
+      "sdlc_phase": "testing",
+      "source": "trailofbits/skills",
+      "install": "npx skills add trailofbits/skills --skill property-based-testing",
+      "description": "Multi-language property testing (Python/Hypothesis)"
+    },
+    {
+      "name": "insecure-defaults",
+      "sdlc_phase": "security",
+      "source": "trailofbits/skills",
+      "install": "npx skills add trailofbits/skills --skill insecure-defaults",
+      "description": "Detect hardcoded credentials, fail-open security patterns"
+    },
+    {
+      "name": "supabase-postgres-best-practices",
+      "sdlc_phase": "database",
+      "source": "supabase/agent-skills",
+      "install": "npx skills add supabase/agent-skills --skill supabase-postgres-best-practices",
+      "description": "PostgreSQL best practices with Supabase"
+    },
+    {
+      "name": "planetscale-postgresql",
+      "sdlc_phase": "database",
+      "source": "planetscale/database-skills",
+      "install": "npx skills add planetscale/database-skills --skill planetscale-postgresql",
+      "description": "Postgres MVCC, VACUUM, WAL tuning, replication"
+    },
+    {
+      "name": "github-actions-generator",
+      "sdlc_phase": "devops",
+      "source": "akin-ozer/cc-devops-skills",
+      "install": "npx skills add akin-ozer/cc-devops-skills --skill github-actions-generator",
+      "description": "GitHub Actions CI/CD pipeline generation"
+    },
+    {
+      "name": "dockerfile-generator",
+      "sdlc_phase": "devops",
+      "source": "akin-ozer/cc-devops-skills",
+      "install": "npx skills add akin-ozer/cc-devops-skills --skill dockerfile-generator",
+      "description": "Dockerfile generation with best practices"
+    }
+  ],
+  "default_mcps": ["github", "postgres"]
+}

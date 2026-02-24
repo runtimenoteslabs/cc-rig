@@ -1,0 +1,78 @@
+{
+  "name": "verify-heavy",
+  "description": "Maximum rigor. All agents, all quality gates.",
+  "agents": [
+    "code-reviewer",
+    "test-writer",
+    "explorer",
+    "architect",
+    "refactorer",
+    "pr-reviewer",
+    "implementer",
+    "pm-spec",
+    "security-auditor",
+    "doc-writer",
+    "techdebt-hunter",
+    "db-reader"
+  ],
+  "commands": [
+    "fix-issue",
+    "review",
+    "test",
+    "plan",
+    "learn",
+    "assumptions",
+    "remember",
+    "refactor",
+    "spec-create",
+    "spec-execute",
+    "techdebt",
+    "security",
+    "document",
+    "optimize",
+    "gtd-capture",
+    "gtd-process",
+    "daily-plan",
+    "worktree"
+  ],
+  "hooks": [
+    "format",
+    "lint",
+    "typecheck",
+    "block-rm-rf",
+    "block-env",
+    "block-main",
+    "session-context",
+    "stop-validator",
+    "memory-stop",
+    "memory-precompact",
+    "push-review",
+    "subagent-review",
+    "commit-message",
+    "doc-review"
+  ],
+  "features": {
+    "memory": true,
+    "spec_workflow": true,
+    "gtd": false,
+    "worktrees": true
+  },
+  "permission_mode": "permissive",
+  "skill_phases": {
+    "planning": true,
+    "coding": true,
+    "testing": true,
+    "review": true,
+    "security": true,
+    "database": "if_applicable",
+    "devops": true
+  },
+  "skill_packs": {
+    "superpowers": "full",
+    "trailofbits_core": [
+      "static-analysis",
+      "insecure-defaults",
+      "second-opinion"
+    ]
+  }
+}

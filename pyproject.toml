@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cc-rig"
+version = "1.0.0"
+description = "Project setup generator for Claude Code"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    {name = "exitcode42"},
+]
+keywords = ["claude", "claude-code", "developer-tools", "scaffolding", "ai", "code-generation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Build Tools",
+]
+
+[project.optional-dependencies]
+rich = ["rich>=13.0", "textual>=0.40"]
+dev = ["pytest>=7.0", "ruff>=0.4"]
+
+[project.scripts]
+cc-rig = "cc_rig.cli:_main_entry"
+
+[tool.setuptools.packages.find]
+include = ["cc_rig*"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

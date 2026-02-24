@@ -1,0 +1,45 @@
+{
+  "name": "speedrun",
+  "description": "Minimal. Get moving fast.",
+  "agents": [
+    "code-reviewer",
+    "test-writer",
+    "explorer"
+  ],
+  "commands": [
+    "fix-issue",
+    "review",
+    "test",
+    "plan",
+    "learn",
+    "assumptions"
+  ],
+  "hooks": [
+    "format",
+    "lint",
+    "block-rm-rf",
+    "block-env",
+    "block-main",
+    "session-context"
+  ],
+  "features": {
+    "memory": false,
+    "spec_workflow": false,
+    "gtd": false,
+    "worktrees": false
+  },
+  "permission_mode": "default",
+  "skill_phases": {
+    "planning": false,
+    "coding": true,
+    "testing": "bundled_only",
+    "review": false,
+    "security": "reference",
+    "database": "if_applicable",
+    "devops": false
+  },
+  "skill_packs": {
+    "superpowers": [],
+    "trailofbits_core": []
+  }
+}

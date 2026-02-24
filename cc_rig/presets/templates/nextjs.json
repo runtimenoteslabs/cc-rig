@@ -1,0 +1,81 @@
+{
+  "name": "nextjs",
+  "language": "typescript",
+  "framework": "nextjs",
+  "project_type": "web_fullstack",
+  "tool_commands": {
+    "test": "npm test",
+    "lint": "npm run lint",
+    "format": "npx prettier --write",
+    "typecheck": "npx tsc --noEmit",
+    "build": "next build"
+  },
+  "source_dir": "app",
+  "test_dir": "src/__tests__",
+  "recommended_skills": [
+    {
+      "name": "vercel-react-best-practices",
+      "sdlc_phase": "coding",
+      "source": "vercel-labs/agent-skills",
+      "install": "npx skills add vercel-labs/agent-skills --skill vercel-react-best-practices",
+      "description": "React best practices from Vercel"
+    },
+    {
+      "name": "next-best-practices",
+      "sdlc_phase": "coding",
+      "source": "vercel-labs/next-skills",
+      "install": "npx skills add vercel-labs/next-skills --skill next-best-practices",
+      "description": "Next.js App Router, RSC, caching patterns"
+    },
+    {
+      "name": "web-design-guidelines",
+      "sdlc_phase": "coding",
+      "source": "vercel-labs/agent-skills",
+      "install": "npx skills add vercel-labs/agent-skills --skill web-design-guidelines",
+      "description": "Web design guidelines and UI patterns"
+    },
+    {
+      "name": "frontend-design",
+      "sdlc_phase": "coding",
+      "source": "anthropics/skills",
+      "install": "npx skills add anthropics/skills --skill frontend-design",
+      "description": "Frontend design patterns from Anthropic"
+    },
+    {
+      "name": "tailwind-design-system",
+      "sdlc_phase": "coding",
+      "source": "wshobson/agents",
+      "install": "npx skills add wshobson/agents --skill tailwind-design-system",
+      "description": "Tailwind CSS v4 design system"
+    },
+    {
+      "name": "webapp-testing",
+      "sdlc_phase": "testing",
+      "source": "anthropics/skills",
+      "install": "npx skills add anthropics/skills --skill webapp-testing",
+      "description": "Web application testing patterns"
+    },
+    {
+      "name": "supabase-postgres-best-practices",
+      "sdlc_phase": "database",
+      "source": "supabase/agent-skills",
+      "install": "npx skills add supabase/agent-skills --skill supabase-postgres-best-practices",
+      "description": "PostgreSQL best practices with Supabase"
+    },
+    {
+      "name": "planetscale-postgresql",
+      "sdlc_phase": "database",
+      "source": "planetscale/database-skills",
+      "install": "npx skills add planetscale/database-skills --skill planetscale-postgresql",
+      "description": "Postgres MVCC, VACUUM, WAL tuning, replication"
+    },
+    {
+      "name": "github-actions-generator",
+      "sdlc_phase": "devops",
+      "source": "akin-ozer/cc-devops-skills",
+      "install": "npx skills add akin-ozer/cc-devops-skills --skill github-actions-generator",
+      "description": "GitHub Actions CI/CD pipeline generation"
+    }
+  ],
+  "default_mcps": ["github", "playwright"]
+}

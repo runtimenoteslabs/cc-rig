@@ -1,0 +1,69 @@
+{
+  "name": "gtd-lite",
+  "description": "Task-focused. GTD system + daily planning.",
+  "agents": [
+    "code-reviewer",
+    "test-writer",
+    "explorer",
+    "architect",
+    "refactorer",
+    "pr-reviewer",
+    "implementer",
+    "parallel-worker"
+  ],
+  "commands": [
+    "fix-issue",
+    "review",
+    "test",
+    "plan",
+    "learn",
+    "assumptions",
+    "remember",
+    "refactor",
+    "gtd-capture",
+    "gtd-process",
+    "daily-plan",
+    "worktree"
+  ],
+  "hooks": [
+    "format",
+    "lint",
+    "typecheck",
+    "block-rm-rf",
+    "block-env",
+    "block-main",
+    "session-context",
+    "stop-validator",
+    "memory-stop",
+    "memory-precompact",
+    "push-review"
+  ],
+  "features": {
+    "memory": true,
+    "spec_workflow": false,
+    "gtd": true,
+    "worktrees": true
+  },
+  "permission_mode": "permissive",
+  "skill_phases": {
+    "planning": true,
+    "coding": true,
+    "testing": true,
+    "review": true,
+    "security": true,
+    "database": "if_applicable",
+    "devops": true
+  },
+  "skill_packs": {
+    "superpowers": [
+      "brainstorming",
+      "writing-plans",
+      "executing-plans",
+      "requesting-code-review",
+      "receiving-code-review",
+      "using-git-worktrees",
+      "finishing-a-development-branch"
+    ],
+    "trailofbits_core": "reference"
+  }
+}

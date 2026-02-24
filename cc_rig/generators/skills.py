@@ -1,0 +1,467 @@
+"""Generate .claude/skills/ — bundled Tier 1 and stub Tier 3 skills."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from cc_rig.config.project import ProjectConfig
+
+
+def generate_skills(
+    config: ProjectConfig,
+    output_dir: Path,
+) -> list[str]:
+    """Generate skill SKILL.md files in .claude/skills/.
+
+    Tier 1 (bundled): tdd, systematic-debug — real, customized content.
+    Tier 3 (stubs): project-patterns, deployment-checklist — minimal.
+
+    Returns list of relative file paths written.
+    """
+    files_written: list[str] = []
+
+    # Tier 1: TDD skill
+    files_written.extend(_write_tdd_skill(config, output_dir))
+
+    # Tier 1: Systematic debug skill
+    files_written.extend(_write_debug_skill(config, output_dir))
+
+    # Tier 3: Project patterns stub
+    files_written.extend(_write_project_patterns_stub(config, output_dir))
+
+    # Tier 3: Deployment checklist stub
+    files_written.extend(_write_deployment_checklist_stub(config, output_dir))
+
+    # Community skills guide
+    if config.recommended_skills:
+        files_written.extend(_write_recommended_skills_guide(config, output_dir))
+
+    return files_written
+
+
+# ── Tier 1: TDD ───────────────────────────────────────────────────
+
+
+def _write_tdd_skill(
+    config: ProjectConfig,
+    output_dir: Path,
+) -> list[str]:
+    skills_dir = output_dir / ".claude" / "skills" / "tdd"
+    skills_dir.mkdir(parents=True, exist_ok=True)
+
+    test_cmd = config.test_cmd or "echo 'run tests'"
+    lang = config.language or "the project language"
+    framework = config.framework or "the project framework"
+
+    # Build framework-specific testing guidance
+    test_guidance = _tdd_guidance_for(framework)
+
+    content = (
+        "---\n"
+        "name: tdd\n"
+        f"description: Test-Driven Development workflow for {framework}\n"
+        "---\n"
+        "\n"
+        "# TDD Skill\n"
+        "\n"
+        "Test-Driven Development workflow customized for "
+        f"{framework} ({lang}).\n"
+        "\n"
+        "## Cycle\n"
+        "\n"
+        "1. **Red**: Write a failing test that defines the "
+        "desired behavior.\n"
+        f"   Run: `{test_cmd}` — confirm it fails.\n"
+        "2. **Green**: Write the minimal code to make the test "
+        "pass.\n"
+        f"   Run: `{test_cmd}` — confirm it passes.\n"
+        "3. **Refactor**: Clean up the code without changing "
+        "behavior.\n"
+        f"   Run: `{test_cmd}` — confirm it still passes.\n"
+        "4. **Commit**: One focused commit per red-green-refactor "
+        "cycle.\n"
+        "\n"
+        "## Rules\n"
+        "\n"
+        "- Never write production code without a failing test.\n"
+        "- Each test should test one behavior.\n"
+        "- Test names describe the expected behavior, not the "
+        "method name.\n"
+        "- Keep tests fast. Mock external services and databases "
+        "in unit tests.\n"
+        "\n"
+        f"## {framework} Testing Patterns\n"
+        "\n"
+        f"{test_guidance}\n"
+    )
+
+    path = skills_dir / "SKILL.md"
+    path.write_text(content)
+    return [".claude/skills/tdd/SKILL.md"]
+
+
+def _tdd_guidance_for(framework: str) -> str:
+    """Return framework-specific TDD guidance."""
+    guides: dict[str, str] = {
+        "fastapi": (
+            "- Use `TestClient` from `starlette.testclient` for "
+            "endpoint tests.\n"
+            "- Use `pytest.fixture` for database sessions and "
+            "test data.\n"
+            "- Test request validation by sending invalid "
+            "payloads.\n"
+            "- Test error responses match the expected status "
+            "codes and schemas.\n"
+            "- Use `httpx.AsyncClient` for async endpoint tests."
+        ),
+        "django": (
+            "- Use `django.test.TestCase` for database tests "
+            "(auto transaction rollback).\n"
+            "- Use `Client` for view/endpoint tests.\n"
+            "- Test models, views, and forms separately.\n"
+            "- Use `factory_boy` or fixtures for test data.\n"
+            "- Test both authenticated and unauthenticated "
+            "access."
+        ),
+        "nextjs": (
+            "- Use Jest or Vitest for unit tests.\n"
+            "- Use React Testing Library for component tests.\n"
+            "- Test user interactions, not implementation "
+            "details.\n"
+            "- Use `getByRole`, `getByText` over `getByTestId`.\n"
+            "- Test Server Components with async rendering "
+            "patterns."
+        ),
+        "gin": (
+            "- Use `httptest.NewRecorder()` for handler tests.\n"
+            "- Write table-driven tests with `t.Run()` "
+            "subtests.\n"
+            "- Use interfaces for dependency injection in "
+            "services.\n"
+            "- Test middleware independently from handlers.\n"
+            "- Use `testify/assert` or stdlib `testing` "
+            "assertions."
+        ),
+        "echo": (
+            "- Use `httptest.NewRecorder()` for handler tests.\n"
+            "- Write table-driven tests with `t.Run()` "
+            "subtests.\n"
+            "- Use interfaces for dependency injection in "
+            "services.\n"
+            "- Test middleware independently from handlers.\n"
+            "- Use `echo.New()` test context for handler unit "
+            "tests."
+        ),
+        "clap": (
+            "- Use `#[test]` for unit tests in `src/`.\n"
+            "- Use `assert_cmd` crate for CLI integration "
+            "tests.\n"
+            "- Test both stdout output and exit codes.\n"
+            "- Use `tempfile` for tests that need filesystem "
+            "state.\n"
+            "- Test error messages match expected format."
+        ),
+        "flask": (
+            "- Use `app.test_client()` for endpoint tests.\n"
+            "- Use `pytest.fixture` with application factory "
+            "pattern.\n"
+            "- Test request validation and error responses.\n"
+            "- Use `flask.testing.FlaskClient` for session "
+            "handling.\n"
+            "- Isolate database tests with transactions or "
+            "test databases."
+        ),
+    }
+    return guides.get(
+        framework,
+        (
+            "- Follow the project's established test patterns.\n"
+            "- Keep unit tests isolated from external services.\n"
+            "- Use descriptive test names.\n"
+            "- Test edge cases and error paths."
+        ),
+    )
+
+
+# ── Tier 1: Systematic Debug ──────────────────────────────────────
+
+
+def _write_debug_skill(
+    config: ProjectConfig,
+    output_dir: Path,
+) -> list[str]:
+    skills_dir = output_dir / ".claude" / "skills" / "systematic-debug"
+    skills_dir.mkdir(parents=True, exist_ok=True)
+
+    test_cmd = config.test_cmd or "echo 'run tests'"
+    lang = config.language or "the project language"
+    framework = config.framework or "the project framework"
+
+    debug_guidance = _debug_guidance_for(framework)
+
+    content = (
+        "---\n"
+        "name: systematic-debug\n"
+        f"description: Structured debugging workflow for {framework}\n"
+        "---\n"
+        "\n"
+        "# Systematic Debug Skill\n"
+        "\n"
+        "Structured debugging workflow for "
+        f"{framework} ({lang}).\n"
+        "\n"
+        "## Process\n"
+        "\n"
+        "1. **Reproduce**: Create a reliable reproduction of "
+        "the bug.\n"
+        f"   Run: `{test_cmd}` to confirm the failure.\n"
+        "2. **Isolate**: Narrow down the scope.\n"
+        "   - Binary search through recent commits if needed "
+        "(`git bisect`).\n"
+        "   - Add logging to trace execution flow.\n"
+        "   - Eliminate variables: does it reproduce with "
+        "minimal input?\n"
+        "3. **Identify**: Find the exact line(s) causing the "
+        "issue.\n"
+        "   - Read the code path from entry to failure.\n"
+        "   - Check assumptions at each step.\n"
+        "4. **Fix**: Apply the minimal correction.\n"
+        "5. **Verify**: Run the reproduction test. Run the "
+        "full suite.\n"
+        "6. **Prevent**: Add a regression test. Update "
+        "memory/gotchas.md if applicable.\n"
+        "\n"
+        "## Rules\n"
+        "\n"
+        "- Never guess. Form a hypothesis, then test it.\n"
+        "- Change one thing at a time.\n"
+        "- If a fix feels like a hack, you have not found the "
+        "root cause.\n"
+        "- Document what you tried and what you learned.\n"
+        "\n"
+        f"## {framework} Debugging Tips\n"
+        "\n"
+        f"{debug_guidance}\n"
+    )
+
+    path = skills_dir / "SKILL.md"
+    path.write_text(content)
+    return [".claude/skills/systematic-debug/SKILL.md"]
+
+
+def _debug_guidance_for(framework: str) -> str:
+    """Return framework-specific debugging guidance."""
+    guides: dict[str, str] = {
+        "fastapi": (
+            "- Check request/response schemas match with "
+            "`print(response.json())`.\n"
+            "- Use `--log-level debug` for uvicorn.\n"
+            "- Check dependency injection order (Depends chain).\n"
+            "- Async bugs: check for missing `await` or "
+            "blocking calls in async endpoints.\n"
+            "- Database: check session lifecycle and connection "
+            "pool exhaustion."
+        ),
+        "django": (
+            "- Use `django-debug-toolbar` for request "
+            "profiling.\n"
+            "- Check ORM queries with `queryset.query` "
+            "or `django.db.connection.queries`.\n"
+            "- Middleware ordering matters — check `MIDDLEWARE` "
+            "list.\n"
+            "- Template errors: check context variables passed "
+            "to render.\n"
+            "- Migration issues: check `showmigrations` for "
+            "gaps."
+        ),
+        "nextjs": (
+            "- Server vs client: check if the error is in RSC "
+            "or client component.\n"
+            "- Use React DevTools for component state "
+            "inspection.\n"
+            "- Check `next.config.js` for misconfigurations.\n"
+            "- Hydration errors: compare server-rendered vs "
+            "client-rendered HTML.\n"
+            "- API route errors: check the Network tab for "
+            "response payloads."
+        ),
+        "gin": (
+            "- Use `gin.DebugMode()` for verbose route "
+            "logging.\n"
+            "- Check middleware chain with "
+            "`c.Next()` / `c.Abort()` flow.\n"
+            "- Use `go vet` and `golangci-lint` for static "
+            "analysis.\n"
+            "- Concurrency bugs: check for shared state "
+            "without mutexes.\n"
+            "- Use `pprof` for performance-related issues."
+        ),
+        "echo": (
+            "- Use `echo.Debug` mode for verbose logging.\n"
+            "- Check middleware chain ordering.\n"
+            "- Use `go vet` and `golangci-lint` for static "
+            "analysis.\n"
+            "- Check context handling (`echo.Context` vs "
+            "`context.Context`).\n"
+            "- Use `pprof` for performance-related issues."
+        ),
+        "clap": (
+            "- Use `RUST_BACKTRACE=1` for full stack traces.\n"
+            "- Use `dbg!()` macro for quick value inspection.\n"
+            "- Check ownership and borrow issues with "
+            "`cargo check`.\n"
+            "- Use `RUST_LOG=debug` with `env_logger` for "
+            "log-level control.\n"
+            "- Lifetime errors: simplify the type signatures "
+            "first."
+        ),
+        "flask": (
+            "- Use `app.run(debug=True)` for auto-reload and "
+            "debugger.\n"
+            "- Check Blueprint registration order.\n"
+            "- Use `flask shell` for interactive debugging.\n"
+            "- SQLAlchemy: check session state and "
+            "`db.session.rollback()` on errors.\n"
+            "- Check `app.url_map` for route conflicts."
+        ),
+    }
+    return guides.get(
+        framework,
+        (
+            "- Use the language's standard debugging tools.\n"
+            "- Add logging at key decision points.\n"
+            "- Check recent git changes with `git log --oneline`.\n"
+            "- Verify assumptions about input data."
+        ),
+    )
+
+
+# ── Tier 3: Project Patterns (stub) ──────────────────────────────
+
+
+def _write_project_patterns_stub(
+    config: ProjectConfig,
+    output_dir: Path,
+) -> list[str]:
+    skills_dir = output_dir / ".claude" / "skills" / "project-patterns"
+    skills_dir.mkdir(parents=True, exist_ok=True)
+
+    content = (
+        "# Project Patterns Skill\n"
+        "\n"
+        "Project-specific conventions, architecture decisions, "
+        "and naming rules.\n"
+        "\n"
+        "## Instructions\n"
+        "\n"
+        "Fill in your project-specific patterns below. "
+        "These guide Claude to follow your team's conventions.\n"
+        "\n"
+        "## Naming Conventions\n"
+        "\n"
+        "(Add your naming rules here.)\n"
+        "\n"
+        "## Architecture Patterns\n"
+        "\n"
+        "(Add your architecture patterns here.)\n"
+        "\n"
+        "## Code Organization\n"
+        "\n"
+        "(Add your code organization rules here.)\n"
+    )
+
+    path = skills_dir / "SKILL.md"
+    path.write_text(content)
+    return [".claude/skills/project-patterns/SKILL.md"]
+
+
+# ── Tier 3: Deployment Checklist (stub) ──────────────────────────
+
+
+def _write_deployment_checklist_stub(
+    config: ProjectConfig,
+    output_dir: Path,
+) -> list[str]:
+    skills_dir = output_dir / ".claude" / "skills" / "deployment-checklist"
+    skills_dir.mkdir(parents=True, exist_ok=True)
+
+    content = (
+        "# Deployment Checklist Skill\n"
+        "\n"
+        "Project-specific deployment steps and verification.\n"
+        "\n"
+        "## Instructions\n"
+        "\n"
+        "Fill in your project-specific deployment checklist. "
+        "Claude will follow these steps when deploying.\n"
+        "\n"
+        "## Pre-Deploy\n"
+        "\n"
+        "(Add pre-deployment checks here.)\n"
+        "\n"
+        "## Deploy Steps\n"
+        "\n"
+        "(Add deployment steps here.)\n"
+        "\n"
+        "## Post-Deploy Verification\n"
+        "\n"
+        "(Add post-deploy verification steps here.)\n"
+    )
+
+    path = skills_dir / "SKILL.md"
+    path.write_text(content)
+    return [".claude/skills/deployment-checklist/SKILL.md"]
+
+
+# ── Recommended Skills Guide (generated from config) ────────────
+
+
+def _write_recommended_skills_guide(
+    config: ProjectConfig,
+    output_dir: Path,
+) -> list[str]:
+    """Generate docs/recommended-skills.md with categorized install commands."""
+    docs_dir = output_dir / "docs"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+
+    lines = [
+        "# Recommended Skills\n",
+        f"Community skills curated for **{config.framework}** "
+        f"({config.language}) with **{config.workflow}** workflow.\n",
+        "",
+    ]
+
+    # Group skills by SDLC phase
+    by_phase: dict[str, list[tuple[str, str, str]]] = {}
+    for skill in config.recommended_skills:
+        phase = skill.sdlc_phase or "other"
+        by_phase.setdefault(phase, []).append((skill.name, skill.description, skill.install))
+
+    phase_order = ("coding", "testing", "review", "security", "database", "devops", "planning")
+    for phase in phase_order:
+        skills = by_phase.get(phase, [])
+        if not skills:
+            continue
+        lines.append(f"## {phase.title()}\n")
+        for name, desc, install in skills:
+            lines.append(f"### {name}\n")
+            if desc:
+                lines.append(f"{desc}\n")
+            lines.append(f"```bash\n{install}\n```\n")
+
+    # Ecosystem discovery links
+    lines.append("## Discover More Skills\n")
+    lines.append("- [skills.sh](https://skills.sh/) — 73K+ skills directory")
+    lines.append(
+        "- [awesome-claude-code](https://github.com/hesreallyhim/awesome-claude-code) "
+        "— Community master index"
+    )
+    lines.append(
+        "- [awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) "
+        "— Composio curated list"
+    )
+    lines.append("")
+
+    path = docs_dir / "recommended-skills.md"
+    path.write_text("\n".join(lines))
+    return ["docs/recommended-skills.md"]

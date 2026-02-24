@@ -1,0 +1,57 @@
+{
+  "name": "standard",
+  "description": "Solid defaults for most projects. Memory + lessons.",
+  "agents": [
+    "code-reviewer",
+    "test-writer",
+    "explorer",
+    "architect",
+    "refactorer"
+  ],
+  "commands": [
+    "fix-issue",
+    "review",
+    "test",
+    "plan",
+    "learn",
+    "assumptions",
+    "remember",
+    "refactor"
+  ],
+  "hooks": [
+    "format",
+    "lint",
+    "typecheck",
+    "block-rm-rf",
+    "block-env",
+    "block-main",
+    "session-context",
+    "stop-validator",
+    "memory-stop",
+    "memory-precompact"
+  ],
+  "features": {
+    "memory": true,
+    "spec_workflow": false,
+    "gtd": false,
+    "worktrees": false
+  },
+  "permission_mode": "permissive",
+  "skill_phases": {
+    "planning": false,
+    "coding": true,
+    "testing": true,
+    "review": true,
+    "security": true,
+    "database": "if_applicable",
+    "devops": true
+  },
+  "skill_packs": {
+    "superpowers": [
+      "requesting-code-review",
+      "receiving-code-review",
+      "finishing-a-development-branch"
+    ],
+    "trailofbits_core": []
+  }
+}
