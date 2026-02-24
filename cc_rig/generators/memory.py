@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from cc_rig.config.project import ProjectConfig
+from cc_rig.generators.fileops import FileTracker
 
 # Shared memory file templates — used by both the generator and doctor --fix.
 MEMORY_FILE_TEMPLATES: dict[str, str] = {
@@ -68,6 +69,7 @@ MEMORY_FILE_TEMPLATES: dict[str, str] = {
 def generate_memory(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     """Generate memory/ files if config.features.memory is True.
 
@@ -85,11 +87,15 @@ def generate_memory(
     files_written: list[str] = []
 
     for filename, template in MEMORY_FILE_TEMPLATES.items():
-        (memory_dir / filename).write_text(template)
-        files_written.append(f"memory/{filename}")
+        rel = f"memory/{filename}"
+        if tracker is not None:
+            tracker.write_text(rel, template)
+        else:
+            (memory_dir / filename).write_text(template)
+        files_written.append(rel)
 
     # MEMORY-README.md
-    (memory_dir / "MEMORY-README.md").write_text(
+    readme_content = (
         "# Memory System — Instructions for Claude\n"
         "\n"
         "This directory is the project's persistent memory. "
@@ -138,6 +144,10 @@ def generate_memory(
         "| `session-log.md` | One-line session summaries | End "
         "of every session |\n"
     )
+    if tracker is not None:
+        tracker.write_text("memory/MEMORY-README.md", readme_content)
+    else:
+        (memory_dir / "MEMORY-README.md").write_text(readme_content)
     files_written.append("memory/MEMORY-README.md")
 
     return files_written

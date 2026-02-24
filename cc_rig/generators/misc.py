@@ -5,11 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from cc_rig.config.project import ProjectConfig
+from cc_rig.generators.fileops import FileTracker
 
 
 def generate_misc(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     """Write .cc-rig.json (the full config as JSON).
 
@@ -18,7 +20,11 @@ def generate_misc(
 
     Returns list of relative file paths written.
     """
-    output_dir.mkdir(parents=True, exist_ok=True)
-    config_path = output_dir / ".cc-rig.json"
-    config_path.write_text(config.to_json(indent=2) + "\n")
+    content = config.to_json(indent=2) + "\n"
+    if tracker is not None:
+        tracker.write_text(".cc-rig.json", content)
+    else:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        config_path = output_dir / ".cc-rig.json"
+        config_path.write_text(content)
     return [".cc-rig.json"]

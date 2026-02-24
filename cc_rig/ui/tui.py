@@ -58,6 +58,16 @@ def _has_rich() -> bool:
         return False
 
 
+def _has_prompt_toolkit() -> bool:
+    """Check if prompt_toolkit is importable."""
+    try:
+        import prompt_toolkit  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 def get_tui_backend() -> str:
     """Return the detected TUI backend name.
 
@@ -70,3 +80,4 @@ def get_tui_backend() -> str:
 # Module-level cached values for consumers that import directly.
 TUI_BACKEND = _detect_backend()
 HAS_RICH = _has_rich()
+HAS_PROMPT_TOOLKIT = _has_prompt_toolkit()

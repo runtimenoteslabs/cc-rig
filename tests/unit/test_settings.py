@@ -140,9 +140,7 @@ class TestHookScriptSyntax:
                 capture_output=True,
                 text=True,
             )
-            assert result.returncode == 0, (
-                f"{script.name} has syntax errors:\n{result.stderr}"
-            )
+            assert result.returncode == 0, f"{script.name} has syntax errors:\n{result.stderr}"
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
     def test_all_workflows_pass_bash_syntax(self, workflow, tmp_path):
@@ -166,9 +164,7 @@ class TestHookScriptExecutable:
         _generate_settings(template, "standard", tmp_path)
         for script in _get_scripts(tmp_path):
             mode = script.stat().st_mode
-            assert mode & 0o755 == 0o755, (
-                f"{script.name} not executable (mode={oct(mode)})"
-            )
+            assert mode & 0o755 == 0o755, f"{script.name} not executable (mode={oct(mode)})"
 
 
 class TestHookScriptContent:
@@ -239,9 +235,7 @@ class TestHookScriptStructure:
         _generate_settings("fastapi", "standard", tmp_path)
         for script in _get_scripts(tmp_path):
             content = script.read_text()
-            assert "set -euo pipefail" in content, (
-                f"{script.name} missing 'set -euo pipefail'"
-            )
+            assert "set -euo pipefail" in content, f"{script.name} missing 'set -euo pipefail'"
 
     def test_all_scripts_end_with_exit(self, tmp_path):
         _generate_settings("fastapi", "standard", tmp_path)
@@ -256,9 +250,7 @@ class TestHookScriptStructure:
         _generate_settings("fastapi", "standard", tmp_path)
         for script in _get_scripts(tmp_path):
             content = script.read_text()
-            assert "# cc-rig hook:" in content, (
-                f"{script.name} missing cc-rig hook comment"
-            )
+            assert "# cc-rig hook:" in content, f"{script.name} missing cc-rig hook comment"
 
     def test_blocking_hooks_use_exit_2(self, tmp_path):
         """Safety hooks (block-*) should use exit 2 to block tool use."""
@@ -268,25 +260,24 @@ class TestHookScriptStructure:
             script = tmp_path / ".claude" / "hooks" / name
             if script.exists():
                 content = script.read_text()
-                assert "exit 2" in content, (
-                    f"{name} should use exit 2 to block tool use"
-                )
+                assert "exit 2" in content, f"{name} should use exit 2 to block tool use"
 
     def test_non_blocking_hooks_dont_use_exit_2(self, tmp_path):
         """Non-safety hooks should never exit 2 (which blocks tool use)."""
         _generate_settings("fastapi", "standard", tmp_path)
         non_blocking = [
-            "format.sh", "lint.sh", "typecheck.sh",
-            "session-context.sh", "stop-validator.sh",
+            "format.sh",
+            "lint.sh",
+            "typecheck.sh",
+            "session-context.sh",
+            "stop-validator.sh",
             "memory-precompact.sh",
         ]
         for name in non_blocking:
             script = tmp_path / ".claude" / "hooks" / name
             if script.exists():
                 content = script.read_text()
-                assert "exit 2" not in content, (
-                    f"{name} should not block tool use (exit 2)"
-                )
+                assert "exit 2" not in content, f"{name} should not block tool use (exit 2)"
 
 
 class TestHookScriptSafetyContent:
@@ -307,9 +298,7 @@ class TestHookScriptSafetyContent:
         _generate_settings("fastapi", "standard", tmp_path)
         script = (tmp_path / ".claude" / "hooks" / "block-env.sh").read_text()
         for pattern in [".env", "credentials", "secrets", ".pem", ".key", "id_rsa"]:
-            assert pattern in script, (
-                f"block-env.sh should block '{pattern}' files"
-            )
+            assert pattern in script, f"block-env.sh should block '{pattern}' files"
 
     def test_block_main_catches_push_to_main(self, tmp_path):
         _generate_settings("fastapi", "standard", tmp_path)
@@ -333,9 +322,7 @@ class TestHookRegistryConsistency:
             _, _, hook_type = meta
             if hook_type == "command":
                 script = tmp_path / ".claude" / "hooks" / f"{hook_name}.sh"
-                assert script.exists(), (
-                    f"Command hook '{hook_name}' has no generated script"
-                )
+                assert script.exists(), f"Command hook '{hook_name}' has no generated script"
 
     def test_prompt_and_agent_hooks_have_prompt_text(self):
         """Every prompt/agent hook should have non-empty prompt text."""
@@ -344,22 +331,16 @@ class TestHookRegistryConsistency:
                 assert name in _PROMPT_TEXTS, (
                     f"Hook '{name}' (type={hook_type}) missing prompt text"
                 )
-                assert len(_PROMPT_TEXTS[name]) > 10, (
-                    f"Hook '{name}' prompt text too short"
-                )
+                assert len(_PROMPT_TEXTS[name]) > 10, f"Hook '{name}' prompt text too short"
 
     def test_hook_event_types_are_valid(self):
         for name, (event, _, _) in _HOOK_REGISTRY.items():
-            assert event in VALID_CC_EVENTS, (
-                f"Hook '{name}' uses invalid event '{event}'"
-            )
+            assert event in VALID_CC_EVENTS, f"Hook '{name}' uses invalid event '{event}'"
 
     def test_hook_types_are_valid(self):
         valid_types = {"command", "prompt", "agent"}
         for name, (_, _, hook_type) in _HOOK_REGISTRY.items():
-            assert hook_type in valid_types, (
-                f"Hook '{name}' has invalid type '{hook_type}'"
-            )
+            assert hook_type in valid_types, f"Hook '{name}' has invalid type '{hook_type}'"
 
     def test_hook_count(self):
         """Guard against accidental additions/removals."""
@@ -454,9 +435,7 @@ class TestBudgetReminderHook:
 
         self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
         script = tmp_path / ".claude" / "hooks" / "budget-reminder.sh"
-        result = subprocess.run(
-            ["bash", "-n", str(script)], capture_output=True, text=True
-        )
+        result = subprocess.run(["bash", "-n", str(script)], capture_output=True, text=True)
         assert result.returncode == 0, f"Syntax error:\n{result.stderr}"
 
     def test_script_passes_bash_syntax_unlimited(self, tmp_path):
@@ -464,9 +443,7 @@ class TestBudgetReminderHook:
 
         self._generate_with_harness(tmp_path, "lite", budget_tokens=None)
         script = tmp_path / ".claude" / "hooks" / "budget-reminder.sh"
-        result = subprocess.run(
-            ["bash", "-n", str(script)], capture_output=True, text=True
-        )
+        result = subprocess.run(["bash", "-n", str(script)], capture_output=True, text=True)
         assert result.returncode == 0, f"Syntax error:\n{result.stderr}"
 
     def test_script_is_executable(self, tmp_path):

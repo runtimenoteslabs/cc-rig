@@ -5,12 +5,14 @@ from __future__ import annotations
 from pathlib import Path
 
 from cc_rig.config.project import ProjectConfig
+from cc_rig.generators.fileops import FileTracker
 from cc_rig.templates import get_framework_content
 
 
 def generate_claude_md(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     """Generate CLAUDE.md with sections ordered for prompt-cache efficiency.
 
@@ -60,8 +62,11 @@ def generate_claude_md(
 
     content = "\n".join(sections)
 
-    output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / "CLAUDE.md").write_text(content)
+    if tracker is not None:
+        tracker.write_text("CLAUDE.md", content)
+    else:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "CLAUDE.md").write_text(content)
 
     return ["CLAUDE.md"]
 

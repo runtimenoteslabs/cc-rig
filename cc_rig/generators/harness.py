@@ -11,9 +11,11 @@ See: https://github.com/ghuntley/how-to-ralph-wiggum
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from cc_rig.config.project import ProjectConfig
+from cc_rig.generators.fileops import FileTracker
 
 # Harness levels in order of capability.
 _LEVELS = ("none", "lite", "standard", "autonomy")
@@ -22,6 +24,7 @@ _LEVELS = ("none", "lite", "standard", "autonomy")
 def generate_harness(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     """Generate harness files based on config.harness.level.
 
@@ -35,15 +38,15 @@ def generate_harness(
 
     # B1+ (lite and above)
     if _at_least(level, "lite"):
-        files.extend(_generate_b1(config, output_dir))
+        files.extend(_generate_b1(config, output_dir, tracker))
 
     # B2+ (standard and above)
     if _at_least(level, "standard"):
-        files.extend(_generate_b2(config, output_dir))
+        files.extend(_generate_b2(config, output_dir, tracker))
 
     # B3 (autonomy)
     if level == "autonomy":
-        files.extend(_generate_b3(config, output_dir))
+        files.extend(_generate_b3(config, output_dir, tracker))
 
     return files
 
@@ -59,7 +62,11 @@ def _at_least(current: str, minimum: str) -> bool:
 # ── B1: Harness-Lite ──────────────────────────────────────────────
 
 
-def _generate_b1(config: ProjectConfig, output_dir: Path) -> list[str]:
+def _generate_b1(
+    config: ProjectConfig,
+    output_dir: Path,
+    tracker: FileTracker | None = None,
+) -> list[str]:
     """Generate B1 files: task tracking + budget awareness."""
     files: list[str] = []
 
@@ -82,6 +89,8 @@ def _generate_b1(config: ProjectConfig, output_dir: Path) -> list[str]:
         "## Active Tasks\n"
         "\n"
         "<!-- Add tasks below -->\n",
+        tracker=tracker,
+        rel_path="tasks/todo.md",
     )
     files.append("tasks/todo.md")
 
@@ -116,6 +125,8 @@ def _generate_b1(config: ProjectConfig, output_dir: Path) -> list[str]:
         "3. **Checkpoint often.** Commit working code before moving on.\n"
         "4. **Stop cleanly.** When approaching budget, save state and stop.\n"
         "5. **Log progress.** Update tasks/todo.md and session-log.\n",
+        tracker=tracker,
+        rel_path="agent_docs/budget-guide.md",
     )
     files.append("agent_docs/budget-guide.md")
 
@@ -125,7 +136,11 @@ def _generate_b1(config: ProjectConfig, output_dir: Path) -> list[str]:
 # ── B2: Harness-Standard ──────────────────────────────────────────
 
 
-def _generate_b2(config: ProjectConfig, output_dir: Path) -> list[str]:
+def _generate_b2(
+    config: ProjectConfig,
+    output_dir: Path,
+    tracker: FileTracker | None = None,
+) -> list[str]:
     """Generate B2 files: verification gates + review notes."""
     files: list[str] = []
     agent_docs = output_dir / "agent_docs"
@@ -162,6 +177,8 @@ def _generate_b2(config: ProjectConfig, output_dir: Path) -> list[str]:
         "1. Fix the issue immediately if straightforward.\n"
         "2. If the fix is complex, log it in tasks/todo.md.\n"
         "3. Never skip a REQUIRED gate.\n",
+        tracker=tracker,
+        rel_path="agent_docs/verification-gates.md",
     )
     files.append("agent_docs/verification-gates.md")
 
@@ -177,6 +194,8 @@ def _generate_b2(config: ProjectConfig, output_dir: Path) -> list[str]:
         "`[YYYY-MM-DD] Review: <what was reviewed> — Learning: <insight>`\n"
         "\n"
         "<!-- Entries below -->\n",
+        tracker=tracker,
+        rel_path="agent_docs/review-notes.md",
     )
     files.append("agent_docs/review-notes.md")
 
@@ -186,7 +205,11 @@ def _generate_b2(config: ProjectConfig, output_dir: Path) -> list[str]:
 # ── B3: Autonomy Loop ─────────────────────────────────────────────
 
 
-def _generate_b3(config: ProjectConfig, output_dir: Path) -> list[str]:
+def _generate_b3(
+    config: ProjectConfig,
+    output_dir: Path,
+    tracker: FileTracker | None = None,
+) -> list[str]:
     """Generate B3 files: autonomy loop + safety rails."""
     files: list[str] = []
     agent_docs = output_dir / "agent_docs"
@@ -249,6 +272,8 @@ def _generate_b3(config: ProjectConfig, output_dir: Path) -> list[str]:
         "\n"
         "Press Ctrl+C at any time. The current Claude session will finish\n"
         "its current operation and the loop will stop.\n",
+        tracker=tracker,
+        rel_path="agent_docs/autonomy-loop.md",
     )
     files.append("agent_docs/autonomy-loop.md")
 
@@ -301,12 +326,13 @@ def _generate_b3(config: ProjectConfig, output_dir: Path) -> list[str]:
         "- Always update `tasks/todo.md` to reflect current state.\n"
         "- If all tasks are done, exit with message: ALL TASKS COMPLETE.\n"
         "- Do NOT carry assumptions from previous iterations — read fresh.\n",
+        tracker=tracker,
+        rel_path="PROMPT.md",
     )
     files.append("PROMPT.md")
 
     # loop.sh — the external bash loop that drives autonomous iteration
-    _write(
-        output_dir / "loop.sh",
+    loop_content = (
         "#!/usr/bin/env bash\n"
         "# Autonomy loop — based on the Ralph Wiggum technique by Geoffrey Huntley.\n"
         "# https://github.com/ghuntley/how-to-ralph-wiggum\n"
@@ -357,17 +383,24 @@ def _generate_b3(config: ProjectConfig, output_dir: Path) -> list[str]:
         'echo "================================================"\n'
         'echo "  MAX ITERATIONS REACHED (${MAX_ITERATIONS})"\n'
         'echo "  Check tasks/todo.md for remaining work."\n'
-        'echo "================================================"\n',
+        'echo "================================================"\n'
+    )
+    _write(
+        output_dir / "loop.sh",
+        loop_content,
+        tracker=tracker,
+        rel_path="loop.sh",
     )
     # Make loop.sh executable
-    (output_dir / "loop.sh").chmod(0o755)
+    if tracker is not None:
+        tracker.chmod("loop.sh", 0o755)
+    else:
+        (output_dir / "loop.sh").chmod(0o755)
     files.append("loop.sh")
 
     # .claude/harness-config.json — machine-readable safety config
     claude_dir = output_dir / ".claude"
     claude_dir.mkdir(parents=True, exist_ok=True)
-
-    import json
 
     safety_config = {
         "harness_level": "autonomy",
@@ -383,8 +416,13 @@ def _generate_b3(config: ProjectConfig, output_dir: Path) -> list[str]:
             "warn_at_percent": h.budget_warn_at_percent,
         },
     }
-    config_path = claude_dir / "harness-config.json"
-    config_path.write_text(json.dumps(safety_config, indent=2) + "\n")
+    harness_json = json.dumps(safety_config, indent=2) + "\n"
+    _write(
+        claude_dir / "harness-config.json",
+        harness_json,
+        tracker=tracker,
+        rel_path=".claude/harness-config.json",
+    )
     files.append(".claude/harness-config.json")
 
     return files
@@ -393,6 +431,14 @@ def _generate_b3(config: ProjectConfig, output_dir: Path) -> list[str]:
 # ── Helpers ────────────────────────────────────────────────────────
 
 
-def _write(path: Path, content: str) -> None:
-    """Write content to a file."""
-    path.write_text(content)
+def _write(
+    path: Path,
+    content: str,
+    tracker: FileTracker | None = None,
+    rel_path: str | None = None,
+) -> None:
+    """Write content to a file, using tracker when available."""
+    if tracker is not None and rel_path is not None:
+        tracker.write_text(rel_path, content)
+    else:
+        path.write_text(content)

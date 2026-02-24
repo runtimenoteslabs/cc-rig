@@ -60,7 +60,19 @@ def dim(msg: str) -> str:
 
 
 def format_summary(config: ProjectConfig) -> str:
-    """Format a ProjectConfig as a review summary."""
+    """Format a ProjectConfig as a review summary.
+
+    Uses rich formatting when available.
+    """
+    try:
+        from cc_rig.ui.tui import HAS_RICH
+
+        if HAS_RICH and _use_color():
+            from cc_rig.ui.rich_tui import rich_format_summary
+
+            return rich_format_summary(config)
+    except ImportError:
+        pass
     lines = [
         heading("Review"),
         "",
@@ -90,7 +102,19 @@ def format_summary(config: ProjectConfig) -> str:
 
 
 def format_file_list(files: list[str]) -> str:
-    """Format a list of generated files with checkmarks."""
+    """Format a list of generated files with checkmarks.
+
+    Uses rich tree when available.
+    """
+    try:
+        from cc_rig.ui.tui import HAS_RICH
+
+        if HAS_RICH and _use_color():
+            from cc_rig.ui.rich_tui import rich_format_file_list
+
+            return rich_format_file_list(files)
+    except ImportError:
+        pass
     lines = []
     for f in sorted(files):
         lines.append(f"  {GREEN}+{RESET} {f}")

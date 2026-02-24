@@ -13,6 +13,7 @@ from cc_rig.generators.agent_docs import generate_agent_docs
 from cc_rig.generators.agents import generate_agents
 from cc_rig.generators.claude_md import generate_claude_md
 from cc_rig.generators.commands import generate_commands
+from cc_rig.generators.fileops import FileTracker
 from cc_rig.generators.harness import generate_harness
 from cc_rig.generators.mcp import generate_mcp
 from cc_rig.generators.memory import generate_memory
@@ -34,21 +35,22 @@ def generate_all(
     Returns:
         Manifest dict with version info and file listing.
     """
+    tracker = FileTracker(output_dir)
     all_files: list[str] = []
 
     # Run generators in dependency order (CLAUDE.md first since it's the
     # primary file, settings next for hooks, then everything else).
-    all_files.extend(generate_claude_md(config, output_dir))
-    all_files.extend(generate_settings(config, output_dir))
-    all_files.extend(generate_agents(config, output_dir))
-    all_files.extend(generate_commands(config, output_dir))
-    all_files.extend(generate_skills(config, output_dir))
-    all_files.extend(generate_agent_docs(config, output_dir))
-    all_files.extend(generate_memory(config, output_dir))
-    all_files.extend(generate_mcp(config, output_dir))
-    all_files.extend(generate_harness(config, output_dir))
-    all_files.extend(generate_addons(config, output_dir))
-    all_files.extend(generate_misc(config, output_dir))
+    all_files.extend(generate_claude_md(config, output_dir, tracker=tracker))
+    all_files.extend(generate_settings(config, output_dir, tracker=tracker))
+    all_files.extend(generate_agents(config, output_dir, tracker=tracker))
+    all_files.extend(generate_commands(config, output_dir, tracker=tracker))
+    all_files.extend(generate_skills(config, output_dir, tracker=tracker))
+    all_files.extend(generate_agent_docs(config, output_dir, tracker=tracker))
+    all_files.extend(generate_memory(config, output_dir, tracker=tracker))
+    all_files.extend(generate_mcp(config, output_dir, tracker=tracker))
+    all_files.extend(generate_harness(config, output_dir, tracker=tracker))
+    all_files.extend(generate_addons(config, output_dir, tracker=tracker))
+    all_files.extend(generate_misc(config, output_dir, tracker=tracker))
 
     # Include the manifest file itself in the file list
     manifest_rel = ".claude/.cc-rig-manifest.json"
@@ -59,6 +61,7 @@ def generate_all(
         "template_preset": config.template_preset,
         "workflow_preset": config.workflow_preset,
         "files": sorted(all_files),
+        "file_metadata": tracker.metadata(),
     }
 
     # Write manifest to .claude/.cc-rig-manifest.json

@@ -123,8 +123,7 @@ class TestAgentDocsStructure:
             content = (tmp_path / "agent_docs" / f"{section}.md").read_text()
             # At least 200 chars of content (not just a header)
             assert len(content) > 200, (
-                f"{section}.md for {template} has only {len(content)} chars — "
-                "likely a stub"
+                f"{section}.md for {template} has only {len(content)} chars — likely a stub"
             )
 
     def test_cache_friendly_workflow_has_required_sections(self, tmp_path):
@@ -160,8 +159,7 @@ class TestFrameworkSpecificContent:
         markers = FRAMEWORK_MARKERS[template]["architecture"]
         found = [m for m in markers if m.lower() in content.lower()]
         assert len(found) >= 1, (
-            f"{template} architecture.md missing framework markers. "
-            f"Expected any of {markers}"
+            f"{template} architecture.md missing framework markers. Expected any of {markers}"
         )
 
     @pytest.mark.parametrize("template", list(FRAMEWORK_MARKERS.keys()))
@@ -171,8 +169,7 @@ class TestFrameworkSpecificContent:
         markers = FRAMEWORK_MARKERS[template]["conventions"]
         found = [m for m in markers if m.lower() in content.lower()]
         assert len(found) >= 1, (
-            f"{template} conventions.md missing framework markers. "
-            f"Expected any of {markers}"
+            f"{template} conventions.md missing framework markers. Expected any of {markers}"
         )
 
     @pytest.mark.parametrize("template", list(FRAMEWORK_MARKERS.keys()))
@@ -182,8 +179,7 @@ class TestFrameworkSpecificContent:
         markers = FRAMEWORK_MARKERS[template]["testing"]
         found = [m for m in markers if m.lower() in content.lower()]
         assert len(found) >= 1, (
-            f"{template} testing.md missing framework markers. "
-            f"Expected any of {markers}"
+            f"{template} testing.md missing framework markers. Expected any of {markers}"
         )
 
     @pytest.mark.parametrize("template", list(FRAMEWORK_MARKERS.keys()))
@@ -193,8 +189,7 @@ class TestFrameworkSpecificContent:
         markers = FRAMEWORK_MARKERS[template]["deployment"]
         found = [m for m in markers if m.lower() in content.lower()]
         assert len(found) >= 1, (
-            f"{template} deployment.md missing framework markers. "
-            f"Expected any of {markers}"
+            f"{template} deployment.md missing framework markers. Expected any of {markers}"
         )
 
 
@@ -209,9 +204,7 @@ class TestFrameworkContentRegistry:
         content = get_framework_content(framework)
         required = {"rules", "architecture", "conventions", "testing", "deployment"}
         missing = required - set(content.keys())
-        assert not missing, (
-            f"Framework '{framework}' CONTENT missing sections: {missing}"
-        )
+        assert not missing, f"Framework '{framework}' CONTENT missing sections: {missing}"
 
     @pytest.mark.parametrize(
         "framework",
@@ -221,12 +214,8 @@ class TestFrameworkContentRegistry:
         content = get_framework_content(framework)
         for key in ("rules", "architecture", "conventions", "testing", "deployment"):
             val = content.get(key, "")
-            assert isinstance(val, str), (
-                f"{framework}.{key} is {type(val)}, expected str"
-            )
-            assert len(val) > 50, (
-                f"{framework}.{key} too short ({len(val)} chars)"
-            )
+            assert isinstance(val, str), f"{framework}.{key} is {type(val)}, expected str"
+            assert len(val) > 50, f"{framework}.{key} too short ({len(val)} chars)"
 
     def test_unknown_framework_falls_back_to_generic(self):
         content = get_framework_content("unknown-framework-xyz")
@@ -248,17 +237,13 @@ class TestDocsDeterminism:
         import tempfile
 
         _, files1 = _generate_docs("fastapi", "standard", tmp_path)
-        contents1 = {
-            f: (tmp_path / f).read_text() for f in files1
-        }
+        contents1 = {f: (tmp_path / f).read_text() for f in files1}
 
         with tempfile.TemporaryDirectory() as tmp2:
             from pathlib import Path
 
             _, files2 = _generate_docs("fastapi", "standard", Path(tmp2))
-            contents2 = {
-                f: (Path(tmp2) / f).read_text() for f in files2
-            }
+            contents2 = {f: (Path(tmp2) / f).read_text() for f in files2}
 
         assert contents1 == contents2
 
@@ -267,16 +252,12 @@ class TestDocsDeterminism:
         import tempfile
 
         _generate_docs("fastapi", "speedrun", tmp_path)
-        speedrun = {
-            doc: (tmp_path / doc).read_text() for doc in EXPECTED_DOCS
-        }
+        speedrun = {doc: (tmp_path / doc).read_text() for doc in EXPECTED_DOCS}
 
         with tempfile.TemporaryDirectory() as tmp2:
             from pathlib import Path
 
             _generate_docs("fastapi", "verify-heavy", Path(tmp2))
-            verify = {
-                doc: (Path(tmp2) / doc).read_text() for doc in EXPECTED_DOCS
-            }
+            verify = {doc: (Path(tmp2) / doc).read_text() for doc in EXPECTED_DOCS}
 
         assert speedrun == verify

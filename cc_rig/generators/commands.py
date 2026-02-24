@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 from cc_rig.config.project import ProjectConfig
+from cc_rig.generators.fileops import FileTracker
 
 
 class CommandDef(NamedTuple):
@@ -418,6 +419,7 @@ _COMMAND_DEFS: dict[str, tuple[str, str, str]] = {
 def generate_commands(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     """Generate .claude/commands/{name}.md for each command in config.
 
@@ -447,7 +449,11 @@ def generate_commands(
         )
 
         filename = f"{cmd_name}.md"
-        (commands_dir / filename).write_text(content)
-        files_written.append(f".claude/commands/{filename}")
+        rel = f".claude/commands/{filename}"
+        if tracker is not None:
+            tracker.write_text(rel, content)
+        else:
+            (commands_dir / filename).write_text(content)
+        files_written.append(rel)
 
     return files_written

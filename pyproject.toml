@@ -26,7 +26,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-rich = ["rich>=13.0", "textual>=0.40"]
+rich = ["rich>=13.0", "textual>=0.40", "prompt_toolkit>=3.0"]
 dev = ["pytest>=7.0", "ruff>=0.4"]
 
 [project.scripts]

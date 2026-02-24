@@ -80,40 +80,30 @@ class TestMcpSchema:
         data = _read_mcp_json(tmp_path)
         for name, server in data["mcpServers"].items():
             missing = REQUIRED_SERVER_FIELDS - set(server.keys())
-            assert not missing, (
-                f"Server '{name}' missing fields: {missing}"
-            )
+            assert not missing, f"Server '{name}' missing fields: {missing}"
 
     @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
     def test_command_is_string(self, template, tmp_path):
         _generate_mcp(template, "standard", tmp_path)
         data = _read_mcp_json(tmp_path)
         for name, server in data["mcpServers"].items():
-            assert isinstance(server["command"], str), (
-                f"Server '{name}': command should be string"
-            )
+            assert isinstance(server["command"], str), f"Server '{name}': command should be string"
 
     @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
     def test_args_is_list_of_strings(self, template, tmp_path):
         _generate_mcp(template, "standard", tmp_path)
         data = _read_mcp_json(tmp_path)
         for name, server in data["mcpServers"].items():
-            assert isinstance(server["args"], list), (
-                f"Server '{name}': args should be list"
-            )
+            assert isinstance(server["args"], list), f"Server '{name}': args should be list"
             for arg in server["args"]:
-                assert isinstance(arg, str), (
-                    f"Server '{name}': arg '{arg}' should be string"
-                )
+                assert isinstance(arg, str), f"Server '{name}': arg '{arg}' should be string"
 
     @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
     def test_env_is_dict_of_strings(self, template, tmp_path):
         _generate_mcp(template, "standard", tmp_path)
         data = _read_mcp_json(tmp_path)
         for name, server in data["mcpServers"].items():
-            assert isinstance(server["env"], dict), (
-                f"Server '{name}': env should be dict"
-            )
+            assert isinstance(server["env"], dict), f"Server '{name}': env should be dict"
             for key, val in server["env"].items():
                 assert isinstance(key, str) and isinstance(val, str), (
                     f"Server '{name}': env entry '{key}' should be str:str"
@@ -140,17 +130,13 @@ class TestMcpServerAssignment:
     def test_all_templates_include_github(self):
         """GitHub MCP should be universal across all templates."""
         for template in BUILTIN_TEMPLATES:
-            assert "github" in TEMPLATE_MCPS[template], (
-                f"{template} missing github MCP"
-            )
+            assert "github" in TEMPLATE_MCPS[template], f"{template} missing github MCP"
 
     def test_db_templates_include_postgres(self):
         """Templates with database backends should include postgres."""
         db_templates = ["fastapi", "django", "flask", "gin", "echo"]
         for template in db_templates:
-            assert "postgres" in TEMPLATE_MCPS[template], (
-                f"{template} should have postgres MCP"
-            )
+            assert "postgres" in TEMPLATE_MCPS[template], f"{template} should have postgres MCP"
 
     def test_nextjs_includes_playwright(self):
         assert "playwright" in TEMPLATE_MCPS["nextjs"]
@@ -190,9 +176,7 @@ class TestMcpServerDefinitions:
         """Second arg should be an npm package name (contains /)."""
         args = _MCP_SERVERS[name]["args"]
         assert len(args) >= 2, f"Server '{name}' needs at least 2 args"
-        assert "/" in args[1], (
-            f"Server '{name}' second arg '{args[1]}' doesn't look like a package"
-        )
+        assert "/" in args[1], f"Server '{name}' second arg '{args[1]}' doesn't look like a package"
 
     def test_known_server_count(self):
         """Guard against accidental additions/removals."""

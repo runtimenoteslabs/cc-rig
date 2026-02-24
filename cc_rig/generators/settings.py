@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from cc_rig.config.project import ProjectConfig
+from cc_rig.generators.fileops import FileTracker
 
 # Shell metacharacters that indicate injection risk in tool commands.
 # Legitimate commands (e.g. "ruff check", "npx prettier --write") never need these.
@@ -114,6 +115,7 @@ _PERMISSIVE_ADDITIONS = [
 def generate_settings(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     """Generate .claude/settings.json with hooks, and hook shell scripts.
 
@@ -149,10 +151,15 @@ def generate_settings(
         if hook_type == "command":
             # Generate the shell script
             script = _generate_hook_script(hook_name, config)
-            script_path = hooks_dir / f"{hook_name}.sh"
-            script_path.write_text(script)
-            script_path.chmod(0o755)
-            files_written.append(f".claude/hooks/{hook_name}.sh")
+            rel = f".claude/hooks/{hook_name}.sh"
+            if tracker is not None:
+                tracker.write_text(rel, script)
+                tracker.chmod(rel, 0o755)
+            else:
+                script_path = hooks_dir / f"{hook_name}.sh"
+                script_path.write_text(script)
+                script_path.chmod(0o755)
+            files_written.append(rel)
 
             hook_entry: dict[str, Any] = {
                 "type": "command",
@@ -183,8 +190,12 @@ def generate_settings(
         settings["hooks"] = hooks_by_event
 
     # Write settings.json
-    settings_path = claude_dir / "settings.json"
-    settings_path.write_text(json.dumps(settings, indent=2) + "\n")
+    settings_content = json.dumps(settings, indent=2) + "\n"
+    if tracker is not None:
+        tracker.write_text(".claude/settings.json", settings_content)
+    else:
+        settings_path = claude_dir / "settings.json"
+        settings_path.write_text(settings_content)
     files_written.append(".claude/settings.json")
 
     return files_written

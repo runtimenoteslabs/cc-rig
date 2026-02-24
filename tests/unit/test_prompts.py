@@ -1,6 +1,7 @@
 """Tests for UI prompts: IO injection, ask_choice, ask_input, confirm, ask_multi."""
 
 from cc_rig.ui.prompts import ask_choice, ask_input, ask_multi, confirm
+from cc_rig.wizard.stepper import BACK
 from tests.conftest import make_io as _make_io
 
 
@@ -51,6 +52,27 @@ class TestAskChoice:
         )
         assert result == "a"
 
+    def test_back_returns_sentinel(self):
+        io = _make_io(["back"])
+        result = ask_choice(
+            "Pick:",
+            [("a", "Alpha"), ("b", "Beta")],
+            io=io,
+            allow_back=True,
+        )
+        assert result is BACK
+
+    def test_back_ignored_when_not_allowed(self):
+        io = _make_io(["back", "1"])
+        result = ask_choice(
+            "Pick:",
+            [("a", "Alpha"), ("b", "Beta")],
+            io=io,
+            allow_back=False,
+        )
+        # "back" is not a valid selection, falls through to "1"
+        assert result == "a"
+
 
 class TestAskInput:
     def test_returns_input(self):
@@ -67,6 +89,21 @@ class TestAskInput:
         io = _make_io(["  trimmed  "])
         result = ask_input("Name", io=io)
         assert result == "trimmed"
+
+    def test_back_returns_sentinel(self):
+        io = _make_io(["back"])
+        result = ask_input("Name", io=io, allow_back=True)
+        assert result is BACK
+
+    def test_require_explicit_rejects_empty(self):
+        io = _make_io(["", "actual-value"])
+        result = ask_input("Name", default="fallback", io=io, require_explicit=True)
+        assert result == "actual-value"
+
+    def test_require_explicit_with_no_default(self):
+        io = _make_io(["", "typed"])
+        result = ask_input("Name", io=io, require_explicit=True)
+        assert result == "typed"
 
 
 class TestConfirm:
@@ -89,6 +126,11 @@ class TestConfirm:
     def test_yes_full_word(self):
         io = _make_io(["yes"])
         assert confirm("OK?", io=io) is True
+
+    def test_back_returns_sentinel(self):
+        io = _make_io(["back"])
+        result = confirm("OK?", io=io, allow_back=True)
+        assert result is BACK
 
 
 class TestAskMulti:
@@ -137,3 +179,13 @@ class TestAskMulti:
             io=io,
         )
         assert result == ["a"]
+
+    def test_back_returns_sentinel(self):
+        io = _make_io(["back"])
+        result = ask_multi(
+            "Pick:",
+            [("a", "Alpha"), ("b", "Beta")],
+            io=io,
+            allow_back=True,
+        )
+        assert result is BACK

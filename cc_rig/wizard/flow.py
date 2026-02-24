@@ -24,7 +24,6 @@ from cc_rig.presets.manager import (
     load_workflow,
 )
 from cc_rig.ui.prompts import IO, ask_choice, ask_input, confirm
-from cc_rig.wizard.expert import run_expert
 from cc_rig.wizard.generate import run_generation
 from cc_rig.wizard.quick import run_quick
 
@@ -67,6 +66,12 @@ def run_wizard(args: argparse.Namespace, io: IO | None = None) -> int:
     if getattr(args, "migrate", False):
         return _migrate(name, output_dir, io)
 
+    # Interactive flows: confirm output directory when not explicitly set
+    if not output_arg and not in_place:
+        output_dir = _confirm_output_dir(output_dir, io)
+        if output_dir is None:
+            return 0
+
     # Quick picker
     if getattr(args, "quick", False):
         return _quick_flow(name, output_dir, io)
@@ -76,6 +81,25 @@ def run_wizard(args: argparse.Namespace, io: IO | None = None) -> int:
 
     # A1: Guided (default) — starts with launcher
     return _guided_flow(name, output_dir, io, expert=expert)
+
+
+def _confirm_output_dir(output_dir: Path, io: IO) -> Path | None:
+    """Confirm or change the output directory for interactive flows.
+
+    Returns the confirmed Path, or None if the user cancels.
+    """
+    cwd = Path(".").resolve()
+    if output_dir == cwd and any(cwd.iterdir()):
+        io.say(f"\nOutput directory: {output_dir}")
+        raw = ask_input(
+            "Generate here? Enter a different path or press Enter to confirm",
+            default=str(output_dir),
+            io=io,
+        )
+        if not raw:
+            return None
+        return Path(raw).resolve()
+    return output_dir
 
 
 def _zero_config(
@@ -184,14 +208,28 @@ def _guided_flow(
     io: IO,
     expert: bool = False,
 ) -> int:
-    """Full guided wizard (A1) with optional expert mode (A2)."""
+    """Full guided wizard (A1) with optional expert mode (A2).
+
+    Uses a StepRunner for back-navigation support.
+    """
     from cc_rig.ui.banner import print_banner
-    from cc_rig.wizard.harness import ask_harness
-    from cc_rig.wizard.launcher import run_launcher
+    from cc_rig.wizard.stepper import StepAction, StepRunner
+    from cc_rig.wizard.steps import (
+        BasicsStep,
+        ConfirmStep,
+        ExpertStep,
+        HarnessStep,
+        ReviewStep,
+        TemplateStep,
+        WorkflowStep,
+    )
 
     print_banner(io.say)
 
-    # Screen 1: Launcher (5 options)
+    # Screen 1: Launcher (handled outside StepRunner since it can
+    # redirect to completely different flows)
+    from cc_rig.wizard.launcher import run_launcher
+
     mode = run_launcher(io)
 
     if mode == "quick":
@@ -211,52 +249,33 @@ def _guided_flow(
     if mode == "migrate":
         return _migrate(name, output_dir, io)
 
-    # mode == "fresh" — continue with full guided flow
+    # mode == "fresh" — run through step-based guided flow
+    steps = [
+        BasicsStep(),
+        TemplateStep(),
+        WorkflowStep(),
+        ReviewStep(),
+        ExpertStep(),
+        HarnessStep(),
+        ConfirmStep(),
+    ]
 
-    # Screen 2: Basics
-    name = name or ask_input("Project name", output_dir.name, io=io)
-    desc = ask_input("Description (optional)", "", io=io)
+    initial_state = {
+        "name": name,
+        "output_dir": output_dir,
+        "force_expert": expert,
+    }
 
-    # Screen 3: Stack detection
-    detected = detect_project(output_dir)
-    template = None
-    if detected.framework:
-        io.say(f"\nDetected: {detected.language} / {detected.framework}")
-        if confirm(f"Use {detected.framework}?", io=io):
-            template = detected.framework
+    runner = StepRunner(steps, io)
+    action, state = runner.run(initial_state)
 
-    if not template:
-        template = _ask_template(io)
-
-    # Screen 4: Workflow
-    workflow = _ask_workflow(io)
-
-    # Build config from defaults
-    config = compute_defaults(
-        template,
-        workflow,
-        project_name=name,
-        project_desc=desc,
-        output_dir=str(output_dir),
-    )
-
-    # Screen 5: Review
-    from cc_rig.ui.display import format_summary
-
-    io.say(format_summary(config))
-
-    # Expert mode (A2)
-    if expert or confirm("Customize?", default=False, io=io):
-        config = run_expert(config, io)
-
-    # Screen 7: Harness choice
-    if confirm("Add runtime harness?", default=False, io=io):
-        config.harness = ask_harness(io)
-
-    # Screen 8: Confirm and generate
-    if not confirm("Generate?", io=io):
-        io.say("Cancelled.")
+    if action == StepAction.CANCEL:
         return 0
+
+    config = state.get("config")
+    if config is None:
+        io.say("No configuration built.")
+        return 1
 
     return run_generation(config, output_dir, io)
 

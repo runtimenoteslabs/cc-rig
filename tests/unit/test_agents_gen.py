@@ -55,7 +55,7 @@ def _parse_frontmatter(content):
     if not content.startswith("---\n"):
         raise ValueError("Missing opening ---")
     end = content.index("\n---\n", 4)
-    yaml_block = content[4 : end]
+    yaml_block = content[4:end]
     body = content[end + 5 :]
     fields = {}
     for line in yaml_block.splitlines():
@@ -126,12 +126,8 @@ class TestFrontmatterStructure:
         config, _ = _generate_agents("fastapi", workflow, tmp_path)
         for agent in config.agents:
             content = (tmp_path / ".claude" / "agents" / f"{agent}.md").read_text()
-            assert content.startswith("---\n"), (
-                f"{agent}.md missing opening frontmatter delimiter"
-            )
-            assert "\n---\n" in content[4:], (
-                f"{agent}.md missing closing frontmatter delimiter"
-            )
+            assert content.startswith("---\n"), f"{agent}.md missing opening frontmatter delimiter"
+            assert "\n---\n" in content[4:], f"{agent}.md missing closing frontmatter delimiter"
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
     def test_all_agents_have_required_fields(self, workflow, tmp_path):
@@ -141,9 +137,7 @@ class TestFrontmatterStructure:
             content = (tmp_path / ".claude" / "agents" / f"{agent}.md").read_text()
             fields, _ = _parse_frontmatter(content)
             missing = required - fields.keys()
-            assert not missing, (
-                f"{agent}.md frontmatter missing fields: {missing}"
-            )
+            assert not missing, f"{agent}.md frontmatter missing fields: {missing}"
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
     def test_frontmatter_name_matches_filename(self, workflow, tmp_path):
@@ -161,9 +155,7 @@ class TestFrontmatterStructure:
         for agent in config.agents:
             content = (tmp_path / ".claude" / "agents" / f"{agent}.md").read_text()
             _, body = _parse_frontmatter(content)
-            assert len(body.strip()) > 30, (
-                f"{agent}.md body too short ({len(body.strip())} chars)"
-            )
+            assert len(body.strip()) > 30, f"{agent}.md body too short ({len(body.strip())} chars)"
 
 
 class TestModelAssignment:
@@ -180,17 +172,12 @@ class TestModelAssignment:
     def test_model_matches_expected(self, agent_name):
         defn = AgentDef(*_AGENT_DEFS[agent_name])
         assert defn.model == EXPECTED_MODELS[agent_name], (
-            f"{agent_name}: expected model '{EXPECTED_MODELS[agent_name]}', "
-            f"got '{defn.model}'"
+            f"{agent_name}: expected model '{EXPECTED_MODELS[agent_name]}', got '{defn.model}'"
         )
 
     def test_opus_agents_are_reasoning_tasks(self):
         """Opus should be reserved for agents requiring deep reasoning."""
-        opus_agents = {
-            name
-            for name, raw in _AGENT_DEFS.items()
-            if AgentDef(*raw).model == "opus"
-        }
+        opus_agents = {name for name, raw in _AGENT_DEFS.items() if AgentDef(*raw).model == "opus"}
         # These should use opus (architecture, PR decisions, specs, security)
         expected_opus = {"architect", "pr-reviewer", "pm-spec", "security-auditor"}
         assert opus_agents == expected_opus
@@ -198,9 +185,7 @@ class TestModelAssignment:
     def test_haiku_agents_are_read_only_fast_tasks(self):
         """Haiku should only be used for fast, read-only scanning."""
         haiku_agents = {
-            name
-            for name, raw in _AGENT_DEFS.items()
-            if AgentDef(*raw).model == "haiku"
+            name for name, raw in _AGENT_DEFS.items() if AgentDef(*raw).model == "haiku"
         }
         assert haiku_agents == {"explorer"}
 
@@ -213,8 +198,7 @@ class TestModelAssignment:
             fields, _ = _parse_frontmatter(content)
             defn = AgentDef(*_AGENT_DEFS[agent])
             assert fields["model"] == defn.model, (
-                f"{agent}.md: generated model '{fields['model']}' != "
-                f"defined model '{defn.model}'"
+                f"{agent}.md: generated model '{fields['model']}' != defined model '{defn.model}'"
             )
 
 
@@ -226,18 +210,14 @@ class TestToolRestrictions:
         defn = AgentDef(*_AGENT_DEFS[agent_name])
         tools = {t.strip() for t in defn.tools.split(",")}
         invalid = tools - VALID_TOOLS
-        assert not invalid, (
-            f"{agent_name}: invalid tools {invalid}"
-        )
+        assert not invalid, f"{agent_name}: invalid tools {invalid}"
 
     @pytest.mark.parametrize("agent_name", list(READ_ONLY_AGENTS))
     def test_read_only_agents_have_no_write_tools(self, agent_name):
         defn = AgentDef(*_AGENT_DEFS[agent_name])
         tools = {t.strip() for t in defn.tools.split(",")}
         forbidden = tools & WRITE_TOOLS
-        assert not forbidden, (
-            f"{agent_name} is read-only but has write tools: {forbidden}"
-        )
+        assert not forbidden, f"{agent_name} is read-only but has write tools: {forbidden}"
 
     @pytest.mark.parametrize("agent_name", list(_AGENT_DEFS.keys()))
     def test_all_agents_can_read(self, agent_name):
@@ -249,14 +229,15 @@ class TestToolRestrictions:
     def test_write_agents_have_full_toolset(self):
         """Non-read-only agents that edit code should have Write+Edit+Bash."""
         code_writers = {
-            "test-writer", "refactorer", "implementer", "parallel-worker",
+            "test-writer",
+            "refactorer",
+            "implementer",
+            "parallel-worker",
         }
         for name in code_writers:
             defn = AgentDef(*_AGENT_DEFS[name])
             tools = {t.strip() for t in defn.tools.split(",")}
-            assert WRITE_TOOLS <= tools, (
-                f"{name} should have {WRITE_TOOLS}, has {tools}"
-            )
+            assert WRITE_TOOLS <= tools, f"{name} should have {WRITE_TOOLS}, has {tools}"
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
     def test_generated_tools_match_definition(self, workflow, tmp_path):
@@ -267,8 +248,7 @@ class TestToolRestrictions:
             fields, _ = _parse_frontmatter(content)
             defn = AgentDef(*_AGENT_DEFS[agent])
             assert fields["tools"] == defn.tools, (
-                f"{agent}.md: generated tools '{fields['tools']}' != "
-                f"defined tools '{defn.tools}'"
+                f"{agent}.md: generated tools '{fields['tools']}' != defined tools '{defn.tools}'"
             )
 
 
@@ -285,9 +265,7 @@ class TestAgentDefConsistency:
     def test_all_agents_have_non_empty_body(self):
         for name, raw in _AGENT_DEFS.items():
             defn = AgentDef(*raw)
-            assert len(defn.body) >= 50, (
-                f"{name}: body too short ({len(defn.body)} chars)"
-            )
+            assert len(defn.body) >= 50, f"{name}: body too short ({len(defn.body)} chars)"
 
     def test_no_duplicate_descriptions(self):
         descriptions = [AgentDef(*raw).description for raw in _AGENT_DEFS.values()]

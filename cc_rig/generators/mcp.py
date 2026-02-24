@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from cc_rig.config.project import ProjectConfig
+from cc_rig.generators.fileops import FileTracker
 
 # ── MCP server definitions ─────────────────────────────────────────
 # Each MCP server: (command, args, env placeholder dict)
@@ -86,6 +87,7 @@ _MCP_SERVERS: dict[str, dict] = {
 def generate_mcp(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     """Generate .mcp.json with MCP server entries from config.
 
@@ -111,8 +113,12 @@ def generate_mcp(
         else:
             mcp_config["mcpServers"][mcp_name] = copy.deepcopy(server_def)
 
-    output_dir.mkdir(parents=True, exist_ok=True)
-    mcp_path = output_dir / ".mcp.json"
-    mcp_path.write_text(json.dumps(mcp_config, indent=2) + "\n")
+    mcp_content = json.dumps(mcp_config, indent=2) + "\n"
+    if tracker is not None:
+        tracker.write_text(".mcp.json", mcp_content)
+    else:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        mcp_path = output_dir / ".mcp.json"
+        mcp_path.write_text(mcp_content)
 
     return [".mcp.json"]

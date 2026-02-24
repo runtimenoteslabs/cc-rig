@@ -5,11 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from cc_rig.config.project import ProjectConfig
+from cc_rig.generators.fileops import FileTracker
 
 
 def generate_skills(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     """Generate skill SKILL.md files in .claude/skills/.
 
@@ -21,20 +23,20 @@ def generate_skills(
     files_written: list[str] = []
 
     # Tier 1: TDD skill
-    files_written.extend(_write_tdd_skill(config, output_dir))
+    files_written.extend(_write_tdd_skill(config, output_dir, tracker))
 
     # Tier 1: Systematic debug skill
-    files_written.extend(_write_debug_skill(config, output_dir))
+    files_written.extend(_write_debug_skill(config, output_dir, tracker))
 
     # Tier 3: Project patterns stub
-    files_written.extend(_write_project_patterns_stub(config, output_dir))
+    files_written.extend(_write_project_patterns_stub(config, output_dir, tracker))
 
     # Tier 3: Deployment checklist stub
-    files_written.extend(_write_deployment_checklist_stub(config, output_dir))
+    files_written.extend(_write_deployment_checklist_stub(config, output_dir, tracker))
 
     # Community skills guide
     if config.recommended_skills:
-        files_written.extend(_write_recommended_skills_guide(config, output_dir))
+        files_written.extend(_write_recommended_skills_guide(config, output_dir, tracker))
 
     return files_written
 
@@ -45,6 +47,7 @@ def generate_skills(
 def _write_tdd_skill(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     skills_dir = output_dir / ".claude" / "skills" / "tdd"
     skills_dir.mkdir(parents=True, exist_ok=True)
@@ -95,9 +98,13 @@ def _write_tdd_skill(
         f"{test_guidance}\n"
     )
 
-    path = skills_dir / "SKILL.md"
-    path.write_text(content)
-    return [".claude/skills/tdd/SKILL.md"]
+    rel = ".claude/skills/tdd/SKILL.md"
+    if tracker is not None:
+        tracker.write_text(rel, content)
+    else:
+        path = skills_dir / "SKILL.md"
+        path.write_text(content)
+    return [rel]
 
 
 def _tdd_guidance_for(framework: str) -> str:
@@ -189,6 +196,7 @@ def _tdd_guidance_for(framework: str) -> str:
 def _write_debug_skill(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     skills_dir = output_dir / ".claude" / "skills" / "systematic-debug"
     skills_dir.mkdir(parents=True, exist_ok=True)
@@ -244,9 +252,13 @@ def _write_debug_skill(
         f"{debug_guidance}\n"
     )
 
-    path = skills_dir / "SKILL.md"
-    path.write_text(content)
-    return [".claude/skills/systematic-debug/SKILL.md"]
+    rel = ".claude/skills/systematic-debug/SKILL.md"
+    if tracker is not None:
+        tracker.write_text(rel, content)
+    else:
+        path = skills_dir / "SKILL.md"
+        path.write_text(content)
+    return [rel]
 
 
 def _debug_guidance_for(framework: str) -> str:
@@ -342,6 +354,7 @@ def _debug_guidance_for(framework: str) -> str:
 def _write_project_patterns_stub(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     skills_dir = output_dir / ".claude" / "skills" / "project-patterns"
     skills_dir.mkdir(parents=True, exist_ok=True)
@@ -370,9 +383,13 @@ def _write_project_patterns_stub(
         "(Add your code organization rules here.)\n"
     )
 
-    path = skills_dir / "SKILL.md"
-    path.write_text(content)
-    return [".claude/skills/project-patterns/SKILL.md"]
+    rel = ".claude/skills/project-patterns/SKILL.md"
+    if tracker is not None:
+        tracker.write_text(rel, content)
+    else:
+        path = skills_dir / "SKILL.md"
+        path.write_text(content)
+    return [rel]
 
 
 # ── Tier 3: Deployment Checklist (stub) ──────────────────────────
@@ -381,6 +398,7 @@ def _write_project_patterns_stub(
 def _write_deployment_checklist_stub(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     skills_dir = output_dir / ".claude" / "skills" / "deployment-checklist"
     skills_dir.mkdir(parents=True, exist_ok=True)
@@ -408,9 +426,13 @@ def _write_deployment_checklist_stub(
         "(Add post-deploy verification steps here.)\n"
     )
 
-    path = skills_dir / "SKILL.md"
-    path.write_text(content)
-    return [".claude/skills/deployment-checklist/SKILL.md"]
+    rel = ".claude/skills/deployment-checklist/SKILL.md"
+    if tracker is not None:
+        tracker.write_text(rel, content)
+    else:
+        path = skills_dir / "SKILL.md"
+        path.write_text(content)
+    return [rel]
 
 
 # ── Recommended Skills Guide (generated from config) ────────────
@@ -419,6 +441,7 @@ def _write_deployment_checklist_stub(
 def _write_recommended_skills_guide(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     """Generate docs/recommended-skills.md with categorized install commands."""
     docs_dir = output_dir / "docs"
@@ -462,6 +485,10 @@ def _write_recommended_skills_guide(
     )
     lines.append("")
 
-    path = docs_dir / "recommended-skills.md"
-    path.write_text("\n".join(lines))
-    return ["docs/recommended-skills.md"]
+    rel = "docs/recommended-skills.md"
+    if tracker is not None:
+        tracker.write_text(rel, "\n".join(lines))
+    else:
+        path = docs_dir / "recommended-skills.md"
+        path.write_text("\n".join(lines))
+    return [rel]

@@ -49,12 +49,29 @@ def run_expert(config: ProjectConfig, io: IO) -> ProjectConfig:
         )
 
     # Features
-    if confirm("Customize features?", default=False, io=io):
+    if confirm("Toggle feature flags?", default=False, io=io):
+        f = config.features
         config.features = Features(
-            memory=confirm("  Memory system?", default=config.features.memory, io=io),
-            spec_workflow=confirm("  Spec workflow?", default=config.features.spec_workflow, io=io),
-            gtd=confirm("  GTD task management?", default=config.features.gtd, io=io),
-            worktrees=confirm("  Git worktrees?", default=config.features.worktrees, io=io),
+            memory=confirm(
+                "  Enable memory (session logs, decisions, patterns)?",
+                default=f.memory,
+                io=io,
+            ),
+            spec_workflow=confirm(
+                "  Enable spec-driven workflow (plan before code)?",
+                default=f.spec_workflow,
+                io=io,
+            ),
+            gtd=confirm(
+                "  Enable GTD task management (capture, process, plan)?",
+                default=f.gtd,
+                io=io,
+            ),
+            worktrees=confirm(
+                "  Enable git worktrees (parallel branches)?",
+                default=f.worktrees,
+                io=io,
+            ),
         )
 
     # Permission mode

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 from cc_rig.config.project import ProjectConfig
+from cc_rig.generators.fileops import FileTracker
 
 
 class AgentDef(NamedTuple):
@@ -369,6 +370,7 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
 def generate_agents(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     """Generate .claude/agents/{name}.md for each agent in config.
 
@@ -403,7 +405,11 @@ def generate_agents(
         )
 
         filename = f"{agent_name}.md"
-        (agents_dir / filename).write_text(content)
-        files_written.append(f".claude/agents/{filename}")
+        rel = f".claude/agents/{filename}"
+        if tracker is not None:
+            tracker.write_text(rel, content)
+        else:
+            (agents_dir / filename).write_text(content)
+        files_written.append(rel)
 
     return files_written

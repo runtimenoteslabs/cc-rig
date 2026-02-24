@@ -30,6 +30,8 @@ def rich_print_banner() -> None:
 
 def rich_format_summary(config: Any) -> str:
     """Format a ProjectConfig summary using rich markup."""
+    import io as _io
+
     from rich.console import Console
     from rich.table import Table
 
@@ -58,13 +60,16 @@ def rich_format_summary(config: Any) -> str:
         features.append("Worktrees")
     table.add_row("Features", ", ".join(features) if features else "none")
 
-    console = Console(record=True)
+    buf = _io.StringIO()
+    console = Console(file=buf, force_terminal=True)
     console.print(table)
-    return console.export_text()
+    return buf.getvalue()
 
 
 def rich_format_file_list(files: list[str]) -> str:
     """Format a file list with rich markup."""
+    import io as _io
+
     from rich.console import Console
     from rich.tree import Tree
 
@@ -72,6 +77,7 @@ def rich_format_file_list(files: list[str]) -> str:
     for f in sorted(files):
         tree.add(f"[green]+[/] {f}")
 
-    console = Console(record=True)
+    buf = _io.StringIO()
+    console = Console(file=buf, force_terminal=True)
     console.print(tree)
-    return console.export_text()
+    return buf.getvalue()

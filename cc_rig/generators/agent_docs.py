@@ -5,12 +5,14 @@ from __future__ import annotations
 from pathlib import Path
 
 from cc_rig.config.project import ProjectConfig
+from cc_rig.generators.fileops import FileTracker
 from cc_rig.templates import get_framework_content
 
 
 def generate_agent_docs(
     config: ProjectConfig,
     output_dir: Path,
+    tracker: FileTracker | None = None,
 ) -> list[str]:
     """Generate agent_docs/ files with framework-specific content.
 
@@ -32,19 +34,26 @@ def generate_agent_docs(
         text = f"# {section.title()}\n\n{section_content}\n"
 
         filename = f"{section}.md"
-        (docs_dir / filename).write_text(text)
-        files_written.append(f"agent_docs/{filename}")
+        rel = f"agent_docs/{filename}"
+        if tracker is not None:
+            tracker.write_text(rel, text)
+        else:
+            (docs_dir / filename).write_text(text)
+        files_written.append(rel)
 
     # Cache-friendly workflow guide (always generated)
-    _write_cache_friendly_workflow(docs_dir)
+    _write_cache_friendly_workflow(docs_dir, tracker)
     files_written.append("agent_docs/cache-friendly-workflow.md")
 
     return files_written
 
 
-def _write_cache_friendly_workflow(docs_dir: Path) -> None:
+def _write_cache_friendly_workflow(
+    docs_dir: Path,
+    tracker: FileTracker | None = None,
+) -> None:
     """Generate cache-friendly-workflow.md."""
-    (docs_dir / "cache-friendly-workflow.md").write_text(
+    content = (
         "# Cache-Friendly Workflow\n"
         "\n"
         "Claude Code builds its system around prompt caching. "
@@ -76,3 +85,7 @@ def _write_cache_friendly_workflow(docs_dir: Path) -> None:
         "session.\n"
         "- Don't connect/disconnect MCP servers during work.\n"
     )
+    if tracker is not None:
+        tracker.write_text("agent_docs/cache-friendly-workflow.md", content)
+    else:
+        (docs_dir / "cache-friendly-workflow.md").write_text(content)

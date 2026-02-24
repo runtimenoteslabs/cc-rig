@@ -1,0 +1,204 @@
+"""Concrete wizard steps for the guided flow.
+
+Each step reads from / writes to a shared ``state`` dict and
+returns a ``StepResult`` indicating forward, back, or cancel.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from cc_rig.config.detection import detect_project
+from cc_rig.presets.manager import BUILTIN_TEMPLATES, BUILTIN_WORKFLOWS, load_workflow
+from cc_rig.ui.prompts import IO, ask_choice, ask_input, confirm
+from cc_rig.wizard.stepper import BACK, StepAction, StepResult
+
+
+def _is_back(value: object) -> bool:
+    return value is BACK
+
+
+# ── Step: Launcher ────────────────────────────────────────────────
+
+
+class LauncherStep:
+    name = "launcher"
+    title = "How would you like to start?"
+
+    def execute(self, state: dict[str, Any], io: IO) -> StepResult:
+        from cc_rig.wizard.launcher import run_launcher
+
+        mode = run_launcher(io)
+        return StepResult(data={"launcher_mode": mode})
+
+
+# ── Step: Basics ──────────────────────────────────────────────────
+
+
+class BasicsStep:
+    name = "basics"
+    title = "Project basics"
+
+    def execute(self, state: dict[str, Any], io: IO) -> StepResult:
+        from pathlib import Path
+
+        output_dir = state.get("output_dir", Path("."))
+        existing_name = state.get("name", "") or ""
+
+        name = ask_input(
+            "Project name",
+            existing_name or output_dir.name,
+            io=io,
+            allow_back=True,
+        )
+        if _is_back(name):
+            return StepResult(action=StepAction.BACK)
+
+        desc = ask_input("Description (optional)", "", io=io, allow_back=True)
+        if _is_back(desc):
+            return StepResult(action=StepAction.BACK)
+
+        return StepResult(data={"name": name, "desc": desc})
+
+
+# ── Step: Template ────────────────────────────────────────────────
+
+
+class TemplateStep:
+    name = "template"
+    title = "Select your stack"
+
+    def execute(self, state: dict[str, Any], io: IO) -> StepResult:
+        from pathlib import Path
+
+        output_dir = state.get("output_dir", Path("."))
+        detected = detect_project(output_dir)
+        template = None
+
+        if detected.framework:
+            io.say(f"\nDetected: {detected.language} / {detected.framework}")
+            use_detected = confirm(f"Use {detected.framework}?", io=io, allow_back=True)
+            if _is_back(use_detected):
+                return StepResult(action=StepAction.BACK)
+            if use_detected:
+                template = detected.framework
+
+        if not template:
+            options = [(t, t) for t in BUILTIN_TEMPLATES]
+            template = ask_choice("Select template:", options, "fastapi", io=io, allow_back=True)
+            if _is_back(template):
+                return StepResult(action=StepAction.BACK)
+
+        return StepResult(data={"template": template})
+
+
+# ── Step: Workflow ────────────────────────────────────────────────
+
+
+class WorkflowStep:
+    name = "workflow"
+    title = "Select your workflow"
+
+    def execute(self, state: dict[str, Any], io: IO) -> StepResult:
+        descriptions: dict[str, str] = {}
+        for w in BUILTIN_WORKFLOWS:
+            data = load_workflow(w)
+            descriptions[w] = data.get("description", w)
+        options = [(w, f"{w} — {descriptions[w]}") for w in BUILTIN_WORKFLOWS]
+        workflow = ask_choice("Select workflow:", options, "standard", io=io, allow_back=True)
+        if _is_back(workflow):
+            return StepResult(action=StepAction.BACK)
+        return StepResult(data={"workflow": workflow})
+
+
+# ── Step: Review ──────────────────────────────────────────────────
+
+
+class ReviewStep:
+    name = "review"
+    title = "Review configuration"
+
+    def execute(self, state: dict[str, Any], io: IO) -> StepResult:
+        from cc_rig.config.defaults import compute_defaults
+        from cc_rig.ui.display import format_summary
+
+        config = compute_defaults(
+            state["template"],
+            state["workflow"],
+            project_name=state.get("name", ""),
+            project_desc=state.get("desc", ""),
+            output_dir=str(state.get("output_dir", ".")),
+        )
+        state["config"] = config
+        io.say(format_summary(config))
+        return StepResult()
+
+
+# ── Step: Expert ──────────────────────────────────────────────────
+
+
+class ExpertStep:
+    name = "expert"
+    title = "Customize (expert)"
+
+    def execute(self, state: dict[str, Any], io: IO) -> StepResult:
+        from cc_rig.wizard.expert import run_expert
+
+        config = state.get("config")
+        if config is None:
+            return StepResult()
+
+        force_expert = state.get("force_expert", False)
+        if force_expert:
+            # --expert flag: always enter expert mode, no confirmation needed
+            config = run_expert(config, io)
+            state["config"] = config
+            return StepResult()
+
+        do_customize = confirm("Customize?", default=False, io=io, allow_back=True)
+        if _is_back(do_customize):
+            return StepResult(action=StepAction.BACK)
+        if do_customize:
+            config = run_expert(config, io)
+            state["config"] = config
+        return StepResult()
+
+
+# ── Step: Harness ─────────────────────────────────────────────────
+
+
+class HarnessStep:
+    name = "harness"
+    title = "Runtime harness"
+
+    def execute(self, state: dict[str, Any], io: IO) -> StepResult:
+        from cc_rig.wizard.harness import ask_harness
+
+        config = state.get("config")
+        if config is None:
+            return StepResult()
+
+        want_harness = confirm("Add runtime harness?", default=False, io=io, allow_back=True)
+        if _is_back(want_harness):
+            return StepResult(action=StepAction.BACK)
+        if want_harness:
+            config.harness = ask_harness(io)
+            state["config"] = config
+        return StepResult()
+
+
+# ── Step: Confirm ─────────────────────────────────────────────────
+
+
+class ConfirmStep:
+    name = "confirm"
+    title = "Generate?"
+
+    def execute(self, state: dict[str, Any], io: IO) -> StepResult:
+        proceed = confirm("Generate?", io=io, allow_back=True)
+        if _is_back(proceed):
+            return StepResult(action=StepAction.BACK)
+        if not proceed:
+            io.say("Cancelled.")
+            return StepResult(action=StepAction.CANCEL)
+        return StepResult()
