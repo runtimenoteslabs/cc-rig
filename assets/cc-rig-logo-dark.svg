@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 96" fill="none">
+  <defs>
+    <linearGradient id="accent-dark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background pill -->
+  <rect x="0" y="0" width="400" height="96" rx="16" fill="#0d1117"/>
+
+  <!-- Terminal bracket -->
+  <text x="28" y="74" font-family="'SF Mono','Fira Code','JetBrains Mono','Cascadia Code',monospace" font-size="48" font-weight="700" fill="url(#accent-dark)">&gt;_</text>
+
+  <!-- cc-rig wordmark -->
+  <text x="130" y="74" font-family="'SF Mono','Fira Code','JetBrains Mono','Cascadia Code',monospace" font-size="48" font-weight="700" fill="#e6edf3">cc-rig</text>
+
+</svg>
