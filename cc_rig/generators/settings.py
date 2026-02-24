@@ -136,10 +136,7 @@ def generate_settings(
 
     # Auto-add budget-reminder hook when harness is B1+
     active_hooks = list(config.hooks)
-    if (
-        config.harness.level != "none"
-        and "budget-reminder" not in active_hooks
-    ):
+    if config.harness.level != "none" and "budget-reminder" not in active_hooks:
         active_hooks.append("budget-reminder")
 
     for hook_name in active_hooks:
@@ -510,9 +507,7 @@ def _script_budget_reminder(config: ProjectConfig) -> str:
     h = config.harness
     if h.budget_per_run_tokens is not None:
         budget_line = f"BUDGET={h.budget_per_run_tokens}"
-        warn_line = (
-            f"WARN_AT=$(( BUDGET * {h.budget_warn_at_percent} / 100 ))"
-        )
+        warn_line = f"WARN_AT=$(( BUDGET * {h.budget_warn_at_percent} / 100 ))"
         display = (
             '  echo "Budget: $BUDGET tokens '
             f'(warn at {h.budget_warn_at_percent}%: $WARN_AT tokens)"\n'
@@ -528,9 +523,7 @@ def _script_budget_reminder(config: ProjectConfig) -> str:
         "set -euo pipefail\n"
         "\n"
         "# Read budget from harness config if available\n"
-        f"{budget_line}\n"
-        + (f"{warn_line}\n" if warn_line else "")
-        + "\n"
+        f"{budget_line}\n" + (f"{warn_line}\n" if warn_line else "") + "\n"
         'echo ""\n'
         'echo "=== Budget Reminder ==="\n'
         + display
