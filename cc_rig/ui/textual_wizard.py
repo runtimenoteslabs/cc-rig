@@ -24,6 +24,8 @@ from textual.widgets import (
     RadioSet,
     SelectionList,
     Static,
+    TabbedContent,
+    TabPane,
 )
 
 from cc_rig.config.schema import VALID_AGENTS, VALID_COMMANDS, VALID_HOOKS
@@ -80,7 +82,20 @@ RadioSet {
 }
 
 SelectionList {
-    height: 16;
+    height: 1fr;
+    min-height: 10;
+    margin: 1 0;
+}
+
+TabbedContent {
+    height: 1fr;
+    min-height: 20;
+}
+
+#workflow-details, #harness-details {
+    border: solid $primary;
+    padding: 1 2;
+    min-height: 8;
     margin: 1 0;
 }
 
@@ -112,6 +127,18 @@ SelectionList {
 """
 
 
+# ── Button with Space support ────────────────────────────────────────
+
+
+class _Button(Button):
+    """Button that also activates on Space (standard UI convention)."""
+
+    BINDINGS = [
+        *Button.BINDINGS,
+        ("space", "press", "Press button"),
+    ]
+
+
 # ── Shared navigation bar ────────────────────────────────────────────
 
 
@@ -125,7 +152,7 @@ class NavBar(Horizontal):
         align: center middle;
         padding: 1 1;
     }
-    NavBar Button {
+    NavBar _Button {
         margin: 0 1;
     }
     """
@@ -137,9 +164,9 @@ class NavBar(Horizontal):
 
     def compose(self) -> ComposeResult:
         if self._show_back:
-            yield Button("Back", id="btn-back", variant="default")
-        yield Button(self._next_label, id="btn-next", variant="primary")
-        yield Button("Cancel", id="btn-cancel", variant="error")
+            yield _Button("Back", id="btn-back", variant="default")
+        yield _Button(self._next_label, id="btn-next", variant="primary")
+        yield _Button("Cancel", id="btn-cancel", variant="error")
 
 
 # ── Branded header ───────────────────────────────────────────────────
@@ -201,6 +228,10 @@ class WelcomeScreen(ModalScreen[dict | None]):
                 RadioButton("Load config file — from a .json path"),
                 RadioButton("Apply to existing repo — scan and propose"),
                 id="launcher-radio",
+            )
+            yield Label(
+                "Tip: Use arrow keys to navigate, Enter to select, Escape to go back.",
+                classes="description",
             )
         yield NavBar(show_back=False, next_label="Start")
 
@@ -284,10 +315,18 @@ class TemplateScreen(ModalScreen[dict | None]):
         self._state = state
 
     def compose(self) -> ComposeResult:
+        from cc_rig.ui.descriptions import TEMPLATE_DESCRIPTIONS
+
         yield BrandHeader(self._state.get("step_label", ""))
         detected = self._state.get("detected_framework", "")
         with VerticalScroll(id="body"):
             yield Label("Select your stack", classes="screen-title")
+            yield Label(
+                "Pick the framework closest to your project. "
+                "This controls which language-specific agents, linters, "
+                "and test commands are configured.",
+                classes="description",
+            )
             if detected:
                 yield Label(
                     f"Detected: {detected} (highlighted below)",
@@ -295,9 +334,10 @@ class TemplateScreen(ModalScreen[dict | None]):
                 )
             buttons = []
             for t in BUILTIN_TEMPLATES:
-                label = t
+                desc = TEMPLATE_DESCRIPTIONS.get(t, t)
+                label = desc
                 if t == detected:
-                    label = f"{t} (detected)"
+                    label = f"{desc} (detected)"
                 buttons.append(RadioButton(label, value=(t == (detected or "fastapi"))))
             yield RadioSet(*buttons, id="template-radio")
         yield NavBar()
@@ -324,7 +364,7 @@ class TemplateScreen(ModalScreen[dict | None]):
 
 
 class WorkflowScreen(ModalScreen[dict | None]):
-    """Select workflow preset."""
+    """Select workflow preset with educational detail panel."""
 
     BINDINGS = [("escape", "go_back", "Back")]
 
@@ -333,9 +373,16 @@ class WorkflowScreen(ModalScreen[dict | None]):
         self._state = state
 
     def compose(self) -> ComposeResult:
+        from cc_rig.ui.descriptions import WORKFLOW_DETAILS
+
         yield BrandHeader(self._state.get("step_label", ""))
         with VerticalScroll(id="body"):
             yield Label("Select your workflow", classes="screen-title")
+            yield Label(
+                "Choose how you want to work with Claude Code. "
+                "Select a workflow to see details below.",
+                classes="description",
+            )
             buttons = []
             for i, w in enumerate(BUILTIN_WORKFLOWS):
                 data = load_workflow(w)
@@ -345,10 +392,22 @@ class WorkflowScreen(ModalScreen[dict | None]):
                 label = f"{w} — {desc} ({agents} agents, {commands} cmds)"
                 buttons.append(RadioButton(label, value=(w == "standard")))
             yield RadioSet(*buttons, id="workflow-radio")
+            # Default to standard details
+            default_detail = WORKFLOW_DETAILS.get("standard", "")
+            yield Static(default_detail, id="workflow-details")
         yield NavBar()
 
     def on_mount(self) -> None:
         self.query_one("#workflow-radio", RadioSet).focus()
+
+    def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
+        from cc_rig.ui.descriptions import WORKFLOW_DETAILS
+
+        idx = event.radio_set.pressed_index
+        if idx >= 0 and idx < len(BUILTIN_WORKFLOWS):
+            workflow = BUILTIN_WORKFLOWS[idx]
+            detail = WORKFLOW_DETAILS.get(workflow, "")
+            self.query_one("#workflow-details", Static).update(detail)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-next":
@@ -382,10 +441,26 @@ class ReviewScreen(ModalScreen[dict | None]):
         config = self._state.get("config")
         with VerticalScroll(id="body"):
             yield Label("Review configuration", classes="screen-title")
+            yield Label(
+                "Your workflow pre-selected agents (specialized AI roles), "
+                "commands (slash commands you invoke), and hooks (auto-actions "
+                "on events like save, commit, push).",
+                classes="description",
+            )
             if config:
                 yield Static(self._format_config(config), id="summary-box")
             yield Label("")
-            yield Checkbox("Customize agents, commands, hooks, features", id="chk-customize")
+            yield Checkbox(
+                "Customize agents, commands, hooks, and features",
+                id="chk-customize",
+            )
+            yield Label(
+                "  Opens expert view to add or remove individual agents, "
+                "commands, and hooks, then toggle features like cross-session "
+                "memory, spec-driven workflow, GTD task management, and "
+                "git worktrees. The defaults above are good for most projects.",
+                classes="description",
+            )
         yield NavBar()
 
     def on_mount(self) -> None:
@@ -397,6 +472,7 @@ class ReviewScreen(ModalScreen[dict | None]):
             f"  Stack:      {config.language} / {config.framework}",
             f"  Type:       {config.project_type}",
             f"  Workflow:   {config.workflow}",
+            "",
             f"  Agents:     {', '.join(config.agents)}",
             f"  Commands:   {', '.join(config.commands)}",
             f"  Hooks:      {', '.join(config.hooks)}",
@@ -435,7 +511,7 @@ class ReviewScreen(ModalScreen[dict | None]):
 
 
 class ExpertScreen(ModalScreen[dict | None]):
-    """Multi-select for agents, commands, and hooks."""
+    """Multi-select for agents, commands, and hooks — organized in tabs."""
 
     BINDINGS = [("escape", "go_back", "Back")]
 
@@ -444,11 +520,21 @@ class ExpertScreen(ModalScreen[dict | None]):
         self._state = state
 
     def compose(self) -> ComposeResult:
+        from cc_rig.ui.descriptions import (
+            get_agent_descriptions,
+            get_command_descriptions,
+            get_hook_descriptions,
+        )
+
         yield BrandHeader(self._state.get("step_label", ""))
         config = self._state.get("config")
         current_agents = config.agents if config else []
         current_commands = config.commands if config else []
         current_hooks = config.hooks if config else []
+
+        agent_descs = get_agent_descriptions()
+        command_descs = get_command_descriptions()
+        hook_descs = get_hook_descriptions()
 
         with VerticalScroll(id="body"):
             yield Label("Expert customization", classes="screen-title")
@@ -457,27 +543,48 @@ class ExpertScreen(ModalScreen[dict | None]):
                 classes="description",
             )
 
-            yield Label("Agents:", classes="field-label")
-            yield SelectionList[str](
-                *[(a, a, a in current_agents) for a in sorted(VALID_AGENTS)],
-                id="sel-agents",
-            )
-
-            yield Label("Commands:", classes="field-label")
-            yield SelectionList[str](
-                *[(c, c, c in current_commands) for c in sorted(VALID_COMMANDS)],
-                id="sel-commands",
-            )
-
-            yield Label("Hooks:", classes="field-label")
-            yield SelectionList[str](
-                *[(h, h, h in current_hooks) for h in sorted(VALID_HOOKS)],
-                id="sel-hooks",
-            )
+            with TabbedContent(id="expert-tabs"):
+                with TabPane(f"Agents ({len(current_agents)})", id="tab-agents"):
+                    yield SelectionList[str](
+                        *[
+                            (
+                                f"{a} — {agent_descs.get(a, '')}",
+                                a,
+                                a in current_agents,
+                            )
+                            for a in sorted(VALID_AGENTS)
+                        ],
+                        id="sel-agents",
+                    )
+                with TabPane(f"Commands ({len(current_commands)})", id="tab-commands"):
+                    yield SelectionList[str](
+                        *[
+                            (
+                                f"{c} — {command_descs.get(c, '')}",
+                                c,
+                                c in current_commands,
+                            )
+                            for c in sorted(VALID_COMMANDS)
+                        ],
+                        id="sel-commands",
+                    )
+                with TabPane(f"Hooks ({len(current_hooks)})", id="tab-hooks"):
+                    yield SelectionList[str](
+                        *[
+                            (
+                                f"{h} — {hook_descs.get(h, '')}",
+                                h,
+                                h in current_hooks,
+                            )
+                            for h in sorted(VALID_HOOKS)
+                        ],
+                        id="sel-hooks",
+                    )
         yield NavBar()
 
     def on_mount(self) -> None:
-        self.query_one("#sel-agents", SelectionList).focus()
+        agents_list = self.query_one("#sel-agents", SelectionList)
+        agents_list.focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-next":
@@ -513,53 +620,39 @@ class FeaturesScreen(ModalScreen[dict | None]):
         self._state = state
 
     def compose(self) -> ComposeResult:
+        from cc_rig.ui.descriptions import FEATURE_DETAILS, WORKFLOW_FEATURE_DEFAULTS
+
         yield BrandHeader(self._state.get("step_label", ""))
         config = self._state.get("config")
         features = config.features if config else None
+        workflow = self._state.get("workflow", "standard")
+        recommended = WORKFLOW_FEATURE_DEFAULTS.get(workflow, set())
 
         with VerticalScroll(id="body"):
-            yield Label("Feature flags", classes="screen-title")
+            yield Label("Features", classes="screen-title")
             yield Label(
-                "Toggle optional capabilities. Each adds the required "
-                "agents, commands, and hooks automatically.",
+                "Each feature adds the agents, commands, and hooks it needs "
+                "automatically. Your workflow pre-enabled the ones marked "
+                "below — toggle any on or off.",
                 classes="description",
             )
-            yield Checkbox(
-                "Memory — session logs, decisions, learned patterns",
-                value=features.memory if features else False,
-                id="feat-memory",
-            )
-            yield Label(
-                "  Adds: remember command, memory-stop + memory-precompact hooks",
-                classes="description",
-            )
-            yield Checkbox(
-                "Spec-driven workflow — plan before code",
-                value=features.spec_workflow if features else False,
-                id="feat-spec",
-            )
-            yield Label(
-                "  Adds: pm-spec + implementer agents, spec-create + spec-execute commands",
-                classes="description",
-            )
-            yield Checkbox(
-                "GTD task management — capture, process, plan",
-                value=features.gtd if features else False,
-                id="feat-gtd",
-            )
-            yield Label(
-                "  Adds: gtd-capture, gtd-process, daily-plan commands",
-                classes="description",
-            )
-            yield Checkbox(
-                "Git worktrees — parallel branches",
-                value=features.worktrees if features else False,
-                id="feat-worktrees",
-            )
-            yield Label(
-                "  Adds: parallel-worker agent, worktree command",
-                classes="description",
-            )
+
+            for detail in FEATURE_DETAILS:
+                key = detail["key"]
+                current_val = getattr(features, key, False) if features else False
+                label = detail["label"]
+                if key in recommended:
+                    label += "  ★ your workflow enables this"
+                yield Checkbox(
+                    label,
+                    value=current_val,
+                    id=detail["widget_id"],
+                )
+                yield Label(
+                    f"  {detail['description']}\n"
+                    f"  Adds: {detail['adds']}",
+                    classes="description",
+                )
         yield NavBar()
 
     def on_mount(self) -> None:
@@ -590,7 +683,9 @@ class FeaturesScreen(ModalScreen[dict | None]):
 
 
 class HarnessScreen(ModalScreen[dict | None]):
-    """Select runtime harness level (B0-B3)."""
+    """Select runtime harness level (B0-B3) with educational detail panel."""
+
+    _LEVELS = ["none", "lite", "standard", "autonomy"]
 
     BINDINGS = [("escape", "go_back", "Back")]
 
@@ -599,31 +694,64 @@ class HarnessScreen(ModalScreen[dict | None]):
         self._state = state
 
     def compose(self) -> ComposeResult:
+        from cc_rig.ui.descriptions import HARNESS_DETAILS
+
         yield BrandHeader(self._state.get("step_label", ""))
+        config = self._state.get("config")
+        has_autonomy_hook = "autonomy-loop" in (config.hooks if config else [])
+
         with VerticalScroll(id="body"):
             yield Label("Runtime harness", classes="screen-title")
             yield Label(
-                "Choose how much automation cc-rig sets up for Claude.",
+                "Your workflow chose what tools Claude has (agents, commands, hooks). "
+                "The harness controls how strictly Claude is supervised — budgets, "
+                "quality gates, and autonomous looping. Each level builds on the "
+                "previous one.",
                 classes="description",
             )
+            if config and not has_autonomy_hook:
+                yield Label(
+                    "Note: Selecting Autonomy (B3) will automatically enable "
+                    "the autonomy-loop hook.",
+                    classes="description",
+                )
             yield RadioSet(
-                RadioButton("None — scaffold only, you drive (B0)", value=True),
-                RadioButton("Lite — task tracking + budget awareness (B1)"),
-                RadioButton("Standard — + verification gates + review notes (B2)"),
-                RadioButton("Autonomy — autonomous iteration with safety rails (B3)"),
+                RadioButton(
+                    "None (B0) — Scaffold only, you drive",
+                    value=True,
+                ),
+                RadioButton(
+                    "Lite (B1) — Task tracking + budget awareness"
+                ),
+                RadioButton(
+                    "Standard (B2) — Verification gates (tests + lint must pass)"
+                ),
+                RadioButton(
+                    "Autonomy (B3) — Autonomous iteration with safety rails"
+                ),
                 id="harness-radio",
             )
+            default_detail = HARNESS_DETAILS.get("none", "")
+            yield Static(default_detail, id="harness-details")
         yield NavBar()
 
     def on_mount(self) -> None:
         self.query_one("#harness-radio", RadioSet).focus()
 
+    def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
+        from cc_rig.ui.descriptions import HARNESS_DETAILS
+
+        idx = event.radio_set.pressed_index
+        if 0 <= idx < len(self._LEVELS):
+            level = self._LEVELS[idx]
+            detail = HARNESS_DETAILS.get(level, "")
+            self.query_one("#harness-details", Static).update(detail)
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-next":
-            levels = ["none", "lite", "standard", "autonomy"]
             radio = self.query_one("#harness-radio", RadioSet)
             idx = radio.pressed_index if radio.pressed_index >= 0 else 0
-            level = levels[idx]
+            level = self._LEVELS[idx]
             if level == "autonomy":
                 self.notify(
                     "Autonomy mode enables autonomous iteration with safety rails.",
@@ -709,16 +837,16 @@ class _ConfirmNavBar(Horizontal):
         align: center middle;
         padding: 1 1;
     }
-    _ConfirmNavBar Button {
+    _ConfirmNavBar _Button {
         margin: 0 1;
     }
     """
 
     def compose(self) -> ComposeResult:
-        yield Button("Back", id="btn-back", variant="default")
-        yield Button("Save Config", id="btn-save", variant="default")
-        yield Button("Generate", id="btn-next", variant="primary")
-        yield Button("Cancel", id="btn-cancel", variant="error")
+        yield _Button("Back", id="btn-back", variant="default")
+        yield _Button("Save Config", id="btn-save", variant="default")
+        yield _Button("Generate", id="btn-next", variant="primary")
+        yield _Button("Cancel", id="btn-cancel", variant="error")
 
 
 # ── Main WizardApp ───────────────────────────────────────────────────
@@ -739,7 +867,7 @@ _GUIDED_SCREENS: list[tuple[type, str, Any]] = [
     (WorkflowScreen, "Select your workflow", None),
     (ReviewScreen, "Review configuration", None),
     (ExpertScreen, "Customize", _wants_expert),
-    (FeaturesScreen, "Feature flags", _wants_expert),
+    (FeaturesScreen, "Features", _wants_expert),
     (HarnessScreen, "Runtime harness", None),
     (ConfirmScreen, "Confirm", None),
 ]
@@ -748,6 +876,9 @@ _QUICK_SCREENS: list[tuple[type, str, Any]] = [
     (TemplateScreen, "Select your stack", None),
     (WorkflowScreen, "Select your workflow", None),
     (BasicsScreen, "Project name", None),
+    (ReviewScreen, "Review configuration", None),
+    (ExpertScreen, "Customize", _wants_expert),
+    (FeaturesScreen, "Features", _wants_expert),
     (ConfirmScreen, "Confirm", None),
 ]
 
@@ -766,6 +897,9 @@ class WizardApp(App[dict | None]):
         super().__init__()
         self._initial_state = dict(initial_state or {})
         self._screens = screens or _GUIDED_SCREENS
+        # Parent context for returning from quick flow to guided flow
+        self._parent_screens: list[tuple[type, str, Any]] | None = None
+        self._parent_step: int = 0
 
     def on_mount(self) -> None:
         self._run_wizard()
@@ -794,14 +928,21 @@ class WizardApp(App[dict | None]):
 
             if result is None:
                 # Back navigation
-                step = max(0, step - 1)
-                # Skip back over conditional screens that were skipped forward
-                while step > 0:
-                    _, _, cond = self._screens[step]
-                    if cond is not None and not cond(state):
-                        step -= 1
-                    else:
-                        break
+                if step == 0 and self._parent_screens is not None:
+                    # Return from quick flow to parent (guided) flow
+                    self._screens = self._parent_screens
+                    step = self._parent_step
+                    self._parent_screens = None
+                    self._parent_step = 0
+                else:
+                    step = max(0, step - 1)
+                    # Skip back over conditional screens that were skipped forward
+                    while step > 0:
+                        _, _, cond = self._screens[step]
+                        if cond is not None and not cond(state):
+                            step -= 1
+                        else:
+                            break
                 continue
 
             if result == "cancel":
@@ -831,6 +972,9 @@ class WizardApp(App[dict | None]):
                     state = self._run_detection(state)
                     # Fall through to normal Basics → Template → ... flow
                 elif mode == "quick":
+                    # Save parent context so Back from step 0 returns here
+                    self._parent_screens = list(self._screens)
+                    self._parent_step = step
                     # Swap to quick screen sequence and restart
                     self._screens = _QUICK_SCREENS
                     step = 0
@@ -905,7 +1049,10 @@ class WizardApp(App[dict | None]):
         return state
 
     def _apply_harness(self, state: dict[str, Any]) -> dict[str, Any]:
-        """Apply harness level to config."""
+        """Apply harness level to config.
+
+        B3 (autonomy) automatically adds the autonomy-loop hook if missing.
+        """
         from cc_rig.config.project import HarnessConfig
 
         config = state.get("config")
@@ -914,6 +1061,11 @@ class WizardApp(App[dict | None]):
 
         level = state.get("harness_level", "none")
         config.harness = HarnessConfig(level=level)
+
+        # B3 requires the autonomy-loop hook — add it automatically
+        if level == "autonomy" and "autonomy-loop" not in config.hooks:
+            config.hooks = list(config.hooks) + ["autonomy-loop"]
+
         state["config"] = config
         return state
 
