@@ -25,10 +25,18 @@ All notable changes to cc-rig will be documented in this file.
 - `--migrate` now falls back to template/workflow picker when framework detection fails (was hard error)
 - Workflow selection added to all migrate paths (was hardcoded to "standard")
 
+**TUI Wizard UX Improvements**
+- Harness descriptions (B0-B3) rewritten to match actual generated files and behavior
+- Features screen: rich user-benefit descriptions with workflow recommendation indicators (★)
+- Review screen: explains what agents, commands, hooks are and what customize gives you
+- Centralized descriptions in `cc_rig/ui/descriptions.py` (single source of truth)
+- Renamed "Feature flags" step label to "Features"
+- Space key now activates focused buttons (standard UI convention, was Enter-only)
+
 **Testing**
-- 15 async Textual pilot-based tests in `tests/unit/test_textual_wizard.py`
+- 21 async Textual pilot-based tests in `tests/unit/test_textual_wizard.py`
 - `pytest-asyncio` added to dev dependencies
-- Test count: 1288 → 1337
+- Test count: 1288 → 1343
 
 ## [1.0.0] - 2026-02-22
 

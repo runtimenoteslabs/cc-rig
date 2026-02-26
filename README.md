@@ -1,9 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/cc-rig-logo-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="assets/cc-rig-logo-light.svg">
-    <img alt="cc-rig" src="assets/cc-rig-logo-dark.svg" width="200">
-  </picture>
+  <img alt="cc-rig" src="assets/cc-rig-logo.png" width="200">
 </p>
 
 <h3 align="center">Set up Claude Code the right way - in under a minute.</h3>
