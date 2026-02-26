@@ -126,7 +126,7 @@ class TestS01FastapiStandardB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 43, f"Expected 43 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 44, f"Expected 44 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
@@ -148,6 +148,7 @@ class TestS01FastapiStandardB0:
             "plan.md",
             "refactor.md",
             "remember.md",
+            "research.md",
             "review.md",
             "test.md",
         ]
@@ -290,8 +291,8 @@ class TestS02FastapiVerifyHeavyB3:
 
     def test_command_count(self):
         commands = _list_dir(self.root, ".claude/commands")
-        # 18 - 3 gtd commands = 15
-        assert len(commands) == 15, f"Expected 15 commands, got {len(commands)}: {commands}"
+        # 19 - 3 gtd commands = 16
+        assert len(commands) == 16, f"Expected 16 commands, got {len(commands)}: {commands}"
 
     def test_memory_present(self):
         assert (self.root / "memory" / "decisions.md").exists()
@@ -375,7 +376,7 @@ class TestS03FastapiGtdLiteB0:
 
     def test_command_count(self):
         commands = _list_dir(self.root, ".claude/commands")
-        assert len(commands) == 12, f"Expected 12 commands, got {len(commands)}: {commands}"
+        assert len(commands) == 13, f"Expected 13 commands, got {len(commands)}: {commands}"
 
     def test_gtd_task_files(self):
         assert (self.root / "tasks" / "inbox.md").exists()

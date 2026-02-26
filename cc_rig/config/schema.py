@@ -68,6 +68,7 @@ VALID_COMMANDS = {
     "review",
     "test",
     "plan",
+    "research",
     "learn",
     "assumptions",
     "remember",

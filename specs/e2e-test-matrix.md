@@ -32,17 +32,17 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 ### S01: FastAPI + Standard + B0
 - **Purpose**: Baseline — most common path, default everything
 - **Tests**: 21
-- **Verifies**: 43 files, 5 agents, 8 commands, 9 hook scripts, memory/, no specs/, no tasks/, permissive permissions, manifest consistency, no duplicates, hooks executable, CLAUDE.md content
+- **Verifies**: 44 files, 5 agents, 9 commands, 9 hook scripts, memory/, no specs/, no tasks/, permissive permissions, manifest consistency, no duplicates, hooks executable, CLAUDE.md content
 
 ### S02: FastAPI + Verify-Heavy + B3 Autonomy
 - **Purpose**: Maximum rigor — all agents, all commands, autonomy harness
 - **Tests**: 18
-- **Verifies**: 13 agents (12 from workflow + parallel-worker), 15 commands (GTD stripped), spec files, harness B1/B2/B3 files, loop.sh executable, harness-config.json, budget-reminder hook
+- **Verifies**: 13 agents (12 from workflow + parallel-worker), 16 commands (GTD stripped), spec files, harness B1/B2/B3 files, loop.sh executable, harness-config.json, budget-reminder hook
 
 ### S03: FastAPI + GTD-Lite + B0
 - **Purpose**: GTD feature path
 - **Tests**: 11
-- **Verifies**: 8 agents, 12 commands (GTD present, spec absent), tasks/inbox.md + todo.md + someday.md, worktree command, no specs/
+- **Verifies**: 8 agents, 13 commands (GTD present, spec absent), tasks/inbox.md + todo.md + someday.md, worktree command, no specs/
 
 ### S04: FastAPI + Speedrun + B0
 - **Purpose**: Minimal config — fewest files

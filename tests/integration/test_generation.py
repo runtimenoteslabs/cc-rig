@@ -122,10 +122,10 @@ class TestManifestCompleteness:
 class TestCLAUDEmdLineCounts:
     _TARGETS = {
         "speedrun": 65,
-        "standard": 85,
-        "spec-driven": 100,
-        "gtd-lite": 100,
-        "verify-heavy": 110,
+        "standard": 95,
+        "spec-driven": 110,
+        "gtd-lite": 115,
+        "verify-heavy": 120,
     }
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)

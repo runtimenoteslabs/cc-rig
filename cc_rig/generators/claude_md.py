@@ -17,8 +17,8 @@ def generate_claude_md(
     """Generate CLAUDE.md with sections ordered for prompt-cache efficiency.
 
     Static sections first (rarely change), dynamic sections last.
-    Target line counts: speedrun ~60, standard ~80, spec-driven ~95,
-    gtd-lite ~95, verify-heavy ~105.
+    Target line counts: speedrun ~60, standard ~86, spec-driven ~102,
+    gtd-lite ~105, verify-heavy ~111.
     """
     sections: list[str] = []
 
@@ -30,6 +30,10 @@ def generate_claude_md(
 
     # ── Section 3: Guardrails (STATIC) ─────────────────────────────
     sections.append(_section_guardrails(config))
+
+    # ── Section 3.5: Workflow Principles (STATIC, non-speedrun) ──
+    if config.workflow != "speedrun":
+        sections.append(_section_workflow_principles())
 
     # ── Section 4: Framework Rules (STATIC) ────────────────────────
     sections.append(_section_framework_rules(config))
@@ -115,6 +119,31 @@ def _section_guardrails(config: ProjectConfig) -> str:
         "- Never run destructive commands (rm -rf /, DROP TABLE).\n"
         "- Prefer editing existing files over creating new ones.\n"
         "- Keep commits small and focused. One concern per commit.\n"
+    )
+
+
+def _section_workflow_principles() -> str:
+    return (
+        "## Workflow Principles\n"
+        "\n"
+        "- **Plan first.** Use `/plan` or `/assumptions` before "
+        "implementing non-trivial changes. Explore the codebase, "
+        "design the approach, then get approval.\n"
+        "- **Research before coding.** Spawn an explorer subagent "
+        "(Task tool with Explore type) to map unfamiliar code "
+        "before modifying it. Keep the main context clean.\n"
+        "- **Verify before done.** Run tests, lint, and typecheck "
+        "before committing. Never assume code works without "
+        "running it.\n"
+        "- **Fix failures immediately.** When tests or lint fail, "
+        "diagnose and fix the root cause now. Don't log it for "
+        "later.\n"
+        "- **Demand elegance.** After getting code working, "
+        "consider a refactor pass. Leave code measurably better "
+        "than you found it.\n"
+        "- **Save learnings.** Use `/remember` to capture "
+        "decisions, patterns, and gotchas. Future sessions will "
+        "thank you.\n"
     )
 
 

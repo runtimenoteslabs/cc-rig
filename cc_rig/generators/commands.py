@@ -104,6 +104,30 @@ _COMMAND_DEFS: dict[str, tuple[str, str, str]] = {
             "only. Wait for approval before proceeding."
         ),
     ),
+    "research": (
+        "Explore codebase before implementing changes",
+        "Read, Glob, Grep, Bash, Task",
+        (
+            "$ARGUMENTS\n"
+            "\n"
+            "Research the codebase before making changes:\n"
+            "\n"
+            "1. **Map**: Identify all files and modules related "
+            "to the topic.\n"
+            "2. **Trace**: Follow the execution path. Understand "
+            "how data flows.\n"
+            "3. **Conventions**: Note patterns, naming, error "
+            "handling style.\n"
+            "4. **Dependencies**: List what depends on the code "
+            "you'll change.\n"
+            "5. **Summarize**: Report your findings. Include file "
+            "paths, key functions, and risks.\n"
+            "\n"
+            "Use subagents (Task tool with Explore type) for "
+            "parallel research across different areas.\n"
+            "Do not make any changes. This is research only."
+        ),
+    ),
     "learn": (
         "Explain code, concept, or pattern in this project",
         "Read, Glob, Grep",

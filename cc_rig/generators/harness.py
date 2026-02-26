@@ -124,7 +124,10 @@ def _generate_b1(
         "2. **Use subagents** for parallel work to stay within budget.\n"
         "3. **Checkpoint often.** Commit working code before moving on.\n"
         "4. **Stop cleanly.** When approaching budget, save state and stop.\n"
-        "5. **Log progress.** Update tasks/todo.md and session-log.\n",
+        "5. **Log progress.** Update tasks/todo.md and session-log.\n"
+        "6. **Fix failures immediately.** If tests or lint fail, diagnose "
+        "and fix before moving on. Up to 2 attempts, then log in "
+        "tasks/todo.md.\n",
         tracker=tracker,
         rel_path="agent_docs/budget-guide.md",
     )
@@ -174,9 +177,11 @@ def _generate_b2(
         "\n"
         "## On Failure\n"
         "\n"
-        "1. Fix the issue immediately if straightforward.\n"
-        "2. If the fix is complex, log it in tasks/todo.md.\n"
-        "3. Never skip a REQUIRED gate.\n",
+        "1. Diagnose the root cause. Read error output carefully.\n"
+        "2. Fix the issue (up to 2 attempts).\n"
+        "3. If still failing after 2 attempts, log the issue in "
+        "tasks/todo.md with error details.\n"
+        "4. Never skip a REQUIRED gate.\n",
         tracker=tracker,
         rel_path="agent_docs/verification-gates.md",
     )

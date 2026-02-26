@@ -159,6 +159,7 @@ Workflows you trigger with `/` in Claude Code. Each is a markdown file in `.clau
 |---------|-------------|
 | `/fix-issue` | Reproduce → diagnose → fix → test → commit |
 | `/plan` | Architecture-first planning with checkpoints |
+| `/research` | Explore codebase before implementing changes |
 | `/review` | Multi-dimensional code review via agent |
 | `/test` | Generate tests with coverage awareness |
 | `/assumptions` | Surface Claude's hidden assumptions (with confidence levels) |
@@ -176,7 +177,7 @@ Workflows you trigger with `/` in Claude Code. Each is a markdown file in `.clau
 | `/security` | Security review via auditor agent |
 | `/document` | Generate documentation |
 
-Up to 18 commands depending on your workflow preset.
+Up to 19 commands depending on your workflow preset.
 
 ### Hooks
 
@@ -296,10 +297,10 @@ Templates set your language, framework, tool commands, linting and framework-spe
 | Workflow | Best for |
 |----------|----------|
 | **speedrun** | Side projects, prototypes, hacking. 3 agents, 6 commands, 6 hooks. No memory. Just code fast. |
-| **standard** | Most projects. 5 agents, 8 commands, 10 hooks. Memory, safety hooks, code review, architecture. |
-| **spec-driven** | Teams that plan first. 9 agents, 12 commands, 11 hooks. Spec create/execute, PM and implementer agents. |
-| **gtd-lite** | Task-oriented developers. 8 agents, 12 commands, 11 hooks. GTD capture/process, daily planning. |
-| **verify-heavy** | Production systems. 13 agents, 18 commands, 14 hooks. Security auditor, PR reviewer, every quality gate. |
+| **standard** | Most projects. 5 agents, 9 commands, 10 hooks. Memory, safety hooks, code review, architecture. |
+| **spec-driven** | Teams that plan first. 9 agents, 13 commands, 11 hooks. Spec create/execute, PM and implementer agents. |
+| **gtd-lite** | Task-oriented developers. 8 agents, 13 commands, 11 hooks. GTD capture/process, daily planning. |
+| **verify-heavy** | Production systems. 13 agents, 19 commands, 14 hooks. Security auditor, PR reviewer, every quality gate. |
 
 ### Add-ons
 
@@ -441,6 +442,30 @@ cc-rig clean [--force] [-d DIR]    Remove generated files
 
 ---
 
+## Workflow Philosophy
+
+cc-rig's defaults encode seven workflow principles distilled from how the Claude Code team builds software, inspired by [Boris Cherny's workflow](https://x.com/bcherny/status/2007179832300581177) (creator of Claude Code):
+
+| Principle | cc-rig Implementation |
+|-----------|----------------------|
+| **Plan before coding** | `/plan` and `/assumptions` commands, `/research` for codebase exploration, CLAUDE.md workflow guidance |
+| **Use subagents for research** | `/research` command, `explorer` agent (Haiku), `parallel-worker` for worktree isolation |
+| **Self-improvement loop** | Memory system (`/remember`, `memory-stop` hook, `memory-precompact` hook), persistent `memory/` files |
+| **Verify before done** | Hooks (format, lint, typecheck), B2+ verification gates, guardrails in CLAUDE.md |
+| **Demand elegance** | `/refactor` command, `refactorer` agent, workflow principles in CLAUDE.md |
+| **Fix failures immediately** | B1+ budget guide, B2+ retry logic in verification gates, B3 autonomy loop (3 retries) |
+| **Track work with tasks** | `tasks/todo.md` (B1+), GTD system (inbox/todo/someday), `/daily-plan` |
+
+Each workflow preset dials these principles up or down:
+
+- **speedrun** — Minimal: just code fast. Verification hooks present but no process enforcement.
+- **standard** — Core principles active. Plan, verify, remember, refactor.
+- **spec-driven** — Plan-first emphasis. Specs before implementation.
+- **gtd-lite** — Task management emphasis. Capture, process, plan.
+- **verify-heavy** — All seven principles at maximum. Every quality gate active.
+
+---
+
 ## FAQ
 
 <details>
@@ -503,6 +528,7 @@ cc-rig's Tier 2 recommendations draw from these community skill repositories:
 
 cc-rig's defaults draw from community research on what makes Claude Code work well:
 
+- [Boris Cherny's workflow principles](https://x.com/bcherny/status/2007179832300581177) - seven principles for effective Claude Code usage (creator of Claude Code)
 - [What great CLAUDE.md files have in common](https://blog.devgenius.io/what-great-claude-md-files-have-in-common-db482172ad2c) - content patterns
 - [HumanLayer's CLAUDE.md guide](https://www.humanlayer.dev/blog/writing-a-good-claude-md) - structure principles
 - [Spec workflow](https://github.com/Pimzino/claude-code-spec-workflow) by Pimzino - plan-first development
