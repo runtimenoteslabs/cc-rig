@@ -245,6 +245,20 @@ def compute_defaults(
         if "worktree" not in commands:
             commands.append("worktree")
 
+    # Step 6b: Strip commands/agents for disabled features.
+    # Workflow presets may include all commands, but if the user disabled
+    # a feature, remove commands that reference non-existent files.
+    _GTD_COMMANDS = {"gtd-capture", "gtd-process", "daily-plan"}
+    _SPEC_COMMANDS = {"spec-create", "spec-execute"}
+    _WORKTREE_COMMANDS = {"worktree"}
+
+    if not features.gtd:
+        commands = [c for c in commands if c not in _GTD_COMMANDS]
+    if not features.spec_workflow:
+        commands = [c for c in commands if c not in _SPEC_COMMANDS]
+    if not features.worktrees:
+        commands = [c for c in commands if c not in _WORKTREE_COMMANDS]
+
     # Step 7: Build recommended_skills with SDLC-aware merging
     default_mcps = list(tmpl.get("default_mcps", []))
     recommended_skills = _merge_skills(tmpl, wf, default_mcps)

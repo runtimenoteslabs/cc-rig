@@ -71,7 +71,6 @@ VALID_COMMANDS = {
     "learn",
     "assumptions",
     "remember",
-    "bug-fix",
     "refactor",
     "spec-create",
     "spec-execute",
@@ -193,6 +192,13 @@ def validate_config(config: ProjectConfig) -> list[str]:
         if hook not in VALID_HOOKS:
             errors.append(f"unknown hook: {hook!r}")
 
+    # Mutual exclusivity
+    if config.features.spec_workflow and config.features.gtd:
+        errors.append(
+            "features.spec_workflow and features.gtd cannot both be enabled — "
+            "spec-workflow is plan-first, GTD is capture-first. Pick one."
+        )
+
     # Feature flag implications
     if config.features.memory:
         if "memory-stop" not in config.hooks:
@@ -234,3 +240,9 @@ def validate_config(config: ProjectConfig) -> list[str]:
             errors.append(f"model_overrides references unknown agent: {agent_name!r}")
 
     return errors
+
+
+def validate_config_warnings(config: ProjectConfig) -> list[str]:
+    """Return non-fatal warnings for a ProjectConfig (empty = no warnings)."""
+    warnings: list[str] = []
+    return warnings

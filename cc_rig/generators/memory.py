@@ -89,7 +89,7 @@ def generate_memory(
     for filename, template in MEMORY_FILE_TEMPLATES.items():
         rel = f"memory/{filename}"
         if tracker is not None:
-            tracker.write_text(rel, template)
+            tracker.write_text(rel, template, preserve_on_clean=True)
         else:
             (memory_dir / filename).write_text(template)
         files_written.append(rel)
@@ -145,7 +145,7 @@ def generate_memory(
         "of every session |\n"
     )
     if tracker is not None:
-        tracker.write_text("memory/MEMORY-README.md", readme_content)
+        tracker.write_text("memory/MEMORY-README.md", readme_content, preserve_on_clean=True)
     else:
         (memory_dir / "MEMORY-README.md").write_text(readme_content)
     files_written.append("memory/MEMORY-README.md")

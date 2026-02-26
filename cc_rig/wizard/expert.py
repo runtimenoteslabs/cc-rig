@@ -51,27 +51,42 @@ def run_expert(config: ProjectConfig, io: IO) -> ProjectConfig:
     # Features
     if confirm("Toggle feature flags?", default=False, io=io):
         f = config.features
+
+        memory = confirm(
+            "  Enable memory (session logs, decisions, patterns)?",
+            default=f.memory,
+            io=io,
+        )
+
+        # Spec-workflow and GTD are mutually exclusive — present as a single choice
+        if f.spec_workflow:
+            task_default = "spec"
+        elif f.gtd:
+            task_default = "gtd"
+        else:
+            task_default = "none"
+        task_choice = ask_choice(
+            "  Task workflow:",
+            [
+                ("none", "None — no structured task workflow"),
+                ("spec", "Spec workflow — plan before code (specs → implement)"),
+                ("gtd", "GTD — capture ideas, process later (inbox → todo)"),
+            ],
+            default=task_default,
+            io=io,
+        )
+
+        worktrees = confirm(
+            "  Enable git worktrees (parallel branches)?",
+            default=f.worktrees,
+            io=io,
+        )
+
         config.features = Features(
-            memory=confirm(
-                "  Enable memory (session logs, decisions, patterns)?",
-                default=f.memory,
-                io=io,
-            ),
-            spec_workflow=confirm(
-                "  Enable spec-driven workflow (plan before code)?",
-                default=f.spec_workflow,
-                io=io,
-            ),
-            gtd=confirm(
-                "  Enable GTD task management (capture, process, plan)?",
-                default=f.gtd,
-                io=io,
-            ),
-            worktrees=confirm(
-                "  Enable git worktrees (parallel branches)?",
-                default=f.worktrees,
-                io=io,
-            ),
+            memory=memory,
+            spec_workflow=(task_choice == "spec"),
+            gtd=(task_choice == "gtd"),
+            worktrees=worktrees,
         )
 
     # Permission mode

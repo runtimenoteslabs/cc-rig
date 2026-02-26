@@ -255,7 +255,9 @@ Safety hooks handle the rest by blocking `.env` edits, pushes to main and destru
 
 `.mcp.json` at the project root, configured for your stack. Available integrations:
 
-GitHub · PostgreSQL · Playwright · Slack · Linear · Sentry · Filesystem · [Taskmaster AI](https://github.com/eyaltoledano/claude-task-master) · [QMD](https://github.com/tobi/qmd)
+**Auto-configured** (selected by template): GitHub · PostgreSQL · Playwright
+
+**Available** (add via expert mode): Slack · Linear · Sentry · Filesystem
 
 ### Agent Docs
 
@@ -494,6 +496,7 @@ cc-rig's Tier 2 recommendations draw from these community skill repositories:
 - [supabase/agent-skills](https://github.com/supabase/agent-skills) - PostgreSQL best practices
 - [akin-ozer/cc-devops-skills](https://github.com/akin-ozer/cc-devops-skills) - 31 CI/CD, IaC and monitoring skills
 - [agamm/claude-code-owasp](https://github.com/agamm/claude-code-owasp) - OWASP Top 10:2025 security
+- [wshobson/agents](https://github.com/wshobson/agents) - Tailwind CSS design system
 - [skills.sh](https://skills.sh/) - Vercel-run skill directory (73K+ skills)
 
 ### Research & Inspiration

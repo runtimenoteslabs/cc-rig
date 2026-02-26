@@ -69,7 +69,7 @@ def _generate_specs_template(
         "- Unresolved decisions or uncertainties.\n"
     )
     if tracker is not None:
-        tracker.write_text("specs/TEMPLATE.md", template_content)
+        tracker.write_text("specs/TEMPLATE.md", template_content, preserve_on_clean=True)
     else:
         (specs_dir / "TEMPLATE.md").write_text(template_content)
     return ["specs/TEMPLATE.md"]
@@ -120,7 +120,7 @@ def _generate_gtd_files(
         full = output_dir / rel
         if not full.exists():
             if tracker is not None:
-                tracker.write_text(rel, content)
+                tracker.write_text(rel, content, preserve_on_clean=True)
             else:
                 full.write_text(content)
             files.append(rel)

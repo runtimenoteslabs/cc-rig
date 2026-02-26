@@ -8,6 +8,7 @@ instead of deleting user files.
 
 from __future__ import annotations
 
+import hashlib
 import shutil
 from pathlib import Path
 from typing import Any
@@ -30,11 +31,17 @@ class FileTracker:
         self._output_dir = output_dir.resolve()
         self._meta: dict[str, dict[str, Any]] = {}
 
-    def write_text(self, rel_path: str, content: str) -> None:
+    def write_text(
+        self, rel_path: str, content: str, *, preserve_on_clean: bool = False
+    ) -> None:
         """Write *content* to *rel_path* under the output directory.
 
         If the file already exists, backs it up to ``_BACKUP_DIR``
         before overwriting.
+
+        When *preserve_on_clean* is True, the manifest records a
+        content hash so ``cc-rig clean`` can skip files the user has
+        edited since generation.
         """
         full = self._output_dir / rel_path
         pre_existed = full.exists()
@@ -49,10 +56,15 @@ class FileTracker:
         full.parent.mkdir(parents=True, exist_ok=True)
         full.write_text(content)
 
-        self._meta[rel_path] = {
+        meta: dict[str, Any] = {
             "pre_existed": pre_existed,
             "backed_up": backed_up,
         }
+        if preserve_on_clean:
+            meta["preserve_on_clean"] = True
+            meta["content_hash"] = hashlib.sha256(content.encode()).hexdigest()
+
+        self._meta[rel_path] = meta
 
     def chmod(self, rel_path: str, mode: int) -> None:
         """Set file permissions (e.g. 0o755 for hook scripts)."""
@@ -67,4 +79,4 @@ class FileTracker:
     # ------------------------------------------------------------------
 
     def _backup_path(self, rel_path: str) -> Path:
-        return self._output_dir / _BACKUP_DIR / rel_path
+        return self._output_dir / _BACKUP_DIR / (rel_path + ".bak")

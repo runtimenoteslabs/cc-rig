@@ -27,8 +27,8 @@ class TestFileTracker:
         # New content written
         assert (tmp_path / "existing.txt").read_text() == "new content"
 
-        # Backup created
-        backup = tmp_path / ".cc-rig-backup" / "existing.txt"
+        # Backup created (with .bak extension to avoid Claude Code discovery)
+        backup = tmp_path / ".cc-rig-backup" / "existing.txt.bak"
         assert backup.exists()
         assert backup.read_text() == "original content"
 
@@ -45,7 +45,7 @@ class TestFileTracker:
         tracker = FileTracker(tmp_path)
         tracker.write_text("sub/file.md", "replaced")
 
-        backup = tmp_path / ".cc-rig-backup" / "sub" / "file.md"
+        backup = tmp_path / ".cc-rig-backup" / "sub" / "file.md.bak"
         assert backup.read_text() == "original nested"
 
     def test_chmod(self, tmp_path):

@@ -673,6 +673,12 @@ def _cmd_clean(args: argparse.Namespace) -> int:
         print(f"\nRemoved {len(result.removed)} file(s).")
     if result.already_missing:
         print(f"  ({len(result.already_missing)} already missing)")
+    if result.restored:
+        print(f"  Restored {len(result.restored)} pre-existing file(s).")
+    if result.skipped_user_modified:
+        print(f"\n  Preserved {len(result.skipped_user_modified)} user-modified file(s):")
+        for f in result.skipped_user_modified:
+            print(f"    {f}")
     if result.dirs_removed:
         print(f"  Cleaned up {len(result.dirs_removed)} empty directory(ies).")
 

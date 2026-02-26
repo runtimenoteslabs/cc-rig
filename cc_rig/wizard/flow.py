@@ -319,18 +319,20 @@ def _guided_flow_textual(
         io.say("Cancelled.")
         return 0
 
+    final_output_dir = Path(state.get("output_dir", output_dir))
+
     # Handle launcher modes that exit the TUI for CLI input
     mode = state.get("launcher_mode", "fresh")
     if mode == "config":
         config_name = ask_input("Config name or path", "", io=io)
         if config_name:
-            return _config_load(config_name, name, output_dir, io)
+            return _config_load(config_name, name, final_output_dir, io)
         io.say("No config specified.")
         return 1
     if mode == "file":
         file_path = ask_input("Path to .json config file", "", io=io)
         if file_path:
-            return _config_load(file_path, name, output_dir, io)
+            return _config_load(file_path, name, final_output_dir, io)
         io.say("No file specified.")
         return 1
 
@@ -339,7 +341,7 @@ def _guided_flow_textual(
         io.say("No configuration built.")
         return 1
 
-    return run_generation(config, output_dir, io)
+    return run_generation(config, final_output_dir, io)
 
 
 def _quick_flow_textual(
@@ -367,7 +369,8 @@ def _quick_flow_textual(
         io.say("No configuration built.")
         return 1
 
-    return run_generation(config, output_dir, io)
+    final_output_dir = Path(state.get("output_dir", output_dir))
+    return run_generation(config, final_output_dir, io)
 
 
 def _ask_template(io: IO) -> str:

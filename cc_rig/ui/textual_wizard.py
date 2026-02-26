@@ -9,6 +9,7 @@ a state dict. The existing StepRunner CLI path remains as fallback.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from textual import work
@@ -280,6 +281,12 @@ class BasicsScreen(ModalScreen[dict | None]):
                 placeholder="A brief description",
                 id="input-desc",
             )
+            yield Label("Output directory:", classes="field-label")
+            yield Input(
+                value=str(self._state.get("output_dir", ".")),
+                placeholder="/path/to/project",
+                id="input-output-dir",
+            )
         yield NavBar()
 
     def on_mount(self) -> None:
@@ -292,7 +299,8 @@ class BasicsScreen(ModalScreen[dict | None]):
                 self.notify("Project name is required", severity="error")
                 return
             desc = self.query_one("#input-desc", Input).value.strip()
-            self.dismiss({"name": name, "desc": desc})
+            output_dir_raw = self.query_one("#input-output-dir", Input).value.strip() or "."
+            self.dismiss({"name": name, "desc": desc, "output_dir": Path(output_dir_raw).resolve()})
         elif event.button.id == "btn-back":
             self.dismiss(None)
         elif event.button.id == "btn-cancel":
@@ -657,6 +665,13 @@ class FeaturesScreen(ModalScreen[dict | None]):
 
     def on_mount(self) -> None:
         self.query_one("#feat-memory", Checkbox).focus()
+
+    def on_checkbox_changed(self, event: Checkbox.Changed) -> None:
+        """Enforce mutual exclusion: spec-workflow and GTD cannot both be on."""
+        if event.checkbox.id == "feat-spec" and event.value:
+            self.query_one("#feat-gtd", Checkbox).value = False
+        elif event.checkbox.id == "feat-gtd" and event.value:
+            self.query_one("#feat-spec", Checkbox).value = False
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-next":

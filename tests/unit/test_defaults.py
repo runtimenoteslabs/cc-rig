@@ -153,6 +153,27 @@ class TestCommandCounts:
         assert "document" in config.commands
         assert "optimize" in config.commands
 
+    def test_verify_heavy_strips_gtd_commands_when_gtd_disabled(self):
+        """verify-heavy has gtd=False, so GTD commands should be stripped."""
+        config = compute_defaults("fastapi", "verify-heavy", project_name="test")
+        assert config.features.gtd is False
+        assert "gtd-capture" not in config.commands
+        assert "gtd-process" not in config.commands
+        assert "daily-plan" not in config.commands
+
+    def test_disabled_spec_workflow_strips_spec_commands(self):
+        """When spec_workflow is off, spec commands should be stripped."""
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        assert config.features.spec_workflow is False
+        assert "spec-create" not in config.commands
+        assert "spec-execute" not in config.commands
+
+    def test_disabled_worktrees_strips_worktree_command(self):
+        """When worktrees is off, worktree command should be stripped."""
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        assert config.features.worktrees is False
+        assert "worktree" not in config.commands
+
 
 # ---------------------------------------------------------------------------
 # Hooks per workflow (from matrix §2c)

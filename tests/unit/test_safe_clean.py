@@ -7,6 +7,11 @@ from cc_rig.generators.fileops import _BACKUP_DIR
 from tests.conftest import generate_project as _generate_project
 
 
+def _generate_with_features(tmp_path, workflow="standard"):
+    """Generate a project with the given workflow (controls features)."""
+    return _generate_project(tmp_path, workflow=workflow)
+
+
 class TestSafeCleanRestorePreExisting:
     def test_pre_existing_file_restored(self, tmp_path):
         """If a file existed before generation, clean restores it from backup."""
@@ -19,8 +24,8 @@ class TestSafeCleanRestorePreExisting:
         # Content should be overwritten by generator
         assert (tmp_path / "CLAUDE.md").read_text() != "my original claude.md"
 
-        # Backup should exist
-        backup = tmp_path / _BACKUP_DIR / "CLAUDE.md"
+        # Backup should exist (with .bak extension to avoid Claude Code discovery)
+        backup = tmp_path / _BACKUP_DIR / "CLAUDE.md.bak"
         assert backup.exists()
         assert backup.read_text() == "my original claude.md"
 
@@ -87,7 +92,7 @@ class TestSafeCleanPreExistingNoBackup:
         _generate_project(tmp_path)
 
         # Manually delete the backup to simulate missing backup
-        backup = tmp_path / _BACKUP_DIR / "CLAUDE.md"
+        backup = tmp_path / _BACKUP_DIR / "CLAUDE.md.bak"
         if backup.exists():
             backup.unlink()
 
@@ -109,3 +114,72 @@ class TestManifestHasFileMetadata:
         # CLAUDE.md should be tracked
         assert "CLAUDE.md" in manifest["file_metadata"]
         assert manifest["file_metadata"]["CLAUDE.md"]["pre_existed"] is False
+
+    def test_manifest_memory_files_have_preserve_flag(self, tmp_path):
+        """Memory files should have preserve_on_clean and content_hash in metadata."""
+        _generate_with_features(tmp_path, workflow="standard")
+        manifest = load_manifest(tmp_path)
+        meta = manifest["file_metadata"]
+        for filename in [
+            "memory/decisions.md",
+            "memory/patterns.md",
+            "memory/gotchas.md",
+            "memory/people.md",
+            "memory/session-log.md",
+            "memory/MEMORY-README.md",
+        ]:
+            assert filename in meta, f"{filename} missing from file_metadata"
+            assert meta[filename]["preserve_on_clean"] is True
+            assert "content_hash" in meta[filename]
+            assert len(meta[filename]["content_hash"]) == 64  # sha256 hex
+
+
+class TestPreserveOnClean:
+    def test_modified_memory_file_preserved(self, tmp_path):
+        """Edited memory files survive clean."""
+        _generate_with_features(tmp_path, workflow="standard")
+        decisions = tmp_path / "memory" / "decisions.md"
+        assert decisions.exists()
+        decisions.write_text("# Decisions\n\nReal decision here.\n")
+
+        result = run_clean(tmp_path, force=True)
+        assert "memory/decisions.md" in result.skipped_user_modified
+        assert decisions.exists()
+        assert "Real decision" in decisions.read_text()
+
+    def test_unmodified_memory_file_deleted(self, tmp_path):
+        """Unedited memory files are deleted normally."""
+        _generate_with_features(tmp_path, workflow="standard")
+        decisions = tmp_path / "memory" / "decisions.md"
+        assert decisions.exists()
+
+        result = run_clean(tmp_path, force=True)
+        assert "memory/decisions.md" not in result.skipped_user_modified
+        assert "memory/decisions.md" in result.removed
+
+    def test_modified_gtd_file_preserved(self, tmp_path):
+        """Edited GTD task files survive clean."""
+        _generate_with_features(tmp_path, workflow="gtd-lite")
+        inbox = tmp_path / "tasks" / "inbox.md"
+        assert inbox.exists()
+        inbox.write_text("# Inbox\n\n- [ ] My real task\n")
+
+        result = run_clean(tmp_path, force=True)
+        assert "tasks/inbox.md" in result.skipped_user_modified
+        assert inbox.exists()
+
+    def test_modified_spec_file_preserved(self, tmp_path):
+        """Edited spec template survives clean."""
+        _generate_with_features(tmp_path, workflow="spec-driven")
+        spec = tmp_path / "specs" / "TEMPLATE.md"
+        assert spec.exists()
+        spec.write_text("# Spec: Auth Feature\n\nReal spec content.\n")
+
+        result = run_clean(tmp_path, force=True)
+        assert "specs/TEMPLATE.md" in result.skipped_user_modified
+        assert spec.exists()
+
+    def test_clean_result_has_skipped_user_modified(self, tmp_path):
+        """CleanResult initializes skipped_user_modified as empty list."""
+        result = CleanResult()
+        assert result.skipped_user_modified == []
