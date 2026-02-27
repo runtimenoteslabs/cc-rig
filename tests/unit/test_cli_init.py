@@ -222,11 +222,36 @@ class TestNoCommand:
         assert rc == 0
 
 
-class TestNotImplemented:
-    def test_doctor_not_implemented(self, capsys):
+class TestDoctorAndClean:
+    def test_doctor_runs_successfully(self, capsys):
+        """Doctor returns 0 with warnings on the project directory."""
         rc = main(["doctor"])
+        assert rc == 0
+        captured = capsys.readouterr()
+        assert "warning" in captured.out.lower() or "passed" in captured.out.lower()
+
+    def test_clean_requires_manifest(self, tmp_path, capsys):
+        """Clean returns 1 when no .cc-rig.json manifest exists."""
+        rc = main(["clean", "--dir", str(tmp_path)])
         assert rc == 1
 
-    def test_clean_not_implemented(self, capsys):
-        rc = main(["clean"])
-        assert rc == 1
+    def test_clean_force_skips_confirm(self, tmp_path):
+        """Clean with --force removes files without stdin prompt."""
+        # Generate files first
+        main(
+            [
+                "init",
+                "--template",
+                "fastapi",
+                "--workflow",
+                "speedrun",
+                "--name",
+                "test",
+                "-o",
+                str(tmp_path),
+            ]
+        )
+        assert (tmp_path / ".cc-rig.json").exists()
+        rc = main(["clean", "--force", "--dir", str(tmp_path)])
+        assert rc == 0
+        assert not (tmp_path / ".cc-rig.json").exists()

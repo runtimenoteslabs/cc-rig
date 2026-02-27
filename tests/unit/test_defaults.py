@@ -631,3 +631,234 @@ class TestSpecDrivenSkills:
         assert "brainstorming" in names
         assert "writing-plans" in names
         assert "executing-plans" in names
+
+
+# ---------------------------------------------------------------------------
+# S05: Template-Specific Skill Identity (skills-test-matrix.md)
+# ---------------------------------------------------------------------------
+
+
+class TestTemplateSkillIdentity:
+    """Verify each template contributes expected skills."""
+
+    def test_fastapi_has_modern_python(self):
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "modern-python" in names
+
+    def test_fastapi_has_property_testing(self):
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "property-based-testing" in names
+
+    def test_fastapi_has_webapp_testing(self):
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "webapp-testing" in names
+
+    def test_fastapi_has_db_skills(self):
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "supabase-postgres-best-practices" in names
+        assert "planetscale-postgresql" in names
+
+    def test_django_matches_fastapi_skills(self):
+        """Django has same template skills as FastAPI (both Python + postgres)."""
+        fa = compute_defaults("fastapi", "standard", project_name="test")
+        dj = compute_defaults("django", "standard", project_name="test")
+        fa_names = {s.name for s in fa.recommended_skills}
+        dj_names = {s.name for s in dj.recommended_skills}
+        assert fa_names == dj_names
+
+    def test_flask_matches_fastapi_skills(self):
+        """Flask has same template skills as FastAPI."""
+        fa = compute_defaults("fastapi", "standard", project_name="test")
+        fl = compute_defaults("flask", "standard", project_name="test")
+        fa_names = {s.name for s in fa.recommended_skills}
+        fl_names = {s.name for s in fl.recommended_skills}
+        assert fa_names == fl_names
+
+    def test_nextjs_has_vercel_skills(self):
+        config = compute_defaults("nextjs", "standard", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "vercel-react-best-practices" in names
+
+    def test_nextjs_has_frontend_skills(self):
+        config = compute_defaults("nextjs", "standard", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "frontend-design" in names
+        assert "tailwind-design-system" in names
+
+    def test_nextjs_has_webapp_testing(self):
+        config = compute_defaults("nextjs", "standard", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "webapp-testing" in names
+
+    def test_nextjs_no_modern_python(self):
+        config = compute_defaults("nextjs", "standard", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "modern-python" not in names
+
+    def test_gin_has_static_analysis(self):
+        config = compute_defaults("gin", "standard", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "static-analysis" in names
+
+    def test_gin_no_modern_python(self):
+        config = compute_defaults("gin", "standard", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "modern-python" not in names
+
+    def test_rust_cli_minimal_skills(self):
+        """rust-cli has fewest template skills (no DB, fewer coding)."""
+        rust = compute_defaults("rust-cli", "standard", project_name="test")
+        fastapi = compute_defaults("fastapi", "standard", project_name="test")
+        assert len(rust.recommended_skills) < len(fastapi.recommended_skills)
+
+    def test_rust_cli_no_db_skills(self):
+        config = compute_defaults("rust-cli", "standard", project_name="test")
+        phases = {s.sdlc_phase for s in config.recommended_skills}
+        assert "database" not in phases
+
+
+# ---------------------------------------------------------------------------
+# S06: Database if_applicable Conditional (skills-test-matrix.md)
+# ---------------------------------------------------------------------------
+
+
+class TestDatabaseConditional:
+    """Verify database phase resolves correctly per template."""
+
+    @pytest.mark.parametrize(
+        "template",
+        ["fastapi", "django", "flask", "gin", "echo"],
+    )
+    def test_db_templates_have_database_skills(self, template):
+        """Templates with postgres MCP should have database skills."""
+        config = compute_defaults(template, "standard", project_name="test")
+        phases = {s.sdlc_phase for s in config.recommended_skills}
+        assert "database" in phases, f"{template} should have database skills"
+
+    def test_nextjs_no_db_skills(self):
+        """nextjs has playwright MCP, not postgres — no database skills."""
+        config = compute_defaults("nextjs", "standard", project_name="test")
+        phases = {s.sdlc_phase for s in config.recommended_skills}
+        assert "database" not in phases
+
+    def test_rust_cli_no_db_skills(self):
+        """rust-cli has no DB MCP — no database skills."""
+        config = compute_defaults("rust-cli", "standard", project_name="test")
+        phases = {s.sdlc_phase for s in config.recommended_skills}
+        assert "database" not in phases
+
+
+# ---------------------------------------------------------------------------
+# S10: Skill Count Scaling (skills-test-matrix.md)
+# ---------------------------------------------------------------------------
+
+
+class TestSkillCountScaling:
+    """Verify skill counts scale with workflow complexity."""
+
+    def _count(self, template: str, workflow: str) -> int:
+        config = compute_defaults(template, workflow, project_name="test")
+        return len(config.recommended_skills)
+
+    def test_speedrun_fewest_skills(self):
+        assert self._count("fastapi", "speedrun") < self._count("fastapi", "standard")
+
+    def test_verify_heavy_most_skills(self):
+        heavy = self._count("fastapi", "verify-heavy")
+        for wf in ["speedrun", "standard", "spec-driven", "gtd-lite"]:
+            assert heavy >= self._count("fastapi", wf), (
+                f"verify-heavy should have >= skills than {wf}"
+            )
+
+    def test_standard_more_than_speedrun(self):
+        assert self._count("fastapi", "standard") > self._count("fastapi", "speedrun")
+
+    def test_spec_driven_more_than_standard(self):
+        assert self._count("fastapi", "spec-driven") >= self._count("fastapi", "standard")
+
+    def test_gtd_lite_similar_to_spec_driven(self):
+        """GTD-lite and spec-driven should have similar skill counts."""
+        gtd = self._count("fastapi", "gtd-lite")
+        spec = self._count("fastapi", "spec-driven")
+        assert abs(gtd - spec) <= 2
+
+    def test_fastapi_more_skills_than_rust_cli(self):
+        assert self._count("fastapi", "standard") > self._count("rust-cli", "standard")
+
+    def test_nextjs_has_frontend_bonus(self):
+        """nextjs has more coding-phase skills than gin."""
+        nextjs = compute_defaults("nextjs", "standard", project_name="test")
+        gin = compute_defaults("gin", "standard", project_name="test")
+        nextjs_coding = [s for s in nextjs.recommended_skills if s.sdlc_phase == "coding"]
+        gin_coding = [s for s in gin.recommended_skills if s.sdlc_phase == "coding"]
+        assert len(nextjs_coding) > len(gin_coding)
+
+    def test_skill_counts_per_workflow(self):
+        """Exact count ranges per workflow (with fastapi template)."""
+        assert 1 <= self._count("fastapi", "speedrun") <= 5
+        assert 10 <= self._count("fastapi", "standard") <= 16
+        assert 15 <= self._count("fastapi", "spec-driven") <= 22
+        assert 15 <= self._count("fastapi", "gtd-lite") <= 22
+        assert 23 <= self._count("fastapi", "verify-heavy") <= 30
+
+    @pytest.mark.parametrize("template", TEMPLATES)
+    @pytest.mark.parametrize("workflow", WORKFLOWS)
+    def test_all_combos_have_reasonable_count(self, template, workflow):
+        """Every combo should have 0-40 skills (sanity bounds)."""
+        count = self._count(template, workflow)
+        assert 0 <= count <= 40, f"{template}+{workflow}: {count} skills out of range"
+
+
+# ---------------------------------------------------------------------------
+# S11: GTD-Lite Full Coverage (skills-test-matrix.md)
+# ---------------------------------------------------------------------------
+
+
+class TestGtdLiteSkills:
+    """GTD-lite skill coverage (previously only tested via anthropic pack)."""
+
+    def test_has_all_standard_phases(self):
+        config = compute_defaults("fastapi", "gtd-lite", project_name="test")
+        phases = {s.sdlc_phase for s in config.recommended_skills}
+        for phase in ("coding", "testing", "review", "security", "devops"):
+            assert phase in phases, f"gtd-lite missing phase: {phase}"
+
+    def test_has_planning_phase(self):
+        config = compute_defaults("fastapi", "gtd-lite", project_name="test")
+        phases = {s.sdlc_phase for s in config.recommended_skills}
+        assert "planning" in phases
+
+    def test_superpowers_list(self):
+        """GTD-lite includes 7 specific superpowers skills."""
+        config = compute_defaults("fastapi", "gtd-lite", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        expected = {
+            "brainstorming",
+            "writing-plans",
+            "executing-plans",
+            "requesting-code-review",
+            "receiving-code-review",
+            "using-git-worktrees",
+            "finishing-a-development-branch",
+        }
+        assert expected.issubset(names), f"Missing: {expected - names}"
+
+    def test_trailofbits_reference_excluded(self):
+        """trailofbits_core='reference' means no ToB skills in active list."""
+        config = compute_defaults("fastapi", "gtd-lite", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        # ToB core skills should NOT be present (reference = docs-only)
+        assert "static-analysis" not in names
+        assert "second-opinion" not in names
+
+    def test_similar_skills_to_spec_driven(self):
+        """GTD-lite and spec-driven should produce identical skill sets."""
+        gtd = compute_defaults("fastapi", "gtd-lite", project_name="test")
+        spec = compute_defaults("fastapi", "spec-driven", project_name="test")
+        gtd_names = {s.name for s in gtd.recommended_skills}
+        spec_names = {s.name for s in spec.recommended_skills}
+        assert gtd_names == spec_names

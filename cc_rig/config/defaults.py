@@ -385,7 +385,7 @@ def _phase_is_active(
     if not phase:
         return False
     value = phases.get(phase)
-    if value is True:
+    if value is True or value == "included":
         return True
     return False
 
