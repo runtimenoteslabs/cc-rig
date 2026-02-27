@@ -164,6 +164,60 @@ class ExpertStep:
         return StepResult()
 
 
+# ── Step: Skill Packs ────────────────────────────────────────────
+
+
+class SkillPacksStep:
+    name = "skill_packs"
+    title = "Optional skill packs"
+
+    def execute(self, state: dict[str, Any], io: IO) -> StepResult:
+        from cc_rig.skills.registry import SKILL_PACKS
+
+        want_packs = confirm("Add optional skill packs?", default=False, io=io, allow_back=True)
+        if _is_back(want_packs):
+            return StepResult(action=StepAction.BACK)
+        if not want_packs:
+            return StepResult(data={"skill_packs": []})
+
+        template = state.get("template", "")
+        options = []
+        for pack_name, pack in SKILL_PACKS.items():
+            label = f"{pack.label} — {pack.description}"
+            recommended = pack.suggested_templates is None or (
+                template in (pack.suggested_templates or [])
+            )
+            if recommended and template:
+                label += " (recommended)"
+            options.append((pack_name, label))
+
+        selected = []
+        for value, label in options:
+            pick = confirm(f"  {label}?", default=False, io=io)
+            if pick:
+                selected.append(value)
+
+        # Apply to config if already computed
+        config = state.get("config")
+        if config is not None:
+            config.skill_packs = list(selected)
+            if selected:
+                from cc_rig.config.defaults import compute_defaults
+
+                refreshed = compute_defaults(
+                    state.get("template", config.template_preset or "fastapi"),
+                    state.get("workflow", config.workflow or "standard"),
+                    project_name=config.project_name,
+                    project_desc=config.project_desc,
+                    output_dir=config.output_dir,
+                    skill_packs=selected,
+                )
+                config.recommended_skills = refreshed.recommended_skills
+            state["config"] = config
+
+        return StepResult(data={"skill_packs": selected})
+
+
 # ── Step: Harness ─────────────────────────────────────────────────
 
 

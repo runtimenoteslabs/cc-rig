@@ -178,6 +178,7 @@ def _section_installed_skills(config: ProjectConfig) -> str:
         config.template_preset or config.framework or "",
         config.workflow or "standard",
         config.default_mcps,
+        packs=config.skill_packs,
     )
     if not specs:
         return ""

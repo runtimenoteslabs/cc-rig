@@ -318,3 +318,113 @@ class TestDownloadIntegration:
         """recommended-skills.md is no longer generated."""
         _generate(tmp_path)
         assert not (tmp_path / "docs" / "recommended-skills.md").exists()
+
+
+# ---------------------------------------------------------------------------
+# Skill packs — generate_skills() passes pack specs to download — 10 tests
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateSkillsWithPacks:
+    """Verify generate_skills() resolves and downloads pack skills."""
+
+    def _generate_with_packs(
+        self,
+        tmp_path: Path,
+        skill_packs: list[str],
+        *,
+        framework: str = "fastapi",
+        workflow: str = "standard",
+    ) -> tuple[list[str], list]:
+        """Generate with packs, return (files_written, download_call_specs)."""
+        config = ProjectConfig(
+            project_name="test",
+            framework=framework,
+            language="python",
+            test_cmd="pytest",
+            workflow=workflow,
+            template_preset=framework,
+            default_mcps=["github", "postgres"],
+            skill_packs=skill_packs,
+        )
+        with patch("cc_rig.generators.skills.download_skills") as mock_dl:
+            report = SkillInstallReport()
+            object.__setattr__(report, "_files", [])
+            mock_dl.return_value = report
+            files = generate_skills(config, tmp_path)
+            call_specs = mock_dl.call_args[0][0] if mock_dl.called else []
+            return files, call_specs
+
+    def test_security_pack_adds_specs_to_download(self, tmp_path):
+        """Security pack skills are passed to download_skills."""
+        _, specs = self._generate_with_packs(tmp_path, ["security"])
+        spec_names = {s.name for s in specs}
+        assert "supply-chain-risk-auditor" in spec_names
+        assert "variant-analysis" in spec_names
+        assert "sharp-edges" in spec_names
+        assert "differential-review" in spec_names
+
+    def test_devops_pack_adds_specs_to_download(self, tmp_path):
+        _, specs = self._generate_with_packs(tmp_path, ["devops"])
+        spec_names = {s.name for s in specs}
+        assert "iac-terraform" in spec_names
+        assert "k8s-troubleshooter" in spec_names
+        assert "monitoring-observability" in spec_names
+        assert "gitops-workflows" in spec_names
+
+    def test_web_quality_pack_adds_specs_to_download(self, tmp_path):
+        _, specs = self._generate_with_packs(tmp_path, ["web-quality"])
+        spec_names = {s.name for s in specs}
+        assert "web-quality-audit" in spec_names
+        assert "accessibility" in spec_names
+        assert "performance" in spec_names
+
+    def test_database_pro_pack_adds_specs_to_download(self, tmp_path):
+        _, specs = self._generate_with_packs(tmp_path, ["database-pro"])
+        spec_names = {s.name for s in specs}
+        assert "database-migrations" in spec_names
+        assert "query-efficiency-auditor" in spec_names
+
+    def test_no_packs_same_specs_as_before(self, tmp_path):
+        """Without packs, download specs are identical to old behavior."""
+        _, specs_no_packs = self._generate_with_packs(tmp_path / "a", [])
+        _, specs_none = self._generate_with_packs(tmp_path / "b", [])
+        assert {s.name for s in specs_no_packs} == {s.name for s in specs_none}
+
+    def test_pack_specs_include_base_specs(self, tmp_path):
+        """Pack specs are added to (not replace) base specs."""
+        _, specs_base = self._generate_with_packs(tmp_path / "a", [])
+        _, specs_pack = self._generate_with_packs(tmp_path / "b", ["security"])
+        base_names = {s.name for s in specs_base}
+        pack_names = {s.name for s in specs_pack}
+        assert base_names.issubset(pack_names)
+
+    def test_multiple_packs_combine_specs(self, tmp_path):
+        _, specs = self._generate_with_packs(
+            tmp_path, ["security", "devops"]
+        )
+        spec_names = {s.name for s in specs}
+        # From security
+        assert "supply-chain-risk-auditor" in spec_names
+        # From devops
+        assert "iac-terraform" in spec_names
+
+    def test_no_duplicate_specs_with_packs(self, tmp_path):
+        _, specs = self._generate_with_packs(
+            tmp_path, ["security", "devops", "web-quality", "database-pro"]
+        )
+        names = [s.name for s in specs]
+        assert len(names) == len(set(names))
+
+    def test_pack_bypasses_speedrun_gating(self, tmp_path):
+        """Pack skills appear in specs even with speedrun workflow."""
+        _, specs = self._generate_with_packs(
+            tmp_path, ["security"], workflow="speedrun"
+        )
+        spec_names = {s.name for s in specs}
+        assert "supply-chain-risk-auditor" in spec_names
+
+    def test_project_patterns_still_generated_with_packs(self, tmp_path):
+        """Project-patterns stub is always generated, even with packs."""
+        files, _ = self._generate_with_packs(tmp_path, ["security"])
+        assert ".claude/skills/project-patterns/SKILL.md" in files

@@ -6,19 +6,21 @@
 
 ## Summary
 
-Comprehensive test coverage for cc-rig's skills system: phase filtering, pack expansion, normalization, deduplication, template-specific skills, generator output (Tier 1/3), recommended skills guide, and edge cases. 110 tests across 12 scenarios in 3 test files.
+Comprehensive test coverage for cc-rig's skills system: phase filtering, pack expansion, normalization, deduplication, template-specific skills, generator output (Tier 1/3), recommended skills guide, optional skill packs, and edge cases. 110+162 tests across 15 scenarios in 6 test files.
 
 ## Implementation
 
 **Test files**:
-- `tests/unit/test_skill_resolution.py` — NEW — isolated config logic (S01–S04, S12)
-- `tests/unit/test_skills.py` — NEW — generator output (S07–S09)
-- `tests/unit/test_defaults.py` — EXTEND — template/workflow integration (S05, S06, S10, S11)
+- `tests/unit/test_skill_resolution.py` — isolated config logic (S01–S04, S12)
+- `tests/unit/test_skills.py` — generator output (S07–S09, S14)
+- `tests/unit/test_defaults.py` — template/workflow integration (S05, S06, S10, S11)
+- `tests/unit/test_skill_packs.py` — optional pack registry, resolution, config, defaults (S13a)
+- `tests/unit/test_skill_registry.py` — catalog completeness assertions
+- `tests/integration/test_e2e_matrix.py` — E2E pipeline: S13b + cross-product packs × templates × workflows (S15)
 
-**Runner**: `pytest tests/unit/test_skill_resolution.py tests/unit/test_skills.py tests/unit/test_defaults.py -v`
-**Total tests**: 144 (42 resolution + 32 generator + 70 defaults integration)
-**Existing skill tests in test_defaults.py**: 278 (pre-existing, now part of 348 total in that file)
-**Combined skill-related tests**: 422
+**Runner**: `pytest tests/unit/test_skill_resolution.py tests/unit/test_skills.py tests/unit/test_defaults.py tests/unit/test_skill_packs.py tests/integration/test_e2e_matrix.py -v`
+**Total tests**: 144 (original) + 72 (pack unit) + 10 (generator pack) + 80 (E2E pack) = 306 skill-related tests
+**Full suite**: 2257 tests, 0 failures, lint clean
 
 ## Bug Found — FIXED
 
@@ -269,6 +271,68 @@ S09 (Guide)  ──┘
 
 All three test files are independent — can implement in parallel.
 
+### S13a: Optional Skill Packs — Unit (registry, resolution, config, defaults) — 72 tests
+
+File: `test_skill_packs.py` | Classes: `TestSkillPackRegistry`, `TestResolveSkillsWithPacks`, `TestProjectConfigSkillPacks`, `TestComputeDefaultsWithPacks`
+
+| Test Group | Count | Verifies |
+|------------|-------|----------|
+| `TestSkillPackRegistry` | 18 | 4 packs present, all skills in catalog, no orphans, exact skill lists, suggested_templates |
+| `TestResolveSkillsWithPacks` | 22 | Each pack adds correct skills, bypass phase gating, multi-pack combine, unknown pack ignored, no dupes, base preserved |
+| `TestProjectConfigSkillPacks` | 8 | Default empty, round-trip to_dict/from_dict, missing key defaults, JSON round-trip |
+| `TestComputeDefaultsWithPacks` | 10 | skill_packs wires through, recommended_skills includes pack skills, bypass speedrun, unknown pack |
+
+### S13b: Skill Packs E2E — Full Pipeline Verification — 20 tests
+
+File: `test_e2e_matrix.py` | Class: `TestS13SkillPackResolution`
+
+| Test | Verifies |
+|------|----------|
+| `test_security_pack_skills_in_claude_md` | 4 security pack skills appear in CLAUDE.md |
+| `test_devops_pack_skills_in_claude_md` | 4 devops pack skills appear in CLAUDE.md |
+| `test_web_quality_pack_skills_in_claude_md` | 3 web-quality pack skills in CLAUDE.md |
+| `test_database_pro_pack_skills_in_claude_md` | 2 database-pro pack skills in CLAUDE.md |
+| `test_multi_pack_skills_in_claude_md` | Multiple packs combine in CLAUDE.md |
+| `test_no_packs_no_pack_skills_in_claude_md` | Without packs, pack skills absent from CLAUDE.md |
+| `test_cc_rig_json_persists_skill_packs` | .cc-rig.json contains skill_packs list |
+| `test_cc_rig_json_empty_packs_by_default` | Default .cc-rig.json has skill_packs=[] |
+| `test_security_pack_bypasses_speedrun_gating` | Pack skills in CLAUDE.md despite speedrun security=False |
+| `test_devops_pack_bypasses_speedrun_gating` | DevOps pack in CLAUDE.md despite speedrun |
+| `test_base_skills_preserved_with_packs` | Adding packs doesn't remove base skills |
+| `test_no_duplicate_skills_with_packs` | All 4 packs combined, no duplicates in CLAUDE.md |
+| `test_manifest_consistent_with_packs` | Manifest integrity with packs |
+| `test_hooks_executable_with_packs` | Hooks executable with packs |
+| `test_no_bak_pollution_with_packs` | No .bak files outside backup dir |
+| `test_config_skill_packs_matches_input` | config.skill_packs matches input |
+| `test_all_packs_combined` | All 4 packs, at least 1 skill per pack in CLAUDE.md |
+
+### S14: Generator-Level Pack Verification — 10 tests
+
+File: `test_skills.py` | Class: `TestGenerateSkillsWithPacks`
+
+| Test | Verifies |
+|------|----------|
+| `test_security_pack_adds_specs_to_download` | 4 security specs in download call |
+| `test_devops_pack_adds_specs_to_download` | 4 devops specs in download call |
+| `test_web_quality_pack_adds_specs_to_download` | 3 web-quality specs in download call |
+| `test_database_pro_pack_adds_specs_to_download` | 2 database-pro specs in download call |
+| `test_no_packs_same_specs_as_before` | Empty packs = same download specs |
+| `test_pack_specs_include_base_specs` | Pack specs superset of base specs |
+| `test_multiple_packs_combine_specs` | Multi-pack combine in download call |
+| `test_no_duplicate_specs_with_packs` | No duplicate specs in download call |
+| `test_pack_bypasses_speedrun_gating` | Pack specs in speedrun download call |
+| `test_project_patterns_still_generated_with_packs` | project-patterns always generated |
+
+### S15: Cross-Product Parametrized — 52 tests
+
+File: `test_e2e_matrix.py` | Parametrized functions
+
+| Test | Dimensions | Count | Verifies |
+|------|------------|-------|----------|
+| `test_pack_generates_valid_output_per_template` | 4 packs × 7 templates | 28 | Manifest consistent, files generated |
+| `test_pack_generates_valid_output_per_workflow` | 4 packs × 5 workflows | 20 | Manifest consistent, files generated |
+| `test_pack_skills_in_claude_md_per_pack` | 4 packs | 4 | Each pack's skills in CLAUDE.md |
+
 ## Coverage Matrix
 
 | Dimension | Scenarios |
@@ -277,25 +341,37 @@ All three test files are independent — can implement in parallel.
 | **_resolve_skill_packs** | S02 |
 | **_normalize_skills** | S03 |
 | **_merge_skills** | S04 |
-| **compute_defaults** | S05, S06, S10, S11 |
-| **generate_skills** | S07, S08 |
+| **compute_defaults** | S05, S06, S10, S11, S13a |
+| **generate_skills** | S07, S08, S14 |
 | **_write_recommended_skills_guide** | S09 |
-| **fastapi template** | S05, S06, S07, S09 |
-| **django template** | S05, S06 |
-| **flask template** | S05, S06 |
-| **nextjs template** | S05, S06, S07 |
-| **gin template** | S05, S06, S07 |
-| **echo template** | S06, S07 |
-| **rust-cli template** | S05, S06, S07 |
-| **speedrun workflow** | S10 |
-| **standard workflow** | S05, S09, S10 |
-| **spec-driven workflow** | S10 |
-| **gtd-lite workflow** | S10, S11 |
-| **verify-heavy workflow** | S10 |
+| **resolve_skills(packs=...)** | S13a, S13b, S14 |
+| **SkillPackSpec / SKILL_PACKS** | S13a |
+| **ProjectConfig.skill_packs** | S13a, S13b |
+| **CLAUDE.md pack content** | S13b, S15 |
+| **.cc-rig.json persistence** | S13b |
+| **Phase gating bypass** | S13a, S13b, S14 |
+| **Cross-product packs × templates** | S15 |
+| **Cross-product packs × workflows** | S15 |
+| **fastapi template** | S05, S06, S07, S09, S13b, S15 |
+| **django template** | S05, S06, S15 |
+| **flask template** | S05, S06, S15 |
+| **nextjs template** | S05, S06, S07, S13b, S15 |
+| **gin template** | S05, S06, S07, S15 |
+| **echo template** | S06, S07, S15 |
+| **rust-cli template** | S05, S06, S07, S15 |
+| **speedrun workflow** | S10, S13a, S13b, S14, S15 |
+| **standard workflow** | S05, S09, S10, S13b, S15 |
+| **spec-driven workflow** | S10, S15 |
+| **gtd-lite workflow** | S10, S11, S15 |
+| **verify-heavy workflow** | S10, S15 |
+| **security pack** | S13a, S13b, S14, S15 |
+| **devops pack** | S13a, S13b, S14, S15 |
+| **web-quality pack** | S13a, S13b, S14, S15 |
+| **database-pro pack** | S13a, S13b, S14, S15 |
 | **superpowers pack** | S02 |
 | **trailofbits_core pack** | S02, S11 |
 | **anthropic_official pack** | S02 |
 | **OWASP injection** | S02 |
-| **deduplication** | S04 |
+| **deduplication** | S04, S13a, S13b |
 | **if_applicable** | S06 |
 | **edge cases** | S12 |

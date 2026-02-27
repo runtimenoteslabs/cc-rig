@@ -167,6 +167,7 @@ class ProjectConfig:
     # Stack-specific recommendations
     recommended_skills: list[SkillRecommendation] = field(default_factory=list)
     default_mcps: list[str] = field(default_factory=list)
+    skill_packs: list[str] = field(default_factory=list)
 
     # Model routing
     claude_plan: str = "pro"
@@ -202,6 +203,7 @@ class ProjectConfig:
             "harness": self.harness.to_dict(),
             "recommended_skills": [s.to_dict() for s in self.recommended_skills],
             "default_mcps": list(self.default_mcps),
+            "skill_packs": list(self.skill_packs),
             "claude_plan": self.claude_plan,
             "model_overrides": dict(self.model_overrides),
             "cc_rig_version": self.cc_rig_version,
@@ -247,6 +249,7 @@ class ProjectConfig:
             harness=harness,
             recommended_skills=_parse_skills(data.get("recommended_skills", [])),
             default_mcps=list(data.get("default_mcps", [])),
+            skill_packs=list(data.get("skill_packs", [])),
             claude_plan=data.get("claude_plan", "pro"),
             model_overrides=dict(data.get("model_overrides", {})),
             cc_rig_version=data.get("cc_rig_version", ""),

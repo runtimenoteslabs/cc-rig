@@ -52,7 +52,7 @@ class TestGuidedFlow:
     def test_full_guided_generates(self, tmp_path):
         output = tmp_path / "out"
         # Inputs: launcher, name, description, no-detection → template pick,
-        # workflow pick, no-customize, no-harness, yes-generate
+        # workflow pick, no-skill-packs, no-customize, no-harness, yes-generate
         io = _make_io(
             [
                 "1",  # launcher: fresh project
@@ -60,6 +60,7 @@ class TestGuidedFlow:
                 "A test project",  # description
                 "2",  # template: fastapi (index 2)
                 "2",  # workflow: standard (index 2)
+                "n",  # add optional skill packs? no
                 "n",  # customize? no
                 "n",  # add runtime harness? no
                 "y",  # generate? yes
@@ -82,6 +83,7 @@ class TestGuidedFlow:
                 "",
                 "1",  # template
                 "1",  # workflow
+                "n",  # add optional skill packs? no
                 "n",  # customize? no
                 "n",  # add runtime harness? no
                 "n",  # generate? NO
@@ -121,6 +123,7 @@ class TestExpertFlow:
                 "",  # description
                 "2",  # template: fastapi
                 "2",  # workflow: standard
+                "n",  # add optional skill packs? no
                 "n",  # customize agents? no
                 "n",  # customize commands? no
                 "n",  # customize hooks? no

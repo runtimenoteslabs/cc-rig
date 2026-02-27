@@ -24,7 +24,18 @@ class SkillSpec:
     companion_files: list[str] = field(default_factory=list)
 
 
-# ── All downloadable skills (27 unique) ────────────────────────────────
+@dataclass
+class SkillPackSpec:
+    """Optional skill pack selectable in the wizard."""
+
+    name: str  # "security"
+    label: str  # "Security Deep Dive"
+    description: str  # one-line for wizard
+    skill_names: list[str]  # refs into SKILL_CATALOG
+    suggested_templates: list[str] | None = None  # None = all, list = specific
+
+
+# ── All downloadable skills (40 unique) ────────────────────────────────
 
 SKILL_CATALOG: dict[str, SkillSpec] = {
     # obra/superpowers — 12 skills
@@ -120,7 +131,7 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
     "modern-python": SkillSpec(
         name="modern-python",
         repo="trailofbits/skills",
-        repo_path="skills/modern-python",
+        repo_path="plugins/modern-python/skills/modern-python",
         sdlc_phase="coding",
         description="Modern Python with uv, ruff, ty, pytest",
         download_mode="skill_md_only",
@@ -128,7 +139,7 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
     "property-based-testing": SkillSpec(
         name="property-based-testing",
         repo="trailofbits/skills",
-        repo_path="skills/property-based-testing",
+        repo_path="plugins/property-based-testing/skills/property-based-testing",
         sdlc_phase="testing",
         description="Multi-language property testing",
         download_mode="skill_md_only",
@@ -136,7 +147,7 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
     "insecure-defaults": SkillSpec(
         name="insecure-defaults",
         repo="trailofbits/skills",
-        repo_path="skills/insecure-defaults",
+        repo_path="plugins/insecure-defaults/skills/insecure-defaults",
         sdlc_phase="security",
         description="Detect hardcoded credentials, fail-open security patterns",
         download_mode="skill_md_only",
@@ -144,7 +155,7 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
     "static-analysis": SkillSpec(
         name="static-analysis",
         repo="trailofbits/skills",
-        repo_path="skills/static-analysis",
+        repo_path="plugins/static-analysis/skills/codeql",
         sdlc_phase="security",
         description="CodeQL, Semgrep, SARIF parsing",
         download_mode="skill_md_only",
@@ -187,7 +198,7 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
     "planetscale-postgresql": SkillSpec(
         name="planetscale-postgresql",
         repo="planetscale/database-skills",
-        repo_path="skills/planetscale-postgresql",
+        repo_path="skills/postgres",
         sdlc_phase="database",
         description="Postgres MVCC, VACUUM, WAL tuning, replication",
         download_mode="full_tree",
@@ -196,7 +207,7 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
     "github-actions-generator": SkillSpec(
         name="github-actions-generator",
         repo="akin-ozer/cc-devops-skills",
-        repo_path="skills/github-actions-generator",
+        repo_path="devops-skills-plugin/skills/github-actions-generator",
         sdlc_phase="devops",
         description="GitHub Actions CI/CD pipeline generation",
         download_mode="full_tree",
@@ -204,7 +215,7 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
     "dockerfile-generator": SkillSpec(
         name="dockerfile-generator",
         repo="akin-ozer/cc-devops-skills",
-        repo_path="skills/dockerfile-generator",
+        repo_path="devops-skills-plugin/skills/dockerfile-generator",
         sdlc_phase="devops",
         description="Dockerfile generation with best practices",
         download_mode="full_tree",
@@ -222,7 +233,7 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
     "vercel-react-best-practices": SkillSpec(
         name="vercel-react-best-practices",
         repo="vercel-labs/agent-skills",
-        repo_path="skills/vercel-react-best-practices",
+        repo_path="skills/react-best-practices",
         sdlc_phase="coding",
         description="React best practices from Vercel",
         download_mode="skill_md_only",
@@ -247,9 +258,118 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
     "tailwind-design-system": SkillSpec(
         name="tailwind-design-system",
         repo="wshobson/agents",
-        repo_path="skills/tailwind-design-system",
+        repo_path="plugins/frontend-mobile-development/skills/tailwind-design-system",
         sdlc_phase="coding",
         description="Tailwind CSS v4 design system",
+        download_mode="skill_md_only",
+    ),
+    # ── Skill pack skills ──────────────────────────────────────────────
+    # trailofbits/skills — security pack
+    "supply-chain-risk-auditor": SkillSpec(
+        name="supply-chain-risk-auditor",
+        repo="trailofbits/skills",
+        repo_path="plugins/supply-chain-risk-auditor/skills/supply-chain-risk-auditor",
+        sdlc_phase="security",
+        description="Dependency risk analysis and supply chain auditing",
+        download_mode="skill_md_only",
+    ),
+    "variant-analysis": SkillSpec(
+        name="variant-analysis",
+        repo="trailofbits/skills",
+        repo_path="plugins/variant-analysis/skills/variant-analysis",
+        sdlc_phase="security",
+        description="Find similar vulnerabilities across codebase",
+        download_mode="skill_md_only",
+    ),
+    "sharp-edges": SkillSpec(
+        name="sharp-edges",
+        repo="trailofbits/skills",
+        repo_path="plugins/sharp-edges/skills/sharp-edges",
+        sdlc_phase="security",
+        description="Identify dangerous API patterns and footguns",
+        download_mode="skill_md_only",
+    ),
+    "differential-review": SkillSpec(
+        name="differential-review",
+        repo="trailofbits/skills",
+        repo_path="plugins/differential-review/skills/differential-review",
+        sdlc_phase="review",
+        description="Security-focused diff review for PRs",
+        download_mode="skill_md_only",
+    ),
+    # ahmedasmar/devops — devops pack
+    "iac-terraform": SkillSpec(
+        name="iac-terraform",
+        repo="ahmedasmar/devops",
+        repo_path="iac-terraform/skills",
+        sdlc_phase="devops",
+        description="Terraform IaC patterns and best practices",
+        download_mode="skill_md_only",
+    ),
+    "k8s-troubleshooter": SkillSpec(
+        name="k8s-troubleshooter",
+        repo="ahmedasmar/devops",
+        repo_path="k8s-troubleshooter/skills",
+        sdlc_phase="devops",
+        description="Kubernetes debugging and troubleshooting",
+        download_mode="skill_md_only",
+    ),
+    "monitoring-observability": SkillSpec(
+        name="monitoring-observability",
+        repo="ahmedasmar/devops",
+        repo_path="monitoring-observability",
+        sdlc_phase="devops",
+        description="Monitoring, alerting, and observability patterns",
+        download_mode="skill_md_only",
+    ),
+    "gitops-workflows": SkillSpec(
+        name="gitops-workflows",
+        repo="ahmedasmar/devops",
+        repo_path="gitops-workflows",
+        sdlc_phase="devops",
+        description="GitOps deployment workflows and patterns",
+        download_mode="skill_md_only",
+    ),
+    # addyosmani/web-quality-skills — web quality pack
+    "web-quality-audit": SkillSpec(
+        name="web-quality-audit",
+        repo="addyosmani/web-quality-skills",
+        repo_path="skills/web-quality-audit",
+        sdlc_phase="review",
+        description="Comprehensive web quality auditing",
+        download_mode="skill_md_only",
+    ),
+    "accessibility": SkillSpec(
+        name="accessibility",
+        repo="addyosmani/web-quality-skills",
+        repo_path="skills/accessibility",
+        sdlc_phase="review",
+        description="WCAG accessibility compliance checking",
+        download_mode="skill_md_only",
+    ),
+    "performance": SkillSpec(
+        name="performance",
+        repo="addyosmani/web-quality-skills",
+        repo_path="skills/performance",
+        sdlc_phase="review",
+        description="Web performance optimization and auditing",
+        download_mode="skill_md_only",
+    ),
+    # wshobson/agents — database pro pack
+    "database-migrations": SkillSpec(
+        name="database-migrations",
+        repo="wshobson/agents",
+        repo_path="plugins/database-management/skills/database-migrations",
+        sdlc_phase="database",
+        description="Safe database migration patterns and rollbacks",
+        download_mode="skill_md_only",
+    ),
+    "query-efficiency-auditor": SkillSpec(
+        name="query-efficiency-auditor",
+        repo="wshobson/agents",
+        repo_path="plugins/database-management/skills/query-efficiency-auditor",
+        sdlc_phase="database",
+        description="SQL query performance analysis and optimization",
         download_mode="skill_md_only",
     ),
 }
@@ -407,6 +527,56 @@ WORKFLOW_PHASES: dict[str, dict[str, Any]] = {
     },
 }
 
+# ── Optional skill packs ──────────────────────────────────────────────
+
+SKILL_PACKS: dict[str, SkillPackSpec] = {
+    "security": SkillPackSpec(
+        name="security",
+        label="Security Deep Dive",
+        description="Supply chain auditing, variant analysis, sharp edges, differential review",
+        skill_names=[
+            "supply-chain-risk-auditor",
+            "variant-analysis",
+            "sharp-edges",
+            "differential-review",
+        ],
+        suggested_templates=None,  # all templates
+    ),
+    "devops": SkillPackSpec(
+        name="devops",
+        label="DevOps & IaC",
+        description="Terraform, Kubernetes, monitoring, GitOps workflows",
+        skill_names=[
+            "iac-terraform",
+            "k8s-troubleshooter",
+            "monitoring-observability",
+            "gitops-workflows",
+        ],
+        suggested_templates=None,  # all templates
+    ),
+    "web-quality": SkillPackSpec(
+        name="web-quality",
+        label="Web Quality",
+        description="Web quality auditing, accessibility, performance optimization",
+        skill_names=[
+            "web-quality-audit",
+            "accessibility",
+            "performance",
+        ],
+        suggested_templates=["nextjs"],  # suggested for frontend
+    ),
+    "database-pro": SkillPackSpec(
+        name="database-pro",
+        label="Database Pro",
+        description="Database migration patterns, query efficiency auditing",
+        skill_names=[
+            "database-migrations",
+            "query-efficiency-auditor",
+        ],
+        suggested_templates=None,  # all templates (DB MCPs determine applicability)
+    ),
+}
+
 # DB services that trigger "if_applicable" database phase.
 _DB_SERVICES = {"postgres", "mysql", "sqlite"}
 
@@ -435,19 +605,22 @@ def resolve_skills(
     template: str,
     workflow: str,
     default_mcps: list[str] | None = None,
+    packs: list[str] | None = None,
 ) -> list[SkillSpec]:
     """Resolve the full list of skills to install for a template × workflow combo.
 
     Combines:
     1. Cross-cutting workflow skills (always installed for the workflow level)
     2. Framework-specific template skills (gated by workflow phase settings)
+    3. Optional skill pack skills (not phase-gated — explicit user opt-in)
 
-    Deduplicates by name (cross-cutting takes precedence over template).
+    Deduplicates by name (workflow wins over template, packs win over both).
 
     Args:
         template: Template name (e.g. "fastapi", "nextjs").
         workflow: Workflow name (e.g. "standard", "speedrun").
         default_mcps: Template's default MCP servers (used to resolve "if_applicable").
+        packs: Optional list of skill pack names (e.g. ["security", "devops"]).
 
     Returns:
         Deduplicated list of SkillSpec objects to install.
@@ -474,11 +647,23 @@ def resolve_skills(
         if spec:
             workflow_specs.append(spec)
 
-    # Deduplicate: template first, then workflow (workflow wins on conflict)
+    # Collect skill pack skills (not phase-gated — explicit user opt-in)
+    pack_specs: list[SkillSpec] = []
+    for pack_name in packs or []:
+        pack = SKILL_PACKS.get(pack_name)
+        if pack:
+            for skill_name in pack.skill_names:
+                spec = SKILL_CATALOG.get(skill_name)
+                if spec:
+                    pack_specs.append(spec)
+
+    # Deduplicate: template first, then workflow, then packs (last wins)
     seen: dict[str, SkillSpec] = {}
     for spec in template_specs:
         seen[spec.name] = spec
     for spec in workflow_specs:
+        seen[spec.name] = spec
+    for spec in pack_specs:
         seen[spec.name] = spec
 
     return list(seen.values())

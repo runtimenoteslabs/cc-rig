@@ -29,6 +29,7 @@ def generate_skills(
         config.template_preset or config.framework or "",
         config.workflow or "standard",
         config.default_mcps,
+        packs=config.skill_packs,
     )
 
     # Attempt to download community skills

@@ -33,6 +33,7 @@ from cc_rig.config.defaults import compute_defaults
 from cc_rig.config.project import HarnessConfig, ProjectConfig
 from cc_rig.generators.orchestrator import generate_all
 from cc_rig.skills.downloader import SkillInstallReport
+from cc_rig.skills.registry import SKILL_PACKS
 
 # ── Mock skill downloads ──────────────────────────────────────────────
 
@@ -56,9 +57,12 @@ def _generate(
     *,
     harness_level: str = "none",
     name: str = "test-proj",
+    skill_packs: list[str] | None = None,
 ) -> tuple[ProjectConfig, dict]:
-    """Generate a project with optional harness level."""
-    config = compute_defaults(template, workflow, project_name=name)
+    """Generate a project with optional harness level and skill packs."""
+    config = compute_defaults(
+        template, workflow, project_name=name, skill_packs=skill_packs
+    )
     if harness_level != "none":
         config.harness = HarnessConfig(level=harness_level)
     manifest = generate_all(config, tmp_path)
@@ -1103,3 +1107,231 @@ def test_worktrees_produces_worktree_command(tmp_path):
     assert "worktree.md" in commands
     agents = _list_dir(tmp_path, ".claude/agents")
     assert "parallel-worker.md" in agents
+
+
+# ── S13: Skill Pack Resolution ────────────────────────────────────────
+
+
+ALL_PACK_NAMES = list(SKILL_PACKS.keys())
+
+
+class TestS13SkillPackResolution:
+    """Verify skill packs produce correct results through full pipeline."""
+
+    # -- CLAUDE.md lists pack skills --
+
+    def test_security_pack_skills_in_claude_md(self, tmp_path):
+        """Security pack skills appear in CLAUDE.md Installed Skills section."""
+        config, manifest = _generate(
+            tmp_path, "fastapi", "standard", skill_packs=["security"]
+        )
+        content = _read_claude_md(tmp_path)
+        assert "supply-chain-risk-auditor" in content
+        assert "variant-analysis" in content
+        assert "sharp-edges" in content
+        assert "differential-review" in content
+
+    def test_devops_pack_skills_in_claude_md(self, tmp_path):
+        config, manifest = _generate(
+            tmp_path, "fastapi", "standard", skill_packs=["devops"]
+        )
+        content = _read_claude_md(tmp_path)
+        assert "iac-terraform" in content
+        assert "k8s-troubleshooter" in content
+        assert "monitoring-observability" in content
+        assert "gitops-workflows" in content
+
+    def test_web_quality_pack_skills_in_claude_md(self, tmp_path):
+        config, manifest = _generate(
+            tmp_path, "nextjs", "standard", skill_packs=["web-quality"]
+        )
+        content = _read_claude_md(tmp_path)
+        assert "web-quality-audit" in content
+        assert "accessibility" in content
+        assert "performance" in content
+
+    def test_database_pro_pack_skills_in_claude_md(self, tmp_path):
+        config, manifest = _generate(
+            tmp_path, "fastapi", "standard", skill_packs=["database-pro"]
+        )
+        content = _read_claude_md(tmp_path)
+        assert "database-migrations" in content
+        assert "query-efficiency-auditor" in content
+
+    def test_multi_pack_skills_in_claude_md(self, tmp_path):
+        config, manifest = _generate(
+            tmp_path, "fastapi", "standard",
+            skill_packs=["security", "devops"],
+        )
+        content = _read_claude_md(tmp_path)
+        # Security pack
+        assert "supply-chain-risk-auditor" in content
+        # DevOps pack
+        assert "iac-terraform" in content
+
+    def test_no_packs_no_pack_skills_in_claude_md(self, tmp_path):
+        """Without packs, pack-only skills should not appear in CLAUDE.md."""
+        config, manifest = _generate(tmp_path, "fastapi", "standard")
+        content = _read_claude_md(tmp_path)
+        assert "supply-chain-risk-auditor" not in content
+        assert "iac-terraform" not in content
+        assert "web-quality-audit" not in content
+        assert "database-migrations" not in content
+
+    # -- .cc-rig.json persistence --
+
+    def test_cc_rig_json_persists_skill_packs(self, tmp_path):
+        config, manifest = _generate(
+            tmp_path, "fastapi", "standard", skill_packs=["security", "devops"]
+        )
+        data = json.loads((tmp_path / ".cc-rig.json").read_text())
+        assert data["skill_packs"] == ["security", "devops"]
+
+    def test_cc_rig_json_empty_packs_by_default(self, tmp_path):
+        config, manifest = _generate(tmp_path, "fastapi", "standard")
+        data = json.loads((tmp_path / ".cc-rig.json").read_text())
+        assert data["skill_packs"] == []
+
+    # -- Phase gating bypass --
+
+    def test_security_pack_bypasses_speedrun_gating(self, tmp_path):
+        """Pack skills appear even in speedrun (which has security=False)."""
+        config, manifest = _generate(
+            tmp_path, "fastapi", "speedrun", skill_packs=["security"]
+        )
+        content = _read_claude_md(tmp_path)
+        assert "supply-chain-risk-auditor" in content
+        assert "variant-analysis" in content
+
+    def test_devops_pack_bypasses_speedrun_gating(self, tmp_path):
+        config, manifest = _generate(
+            tmp_path, "fastapi", "speedrun", skill_packs=["devops"]
+        )
+        content = _read_claude_md(tmp_path)
+        assert "iac-terraform" in content
+        assert "k8s-troubleshooter" in content
+
+    # -- Base skills preserved with packs --
+
+    def test_base_skills_preserved_with_packs(self, tmp_path):
+        """Adding packs does not remove base workflow/template skills."""
+        config_base, _ = _generate(tmp_path / "base", "fastapi", "standard")
+        config_packs, _ = _generate(
+            tmp_path / "packs", "fastapi", "standard",
+            skill_packs=["security"],
+        )
+        base_md = _read_claude_md(tmp_path / "base")
+        packs_md = _read_claude_md(tmp_path / "packs")
+        # Base skills still present
+        assert "owasp-security" in packs_md
+        assert "modern-python" in packs_md
+        # Pack skills added
+        assert "supply-chain-risk-auditor" in packs_md
+        # Base didn't have pack skills
+        assert "supply-chain-risk-auditor" not in base_md
+
+    # -- No duplicate skills --
+
+    def test_no_duplicate_skills_with_packs(self, tmp_path):
+        config, manifest = _generate(
+            tmp_path, "fastapi", "standard",
+            skill_packs=["security", "devops", "web-quality", "database-pro"],
+        )
+        content = _read_claude_md(tmp_path)
+        # Count skill mentions in the Installed Skills section
+        skills_section = content.split("## Installed Skills")[-1].split("##")[0]
+        lines = [ln.strip() for ln in skills_section.splitlines() if ln.strip().startswith("-")]
+        skill_names = []
+        for line in lines:
+            # Each line like "- **Phase**: skill-name (repo)" or "  - skill-name (repo)"
+            line = line.lstrip("- ").lstrip("*").strip()
+            if "(" in line:
+                name = line.split("(")[0].strip().rstrip("*").strip()
+                skill_names.append(name)
+        # No duplicates
+        assert len(skill_names) == len(set(skill_names)), (
+            f"Duplicate skills in CLAUDE.md: "
+            f"{[n for n in skill_names if skill_names.count(n) > 1]}"
+        )
+
+    # -- Manifest consistency --
+
+    def test_manifest_consistent_with_packs(self, tmp_path):
+        config, manifest = _generate(
+            tmp_path, "fastapi", "standard", skill_packs=["security"]
+        )
+        _assert_manifest_consistent(tmp_path)
+
+    def test_hooks_executable_with_packs(self, tmp_path):
+        config, manifest = _generate(
+            tmp_path, "fastapi", "standard", skill_packs=["security"]
+        )
+        _assert_hooks_executable(tmp_path)
+
+    def test_no_bak_pollution_with_packs(self, tmp_path):
+        config, manifest = _generate(
+            tmp_path, "fastapi", "standard", skill_packs=["security"]
+        )
+        _assert_no_bak_pollution(tmp_path)
+
+    # -- config.skill_packs round-trip through pipeline --
+
+    def test_config_skill_packs_matches_input(self, tmp_path):
+        packs = ["security", "database-pro"]
+        config, manifest = _generate(
+            tmp_path, "fastapi", "standard", skill_packs=packs
+        )
+        assert config.skill_packs == packs
+
+    # -- All packs combined --
+
+    def test_all_packs_combined(self, tmp_path):
+        config, manifest = _generate(
+            tmp_path, "fastapi", "standard", skill_packs=ALL_PACK_NAMES
+        )
+        content = _read_claude_md(tmp_path)
+        # At least one skill from each pack
+        assert "supply-chain-risk-auditor" in content  # security
+        assert "iac-terraform" in content  # devops
+        assert "web-quality-audit" in content  # web-quality
+        assert "database-migrations" in content  # database-pro
+        _assert_manifest_consistent(tmp_path)
+
+
+# ── S13 cross-product: Packs × Templates × Workflows ─────────────────
+
+
+@pytest.mark.parametrize("pack_name", ALL_PACK_NAMES)
+@pytest.mark.parametrize("template", TEMPLATES)
+def test_pack_generates_valid_output_per_template(tmp_path, pack_name, template):
+    """Every pack × template combination generates without error."""
+    config, manifest = _generate(
+        tmp_path, template, "standard", skill_packs=[pack_name]
+    )
+    assert len(manifest["files"]) > 0
+    _assert_manifest_consistent(tmp_path)
+
+
+@pytest.mark.parametrize("pack_name", ALL_PACK_NAMES)
+@pytest.mark.parametrize("workflow", WORKFLOWS)
+def test_pack_generates_valid_output_per_workflow(tmp_path, pack_name, workflow):
+    """Every pack × workflow combination generates without error."""
+    config, manifest = _generate(
+        tmp_path, "fastapi", workflow, skill_packs=[pack_name]
+    )
+    assert len(manifest["files"]) > 0
+    _assert_manifest_consistent(tmp_path)
+
+
+@pytest.mark.parametrize("pack_name", ALL_PACK_NAMES)
+def test_pack_skills_in_claude_md_per_pack(tmp_path, pack_name):
+    """Each pack's skills appear in CLAUDE.md when the pack is selected."""
+    config, manifest = _generate(
+        tmp_path, "fastapi", "standard", skill_packs=[pack_name]
+    )
+    content = _read_claude_md(tmp_path)
+    pack = SKILL_PACKS[pack_name]
+    for skill_name in pack.skill_names:
+        assert skill_name in content, (
+            f"Pack {pack_name!r} skill {skill_name!r} missing from CLAUDE.md"
+        )

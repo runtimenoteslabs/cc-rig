@@ -201,6 +201,7 @@ def compute_defaults(
     project_desc: str = "",
     output_dir: str = ".",
     claude_plan: str = "pro",
+    skill_packs: list[str] | None = None,
 ) -> ProjectConfig:
     """Map template + workflow → fully resolved ProjectConfig.
 
@@ -287,7 +288,8 @@ def compute_defaults(
 
     # Step 7: Build recommended_skills from registry resolver
     default_mcps = list(tmpl.get("default_mcps", []))
-    specs = _registry_resolve(template, workflow, default_mcps)
+    resolved_packs = list(skill_packs or [])
+    specs = _registry_resolve(template, workflow, default_mcps, packs=resolved_packs)
     recommended_skills = [
         SkillRecommendation(
             name=s.name,
@@ -327,6 +329,7 @@ def compute_defaults(
         permission_mode=wf.get("permission_mode", "default"),
         recommended_skills=recommended_skills,
         default_mcps=default_mcps,
+        skill_packs=resolved_packs,
         claude_plan=claude_plan,
         model_overrides={},
         cc_rig_version=__version__,

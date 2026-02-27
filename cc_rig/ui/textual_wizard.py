@@ -693,6 +693,72 @@ class FeaturesScreen(ModalScreen[dict | None]):
         self.dismiss(None)
 
 
+# ── Screen 6c: Skill Packs ──────────────────────────────────────────
+
+
+class SkillPacksScreen(ModalScreen[dict | None]):
+    """Optional skill packs — deeper coverage for specific domains."""
+
+    BINDINGS = [("escape", "go_back", "Back")]
+
+    def __init__(self, state: dict[str, Any]) -> None:
+        super().__init__()
+        self._state = state
+
+    def compose(self) -> ComposeResult:
+        from cc_rig.skills.registry import SKILL_PACKS
+
+        yield BrandHeader(self._state.get("step_label", ""))
+        template = self._state.get("template", "")
+
+        with VerticalScroll(id="body"):
+            yield Label("Optional skill packs", classes="screen-title")
+            yield Label(
+                "Add deeper coverage for specific domains. "
+                "These are opt-in and extend your base skill set.",
+                classes="description",
+            )
+
+            for pack_name, pack in SKILL_PACKS.items():
+                label = f"{pack.label} — {pack.description}"
+                recommended = pack.suggested_templates is None or (
+                    template in (pack.suggested_templates or [])
+                )
+                if recommended and template:
+                    label += "  ★ recommended for your stack"
+                yield Checkbox(
+                    label,
+                    value=False,
+                    id=f"pack-{pack_name}",
+                )
+        yield NavBar()
+
+    def on_mount(self) -> None:
+        from cc_rig.skills.registry import SKILL_PACKS
+
+        first_pack = next(iter(SKILL_PACKS), None)
+        if first_pack:
+            self.query_one(f"#pack-{first_pack}", Checkbox).focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        from cc_rig.skills.registry import SKILL_PACKS
+
+        if event.button.id == "btn-next":
+            selected = []
+            for pack_name in SKILL_PACKS:
+                chk = self.query_one(f"#pack-{pack_name}", Checkbox)
+                if chk.value:
+                    selected.append(pack_name)
+            self.dismiss({"skill_packs": selected})
+        elif event.button.id == "btn-back":
+            self.dismiss(None)
+        elif event.button.id == "btn-cancel":
+            self.dismiss("cancel")
+
+    def action_go_back(self) -> None:
+        self.dismiss(None)
+
+
 # ── Screen 7: Harness ────────────────────────────────────────────────
 
 
@@ -874,6 +940,7 @@ _GUIDED_SCREENS: list[tuple[type, str, Any]] = [
     (TemplateScreen, "Select your stack", None),
     (WorkflowScreen, "Select your workflow", None),
     (ReviewScreen, "Review configuration", None),
+    (SkillPacksScreen, "Skill packs", None),
     (ExpertScreen, "Customize", _wants_expert),
     (FeaturesScreen, "Features", _wants_expert),
     (HarnessScreen, "Runtime harness", None),
@@ -885,6 +952,7 @@ _QUICK_SCREENS: list[tuple[type, str, Any]] = [
     (WorkflowScreen, "Select your workflow", None),
     (BasicsScreen, "Project name", None),
     (ReviewScreen, "Review configuration", None),
+    (SkillPacksScreen, "Skill packs", None),
     (ExpertScreen, "Customize", _wants_expert),
     (FeaturesScreen, "Features", _wants_expert),
     (ConfirmScreen, "Confirm", None),
@@ -963,6 +1031,10 @@ class WizardApp(App[dict | None]):
             if screen_cls in (TemplateScreen, WorkflowScreen):
                 if "template" in state and "workflow" in state:
                     state = self._compute_config(state)
+
+            # Apply skill pack selections
+            if screen_cls is SkillPacksScreen:
+                state = self._apply_skill_packs(state)
 
             # Apply expert overrides
             if screen_cls in (ExpertScreen, FeaturesScreen):
@@ -1052,6 +1124,34 @@ class WizardApp(App[dict | None]):
             config.hooks = state["expert_hooks"]
         if "expert_features" in state:
             config.features = Features(**state["expert_features"])
+
+        state["config"] = config
+        return state
+
+    def _apply_skill_packs(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Apply skill pack selections to config and recompute recommended_skills."""
+        config = state.get("config")
+        if config is None:
+            return state
+
+        selected_packs = state.get("skill_packs", [])
+        config.skill_packs = list(selected_packs)
+
+        # Recompute recommended_skills with packs included
+        if selected_packs:
+            from cc_rig.config.defaults import compute_defaults
+
+            template = state.get("template", config.template_preset or "fastapi")
+            workflow = state.get("workflow", config.workflow or "standard")
+            refreshed = compute_defaults(
+                template,
+                workflow,
+                project_name=config.project_name,
+                project_desc=config.project_desc,
+                output_dir=config.output_dir,
+                skill_packs=selected_packs,
+            )
+            config.recommended_skills = refreshed.recommended_skills
 
         state["config"] = config
         return state

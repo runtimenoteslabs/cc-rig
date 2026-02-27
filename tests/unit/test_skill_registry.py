@@ -35,10 +35,10 @@ _VERIFY_HEAVY_CROSS_CUTTING_COUNT = 14
 
 
 class TestSkillCatalogCompleteness:
-    """SKILL_CATALOG must contain exactly 27 uniquely-named skills."""
+    """SKILL_CATALOG must contain exactly 40 uniquely-named skills."""
 
-    def test_catalog_has_27_skills(self):
-        assert len(SKILL_CATALOG) == 27
+    def test_catalog_has_40_skills(self):
+        assert len(SKILL_CATALOG) == 40
 
     def test_all_catalog_keys_are_skill_spec(self):
         for name, spec in SKILL_CATALOG.items():
@@ -100,6 +100,20 @@ class TestSkillCatalogCompleteness:
             "next-best-practices",
             "web-design-guidelines",
             "tailwind-design-system",
+            # Skill pack skills
+            "supply-chain-risk-auditor",
+            "variant-analysis",
+            "sharp-edges",
+            "differential-review",
+            "iac-terraform",
+            "k8s-troubleshooter",
+            "monitoring-observability",
+            "gitops-workflows",
+            "web-quality-audit",
+            "accessibility",
+            "performance",
+            "database-migrations",
+            "query-efficiency-auditor",
         ]
         for skill in expected_skills:
             assert skill in SKILL_CATALOG, f"Expected skill {skill!r} missing from SKILL_CATALOG"
@@ -938,6 +952,6 @@ class TestEdgeCases:
     @pytest.mark.parametrize("template", ALL_TEMPLATES)
     @pytest.mark.parametrize("workflow", ALL_WORKFLOWS)
     def test_all_combos_have_reasonable_skill_count(self, template, workflow):
-        """Every combo should produce 0–27 skills (bounded by catalog size)."""
+        """Every combo should produce 0–40 skills (bounded by catalog size)."""
         result = resolve_skills(template, workflow, ["postgres"])
-        assert 0 <= len(result) <= 27, f"{template}+{workflow}: {len(result)} skills out of range"
+        assert 0 <= len(result) <= 40, f"{template}+{workflow}: {len(result)} skills out of range"
