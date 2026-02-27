@@ -116,8 +116,8 @@ def run_generation(
     if config.recommended_skills:
         io.say("")
         io.say(
-            f"  {len(config.recommended_skills)} recommended skills for your stack "
-            "— see docs/recommended-skills.md for install commands."
+            f"  {len(config.recommended_skills)} skills auto-installed for your stack."
+            " Manage with: cc-rig skills list | cc-rig skills catalog"
         )
 
     io.say("")
@@ -171,7 +171,6 @@ def _needs_attention(config: ProjectConfig) -> list[str]:
 
     # Stub skills that need filling in
     items.append(".claude/skills/project-patterns/SKILL.md — add your team's conventions")
-    items.append(".claude/skills/deployment-checklist/SKILL.md — add deploy steps")
 
     return items
 
