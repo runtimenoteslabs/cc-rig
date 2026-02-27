@@ -115,9 +115,8 @@ your-project/
 │   ├── agents/                     # Specialized agents for different tasks
 │   ├── commands/                   # Slash commands you trigger with /
 │   ├── hooks/                      # Auto-format, lint, safety blocks
-│   └── skills/                     # Auto-invoked behaviors (TDD, debugging)
+│   └── skills/                     # Community skills auto-installed from 9 repos
 ├── agent_docs/                     # Framework-specific guides for Claude
-├── docs/                           # Recommended skills and plugins
 └── memory/                         # Git-tracked team knowledge across sessions
 ```
 
@@ -200,24 +199,35 @@ Up to 14 hooks depending on your workflow preset.
 
 ### Skills
 
-Auto-invoked behaviors in `.claude/skills/`. Claude loads them when the task matches. No manual trigger needed. Three tiers:
+Auto-invoked behaviors in `.claude/skills/`. Claude loads them when the task matches. No manual trigger needed.
 
-**Tier 1 - Bundled** (cc-rig generates project-customized content):
-- **TDD** - test-driven development patterns for your specific framework and test runner
-- **Systematic debugging** - language-specific debugging workflow for your stack
+The Claude Code skill ecosystem is huge — [skills.sh](https://skills.sh/) indexes 73K+, repos like [obra/superpowers](https://github.com/obra/superpowers), [trailofbits/skills](https://github.com/trailofbits/skills) and [anthropics/skills](https://github.com/anthropics/skills) offer high-quality options across every SDLC phase. cc-rig gives you a smart starting set and makes it easy to add more.
 
-**Tier 2 - Recommended** (cc-rig documents install commands, doesn't bundle):
-- Each template preset defines framework-specific skills across 7 SDLC phases (coding, testing, review, security, database, devops, planning)
-- 9 curated sources: anthropics/skills, obra/superpowers, trailofbits/skills, vercel-labs, planetscale, supabase, akin-ozer/cc-devops-skills, agamm/claude-code-owasp, wshobson/agents
-- Workflow presets control which phases are active and which cross-cutting skill packs (anthropics/skills, obra/superpowers, trailofbits core, OWASP) to merge in
-- Smart defaults engine merges template + workflow skills, filters by active phases, deduplicates
-- Install commands rendered in CLAUDE.md; full catalog in `docs/recommended-skills.md`
+**Starter set** (auto-installed at `init`):
+- **Framework-matched**: Python projects get `modern-python` and `property-based-testing`, Next.js gets `vercel-react-best-practices` and `next-best-practices`, Go/Rust get `static-analysis`
+- **Cross-cutting**: code review, security basics, TDD, debugging — scaled by workflow level (0 for speedrun, up to 14 for verify-heavy)
+- **`project-patterns`** stub for your team's custom conventions
 
-**Tier 3 - Stubs** (cc-rig generates templates, you fill in):
-- **Project patterns** - your team's naming conventions, architecture patterns and code organization
-- **Deployment checklist** - your pre-deploy checks, deploy steps and post-deploy verification
+**Optional skill packs** (select during wizard or add later):
 
-Why only 2 bundled? Skills like OWASP security already exist as well-maintained community skills. Installing them beats copying stale versions.
+| Pack | What it adds | Source repos |
+|------|-------------|--------------|
+| Security Deep Dive | supply chain auditing, variant analysis, dangerous API detection | trailofbits/skills |
+| DevOps & IaC | Terraform, Kubernetes, monitoring, GitOps | hashicorp, ahmedasmar |
+| Web Quality | Core Web Vitals, accessibility, SEO, performance | addyosmani |
+| Database Pro | migration patterns, query optimization, multi-DB support | multiple |
+
+Add skills anytime — from cc-rig or any source:
+
+```bash
+cc-rig skills list                    # Show what's installed
+cc-rig skills catalog                 # Browse available packs and skills
+cc-rig skills add <name>              # Install from catalog
+cc-rig skills remove <name>           # Remove a skill
+npx skills add <repo> --skill <name>  # Install any skill from any repo
+```
+
+Browse the full ecosystem: [skills.sh](https://skills.sh/) · [awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) · [skillsmp.com](https://skillsmp.com/)
 
 ### Memory
 
@@ -445,6 +455,12 @@ cc-rig config save|load|list|inspect|diff|lock|unlock
 cc-rig harness init [--lite|--standard|--autonomy] [-d DIR]
 cc-rig harness status [--dir DIR]  Show current harness level and progress
 
+cc-rig skills list [-d DIR]        Show installed skills
+cc-rig skills catalog              Browse all available skills
+cc-rig skills add <name> [-d DIR]  Install a skill from the catalog
+cc-rig skills remove <name> [-d DIR] Remove an installed skill
+cc-rig skills install [-d DIR]     Retry failed downloads from init
+
 cc-rig doctor [--fix] [-d DIR]     Validate project health
 cc-rig clean [--force] [-d DIR]    Remove generated files
 ```
@@ -498,7 +514,7 @@ Yes. Everything is plain text. Edit whatever you want. cc-rig won't overwrite yo
 <details>
 <summary><strong>What about Claude Code plugins and skills?</strong></summary>
 
-cc-rig and plugins are complementary. cc-rig generates your project scaffold: CLAUDE.md, settings, agents, commands, hooks and memory. Plugins add specific capabilities on top. cc-rig recommends relevant plugins for your stack and shows you how to install them.
+cc-rig and community skills are complementary. cc-rig generates your project scaffold (CLAUDE.md, settings, agents, commands, hooks, memory) and installs a starter set of community skills matched to your framework. The wizard offers optional packs for deeper coverage (security, DevOps, web quality). You can install any additional skill from <a href="https://skills.sh/">skills.sh</a> (73K+), <a href="https://github.com/ComposioHQ/awesome-claude-skills">awesome-claude-skills</a> or any GitHub repo.
 </details>
 
 <details>
@@ -519,19 +535,22 @@ cc-rig is free and open source. Claude Code itself requires an <a href="https://
 
 ### Skill Ecosystem
 
-cc-rig's Tier 2 recommendations draw from these community skill repositories:
+cc-rig's starter set and optional packs draw from these repos:
 
 - [obra/superpowers](https://github.com/obra/superpowers) - 14 SDLC workflow skills (planning, review, git, debugging)
-- [trailofbits/skills](https://github.com/trailofbits/skills) - 28 security + modern dev skills
+- [trailofbits/skills](https://github.com/trailofbits/skills) - 30+ security + modern dev skills
 - [anthropics/skills](https://github.com/anthropics/skills) - 16 official Anthropic skills (frontend, docs, testing)
-- [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills) - React and design guideline skills
-- [vercel-labs/next-skills](https://github.com/vercel-labs/next-skills) - Next.js App Router, caching and upgrades
-- [planetscale/database-skills](https://github.com/planetscale/database-skills) - MySQL, PostgreSQL, Vitess and Neki
+- [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) - Core Web Vitals, accessibility, SEO from Chrome team
+- [hashicorp/agent-skills](https://github.com/hashicorp/agent-skills) - Official Terraform and Packer
+- [vercel-labs](https://github.com/vercel-labs/agent-skills) - React, Next.js and design guideline skills
 - [supabase/agent-skills](https://github.com/supabase/agent-skills) - PostgreSQL best practices
+- [planetscale/database-skills](https://github.com/planetscale/database-skills) - MySQL, PostgreSQL, Vitess
 - [akin-ozer/cc-devops-skills](https://github.com/akin-ozer/cc-devops-skills) - 31 CI/CD, IaC and monitoring skills
+- [ahmedasmar/devops-claude-skills](https://github.com/ahmedasmar/devops-claude-skills) - Kubernetes, Terraform, monitoring, GitOps
 - [agamm/claude-code-owasp](https://github.com/agamm/claude-code-owasp) - OWASP Top 10:2025 security
 - [wshobson/agents](https://github.com/wshobson/agents) - Tailwind CSS design system
-- [skills.sh](https://skills.sh/) - Vercel-run skill directory (73K+ skills)
+
+The broader ecosystem has thousands more. Discover skills at [skills.sh](https://skills.sh/) (73K+), [awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills), [skillsmp.com](https://skillsmp.com/) or install from any GitHub repo with `npx skills add`.
 
 ### Research & Inspiration
 
