@@ -10,7 +10,7 @@ a state dict. The existing StepRunner CLI path remains as fallback.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from textual import work
 from textual.app import App, ComposeResult
@@ -207,7 +207,7 @@ class BrandHeader(Horizontal):
 # ── Screen 1: Welcome ────────────────────────────────────────────────
 
 
-class WelcomeScreen(ModalScreen[dict | None]):
+class WelcomeScreen(ModalScreen[Optional[dict]]):
     """Launcher screen — choose how to start."""
 
     BINDINGS = [("escape", "go_back", "Back")]
@@ -255,7 +255,7 @@ class WelcomeScreen(ModalScreen[dict | None]):
 # ── Screen 2: Basics ─────────────────────────────────────────────────
 
 
-class BasicsScreen(ModalScreen[dict | None]):
+class BasicsScreen(ModalScreen[Optional[dict]]):
     """Project name and description inputs."""
 
     BINDINGS = [("escape", "go_back", "Back")]
@@ -313,7 +313,7 @@ class BasicsScreen(ModalScreen[dict | None]):
 # ── Screen 3: Template ───────────────────────────────────────────────
 
 
-class TemplateScreen(ModalScreen[dict | None]):
+class TemplateScreen(ModalScreen[Optional[dict]]):
     """Select framework/template."""
 
     BINDINGS = [("escape", "go_back", "Back")]
@@ -371,7 +371,7 @@ class TemplateScreen(ModalScreen[dict | None]):
 # ── Screen 4: Workflow ────────────────────────────────────────────────
 
 
-class WorkflowScreen(ModalScreen[dict | None]):
+class WorkflowScreen(ModalScreen[Optional[dict]]):
     """Select workflow preset with educational detail panel."""
 
     BINDINGS = [("escape", "go_back", "Back")]
@@ -435,7 +435,7 @@ class WorkflowScreen(ModalScreen[dict | None]):
 # ── Screen 5: Review ─────────────────────────────────────────────────
 
 
-class ReviewScreen(ModalScreen[dict | None]):
+class ReviewScreen(ModalScreen[Optional[dict]]):
     """Show computed config summary. Option to customize."""
 
     BINDINGS = [("escape", "go_back", "Back")]
@@ -518,7 +518,7 @@ class ReviewScreen(ModalScreen[dict | None]):
 # ── Screen 6: Expert ─────────────────────────────────────────────────
 
 
-class ExpertScreen(ModalScreen[dict | None]):
+class ExpertScreen(ModalScreen[Optional[dict]]):
     """Multi-select for agents, commands, and hooks — organized in tabs."""
 
     BINDINGS = [("escape", "go_back", "Back")]
@@ -618,7 +618,7 @@ class ExpertScreen(ModalScreen[dict | None]):
 # ── Screen 6b: Features ──────────────────────────────────────────────
 
 
-class FeaturesScreen(ModalScreen[dict | None]):
+class FeaturesScreen(ModalScreen[Optional[dict]]):
     """Feature flag toggles — memory, spec-workflow, GTD, worktrees."""
 
     BINDINGS = [("escape", "go_back", "Back")]
@@ -696,7 +696,7 @@ class FeaturesScreen(ModalScreen[dict | None]):
 # ── Screen 6c: Skill Packs ──────────────────────────────────────────
 
 
-class SkillPacksScreen(ModalScreen[dict | None]):
+class SkillPacksScreen(ModalScreen[Optional[dict]]):
     """Optional skill packs — deeper coverage for specific domains."""
 
     BINDINGS = [("escape", "go_back", "Back")]
@@ -762,7 +762,7 @@ class SkillPacksScreen(ModalScreen[dict | None]):
 # ── Screen 7: Harness ────────────────────────────────────────────────
 
 
-class HarnessScreen(ModalScreen[dict | None]):
+class HarnessScreen(ModalScreen[Optional[dict]]):
     """Select runtime harness level (B0-B3) with educational detail panel."""
 
     _LEVELS = ["none", "lite", "standard", "autonomy"]
@@ -844,7 +844,7 @@ class HarnessScreen(ModalScreen[dict | None]):
 # ── Screen 8: Confirm ────────────────────────────────────────────────
 
 
-class ConfirmScreen(ModalScreen[dict | None]):
+class ConfirmScreen(ModalScreen[Optional[dict]]):
     """Final confirmation before generation."""
 
     BINDINGS = [("escape", "go_back", "Back")]
@@ -959,7 +959,7 @@ _QUICK_SCREENS: list[tuple[type, str, Any]] = [
 ]
 
 
-class WizardApp(App[dict | None]):
+class WizardApp(App[Optional[dict]]):
     """Full-screen TUI wizard. Returns state dict or None if cancelled."""
 
     CSS = APP_CSS
