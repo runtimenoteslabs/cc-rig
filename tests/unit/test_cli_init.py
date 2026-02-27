@@ -223,9 +223,16 @@ class TestNoCommand:
 
 
 class TestDoctorAndClean:
-    def test_doctor_runs_successfully(self, capsys):
-        """Doctor returns 0 with warnings on the project directory."""
-        rc = main(["doctor"])
+    def test_doctor_runs_successfully(self, tmp_path, capsys):
+        """Doctor returns 0 with warnings on a generated project directory."""
+        # Generate a project first so doctor has something to check
+        main(
+            [
+                "init", "--template", "fastapi", "--workflow", "speedrun",
+                "--name", "test", "-o", str(tmp_path),
+            ]
+        )
+        rc = main(["doctor", "--dir", str(tmp_path)])
         assert rc == 0
         captured = capsys.readouterr()
         assert "warning" in captured.out.lower() or "passed" in captured.out.lower()
