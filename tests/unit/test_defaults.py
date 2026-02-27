@@ -579,6 +579,44 @@ class TestVerifyHeavySkills:
         assert len(heavy.recommended_skills) > len(standard.recommended_skills)
 
 
+class TestAnthropicOfficialSkills:
+    """Anthropic official skills from anthropics/skills pack."""
+
+    def test_verify_heavy_has_all_anthropic_skills(self):
+        config = compute_defaults("fastapi", "verify-heavy", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "webapp-testing" in names
+        assert "mcp-builder" in names
+        assert "skill-creator" in names
+
+    def test_standard_has_mcp_builder(self):
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "mcp-builder" in names
+
+    def test_standard_no_skill_creator(self):
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "skill-creator" not in names
+
+    def test_speedrun_no_anthropic_skills(self):
+        config = compute_defaults("fastapi", "speedrun", project_name="test")
+        sources = {s.source for s in config.recommended_skills}
+        assert "anthropics/skills" not in sources
+
+    def test_spec_driven_has_mcp_builder_and_skill_creator(self):
+        config = compute_defaults("fastapi", "spec-driven", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "mcp-builder" in names
+        assert "skill-creator" in names
+
+    def test_gtd_lite_has_mcp_builder_and_skill_creator(self):
+        config = compute_defaults("fastapi", "gtd-lite", project_name="test")
+        names = {s.name for s in config.recommended_skills}
+        assert "mcp-builder" in names
+        assert "skill-creator" in names
+
+
 class TestSpecDrivenSkills:
     """Spec-driven: includes planning phase."""
 

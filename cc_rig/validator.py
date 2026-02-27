@@ -59,6 +59,7 @@ def validate_output(
     _check_agent_files(output_dir, config, result)
     _check_command_files(output_dir, config, result)
     _check_memory_files(output_dir, config, result)
+    _check_claude_local(output_dir, result)
     if manifest:
         _check_manifest(output_dir, manifest, result)
 
@@ -102,7 +103,7 @@ def _iter_manifest_files(
                     if not suffix or rel.endswith(suffix):
                         results.append(rel)
     # Also check top-level generated files.
-    for name in ("CLAUDE.md", ".mcp.json", ".cc-rig.json", ".gitignore"):
+    for name in ("CLAUDE.md", "CLAUDE.local.md", ".mcp.json", ".cc-rig.json", ".gitignore"):
         if suffix and not name.endswith(suffix):
             continue
         if (output_dir / name).is_file():
@@ -116,11 +117,11 @@ def _iter_manifest_files(
 
 # Target line counts per workflow (from SMART-DEFAULTS-MATRIX.md §7)
 _CLAUDE_MD_LINE_TARGETS: dict[str, int] = {
-    "speedrun": 45,
-    "standard": 60,
-    "spec-driven": 75,
-    "gtd-lite": 75,
-    "verify-heavy": 90,
+    "speedrun": 60,
+    "standard": 95,
+    "spec-driven": 110,
+    "gtd-lite": 115,
+    "verify-heavy": 120,
 }
 
 
@@ -398,6 +399,19 @@ def _check_memory_files(
             )
 
 
+def _check_claude_local(output_dir: Path, result: ValidationResult) -> None:
+    """V20: CLAUDE.local.md should exist after generation."""
+    if not (output_dir / "CLAUDE.local.md").exists():
+        result.issues.append(
+            ValidationIssue(
+                "V20",
+                "CLAUDE.local.md not found — personal preference file missing",
+                "warning",
+                file="CLAUDE.local.md",
+            )
+        )
+
+
 def _check_manifest(
     output_dir: Path,
     manifest: dict,
@@ -415,7 +429,7 @@ def _check_manifest(
                 if path.is_file():
                     actual_files.add(str(path.relative_to(output_dir)))
     # Also check top-level generated files
-    for name in ("CLAUDE.md", ".mcp.json", ".cc-rig.json", ".gitignore"):
+    for name in ("CLAUDE.md", "CLAUDE.local.md", ".mcp.json", ".cc-rig.json", ".gitignore"):
         top = output_dir / name
         if top.exists():
             actual_files.add(name)

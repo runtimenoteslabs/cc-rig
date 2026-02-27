@@ -31,9 +31,7 @@ class FileTracker:
         self._output_dir = output_dir.resolve()
         self._meta: dict[str, dict[str, Any]] = {}
 
-    def write_text(
-        self, rel_path: str, content: str, *, preserve_on_clean: bool = False
-    ) -> None:
+    def write_text(self, rel_path: str, content: str, *, preserve_on_clean: bool = False) -> None:
         """Write *content* to *rel_path* under the output directory.
 
         If the file already exists, backs it up to ``_BACKUP_DIR``

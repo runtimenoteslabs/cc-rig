@@ -10,7 +10,7 @@ from cc_rig.generators.fileops import FileTracker
 # Shared memory file templates — used by both the generator and doctor --fix.
 MEMORY_FILE_TEMPLATES: dict[str, str] = {
     "decisions.md": (
-        "# Decisions\n"
+        "# Decisions (git-tracked, shared)\n"
         "\n"
         "Architectural decisions and rationale. "
         "One line per entry.\n"
@@ -21,7 +21,7 @@ MEMORY_FILE_TEMPLATES: dict[str, str] = {
         "<!-- Entries below -->\n"
     ),
     "patterns.md": (
-        "# Patterns\n"
+        "# Patterns (git-tracked, shared)\n"
         "\n"
         "Discovered code patterns and established conventions. "
         "One line per entry.\n"
@@ -31,7 +31,7 @@ MEMORY_FILE_TEMPLATES: dict[str, str] = {
         "<!-- Entries below -->\n"
     ),
     "gotchas.md": (
-        "# Gotchas\n"
+        "# Gotchas (git-tracked, shared)\n"
         "\n"
         "Known issues, things that did not work, and surprises. "
         "One line per entry.\n"
@@ -42,7 +42,7 @@ MEMORY_FILE_TEMPLATES: dict[str, str] = {
         "<!-- Entries below -->\n"
     ),
     "people.md": (
-        "# People\n"
+        "# People (git-tracked, shared)\n"
         "\n"
         "Who owns what. Updated when ownership changes. "
         "One line per entry.\n"
@@ -52,7 +52,7 @@ MEMORY_FILE_TEMPLATES: dict[str, str] = {
         "<!-- Entries below -->\n"
     ),
     "session-log.md": (
-        "# Session Log\n"
+        "# Session Log (git-tracked, shared)\n"
         "\n"
         "Brief log of what was done each session. Keep only "
         "the last 20 entries.\n"
@@ -96,11 +96,22 @@ def generate_memory(
 
     # MEMORY-README.md
     readme_content = (
-        "# Memory System — Instructions for Claude\n"
+        "# Team Memory System — Instructions for Claude\n"
         "\n"
-        "This directory is the project's persistent memory. "
-        "Claude Code has no native memory across sessions, "
-        "so these files bridge the gap.\n"
+        "## Two Memory Systems\n"
+        "\n"
+        "Claude Code has two complementary memory systems:\n"
+        "\n"
+        "- **Auto-memory** (`~/.claude/projects/`): Personal, "
+        "per-machine notes managed automatically by Claude Code. "
+        "Loaded every session. Use for personal preferences "
+        "and local context.\n"
+        "- **Team memory** (`memory/`): Git-tracked, shared "
+        "knowledge that travels with the repo. Use for "
+        "architectural decisions, patterns, gotchas, and team "
+        "conventions that every contributor should know.\n"
+        "\n"
+        "This directory is team memory.\n"
         "\n"
         "## How to Use\n"
         "\n"
@@ -113,11 +124,12 @@ def generate_memory(
         "memory content in CLAUDE.md.\n"
         "\n"
         "### Writing Memory\n"
-        "- Before stopping a session, save learnings to the "
-        "appropriate file.\n"
+        "- Before stopping a session, save team-relevant "
+        "learnings to the appropriate file.\n"
         "- Before context compaction, save key decisions and "
         "patterns.\n"
         "- Always use one-line entries with date prefix.\n"
+        "- Personal notes go in auto-memory, not here.\n"
         "\n"
         "### Anti-Ballooning Rules\n"
         "1. **One line per entry.** No multi-line descriptions.\n"

@@ -74,6 +74,7 @@
       "static-analysis",
       "insecure-defaults",
       "second-opinion"
-    ]
+    ],
+    "anthropic_official": "full"
   }
 }

@@ -126,7 +126,7 @@ class TestS01FastapiStandardB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 44, f"Expected 44 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 45, f"Expected 45 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
@@ -246,6 +246,25 @@ class TestS01FastapiStandardB0:
         assert not (self.root / "loop.sh").exists()
         assert not (self.root / "PROMPT.md").exists()
         assert not (self.root / ".claude" / "harness-config.json").exists()
+
+    def test_claude_local_md_present(self):
+        assert (self.root / "CLAUDE.local.md").exists()
+        content = (self.root / "CLAUDE.local.md").read_text()
+        assert "Personal Preferences" in content
+
+    def test_agent_docs_uses_at_imports(self):
+        content = _read_claude_md(self.root)
+        assert "@agent_docs/architecture.md" in content
+        assert "@agent_docs/conventions.md" in content
+
+    def test_memory_section_explains_both_systems(self):
+        content = _read_claude_md(self.root)
+        assert "Auto-memory" in content
+        assert "Team memory" in content
+
+    def test_session_context_says_team_memory(self):
+        content = (self.root / ".claude" / "hooks" / "session-context.sh").read_text()
+        assert "Team memory" in content
 
 
 # ── S02: FastAPI + Verify-Heavy + B3 ─────────────────────────────────
@@ -413,7 +432,7 @@ class TestS04FastapiSpeedrunB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 30, f"Expected 30 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 31, f"Expected 31 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
@@ -832,7 +851,7 @@ class TestS10DjangoSpeedrunB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 30, f"Expected 30 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 31, f"Expected 31 files, got {len(files)}: {sorted(files)}"
 
     def test_hooks_executable(self):
         _assert_hooks_executable(self.root)
@@ -1033,9 +1052,7 @@ def test_memory_false_produces_no_memory_files(tmp_path):
     """When memory=false, no memory files or hooks are generated."""
     config, manifest = _generate(tmp_path, "fastapi", "speedrun")
     assert not (tmp_path / "memory").exists()
-    assert "remember.md" not in [
-        f.name for f in (tmp_path / ".claude" / "commands").iterdir()
-    ]
+    assert "remember.md" not in [f.name for f in (tmp_path / ".claude" / "commands").iterdir()]
 
 
 def test_memory_true_produces_all_memory_files(tmp_path):

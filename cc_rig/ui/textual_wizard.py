@@ -657,8 +657,7 @@ class FeaturesScreen(ModalScreen[dict | None]):
                     id=detail["widget_id"],
                 )
                 yield Label(
-                    f"  {detail['description']}\n"
-                    f"  Adds: {detail['adds']}",
+                    f"  {detail['description']}\n  Adds: {detail['adds']}",
                     classes="description",
                 )
         yield NavBar()
@@ -735,15 +734,9 @@ class HarnessScreen(ModalScreen[dict | None]):
                     "None (B0) — Scaffold only, you drive",
                     value=True,
                 ),
-                RadioButton(
-                    "Lite (B1) — Task tracking + budget awareness"
-                ),
-                RadioButton(
-                    "Standard (B2) — Verification gates (tests + lint must pass)"
-                ),
-                RadioButton(
-                    "Autonomy (B3) — Autonomous iteration with safety rails"
-                ),
+                RadioButton("Lite (B1) — Task tracking + budget awareness"),
+                RadioButton("Standard (B2) — Verification gates (tests + lint must pass)"),
+                RadioButton("Autonomy (B3) — Autonomous iteration with safety rails"),
                 id="harness-radio",
             )
             default_detail = HARNESS_DETAILS.get("none", "")

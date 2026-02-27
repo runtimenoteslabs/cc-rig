@@ -46,19 +46,21 @@ _PROMPT_TEXTS: dict[str, str] = {
     "session-context": (
         "Read agent_docs/architecture.md, agent_docs/conventions.md, "
         "and agent_docs/testing.md to load project context. "
+        "Auto-memory is loaded automatically. "
         "If memory/ exists, read memory/decisions.md and "
-        "memory/session-log.md for recent context."
+        "memory/session-log.md for recent team context."
     ),
     "memory-stop": (
-        "Before stopping, check if there are decisions, patterns, "
-        "gotchas, or learnings from this session to save. "
+        "Before stopping, check if there are team-relevant decisions, "
+        "patterns, gotchas, or learnings from this session to save. "
         "Update the relevant memory/ files with one-line entries. "
-        "Add a one-line session summary to memory/session-log.md."
+        "Add a one-line session summary to memory/session-log.md. "
+        "Personal notes go in auto-memory, not here."
     ),
     "memory-precompact": (
         "Context is about to be compacted. Save any key decisions, "
-        "patterns, or learnings to the appropriate memory/ files "
-        "before context is lost. Use one-line entries."
+        "patterns, or learnings to the appropriate team memory files "
+        "(memory/) before context is lost. Use one-line entries."
     ),
     "push-review": (
         "Before pushing, review the changes being pushed. "
@@ -490,7 +492,7 @@ def _script_session_context(config: ProjectConfig) -> str:
         "done\n"
         "\n"
         'if [ -d "memory" ]; then\n'
-        "  echo 'Memory files:'\n"
+        "  echo 'Team memory files:'\n"
         "  for f in memory/decisions.md memory/session-log.md; do\n"
         '    [ -f "$f" ] && echo "  $f"\n'
         "  done\n"

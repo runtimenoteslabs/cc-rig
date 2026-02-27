@@ -326,7 +326,9 @@ class TestOutputDirPropagation:
         custom_dir.mkdir()
 
         config = compute_defaults(
-            "fastapi", "standard", project_name="test-proj",
+            "fastapi",
+            "standard",
+            project_name="test-proj",
             output_dir=str(custom_dir),
         )
         tui_state = {
@@ -355,7 +357,9 @@ class TestOutputDirPropagation:
         custom_dir.mkdir()
 
         config = compute_defaults(
-            "fastapi", "standard", project_name="test-proj",
+            "fastapi",
+            "standard",
+            project_name="test-proj",
             output_dir=str(custom_dir),
         )
         tui_state = {
@@ -379,7 +383,9 @@ class TestOutputDirPropagation:
         from cc_rig.wizard.flow import _guided_flow_textual
 
         config = compute_defaults(
-            "fastapi", "standard", project_name="test-proj",
+            "fastapi",
+            "standard",
+            project_name="test-proj",
             output_dir=str(tmp_path),
         )
         tui_state = {

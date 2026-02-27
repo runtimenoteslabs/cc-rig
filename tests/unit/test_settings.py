@@ -347,6 +347,25 @@ class TestHookRegistryConsistency:
         assert len(_HOOK_REGISTRY) == 15
 
 
+class TestTeamMemoryPromptTexts:
+    """Verify prompt texts reference team memory correctly."""
+
+    def test_memory_stop_says_team_relevant(self):
+        assert "team-relevant" in _PROMPT_TEXTS["memory-stop"]
+
+    def test_memory_stop_mentions_auto_memory(self):
+        assert "auto-memory" in _PROMPT_TEXTS["memory-stop"].lower()
+
+    def test_memory_precompact_says_team_memory(self):
+        assert "team memory" in _PROMPT_TEXTS["memory-precompact"]
+
+    def test_session_context_says_auto_memory(self):
+        assert "Auto-memory" in _PROMPT_TEXTS["session-context"]
+
+    def test_session_context_says_team_context(self):
+        assert "team context" in _PROMPT_TEXTS["session-context"]
+
+
 class TestShellInjectionProtection:
     """Verify _safe_cmd rejects dangerous input."""
 

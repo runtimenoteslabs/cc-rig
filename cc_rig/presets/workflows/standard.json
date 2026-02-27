@@ -53,6 +53,7 @@
       "receiving-code-review",
       "finishing-a-development-branch"
     ],
-    "trailofbits_core": []
+    "trailofbits_core": [],
+    "anthropic_official": ["mcp-builder"]
   }
 }

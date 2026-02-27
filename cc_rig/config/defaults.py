@@ -166,6 +166,31 @@ _OWASP_SKILL = SkillRecommendation(
     description="OWASP Top 10:2025, ASVS 5.0, language-specific security",
 )
 
+# Anthropic official skills (github.com/anthropics/skills)
+_ANTHROPIC_OFFICIAL: dict[str, SkillRecommendation] = {
+    "webapp-testing": SkillRecommendation(
+        name="webapp-testing",
+        sdlc_phase="testing",
+        source="anthropics/skills",
+        install="npx skills add anthropics/skills --skill webapp-testing",
+        description="Web application testing patterns from Anthropic",
+    ),
+    "mcp-builder": SkillRecommendation(
+        name="mcp-builder",
+        sdlc_phase="devops",
+        source="anthropics/skills",
+        install="npx skills add anthropics/skills --skill mcp-builder",
+        description="Build custom MCP servers for tool integration",
+    ),
+    "skill-creator": SkillRecommendation(
+        name="skill-creator",
+        sdlc_phase="coding",
+        source="anthropics/skills",
+        install="npx skills add anthropics/skills --skill skill-creator",
+        description="Meta-skill: create new Claude Code skills interactively",
+    ),
+}
+
 
 def compute_defaults(
     template: str,
@@ -397,5 +422,17 @@ def _resolve_skill_packs(
     # OWASP — included for all workflows where security phase is active
     if _phase_is_active(skill_phases, "security"):
         result.append(_OWASP_SKILL)
+
+    # Anthropic official skills
+    anthropic = packs.get("anthropic_official", [])
+    if anthropic == "full":
+        for name, skill in _ANTHROPIC_OFFICIAL.items():
+            if _phase_is_active(skill_phases, skill.sdlc_phase):
+                result.append(skill)
+    elif isinstance(anthropic, list):
+        for name in anthropic:
+            skill = _ANTHROPIC_OFFICIAL.get(name)
+            if skill and _phase_is_active(skill_phases, skill.sdlc_phase):
+                result.append(skill)
 
     return result

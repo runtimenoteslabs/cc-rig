@@ -31,8 +31,16 @@ class TestNextSteps:
     def test_memory_note_hidden_when_disabled(self, tmp_path):
         config = make_valid_config(
             features=Features(memory=False),
-            hooks=["format", "lint", "typecheck", "block-rm-rf", "block-env", "block-main",
-                   "session-context", "stop-validator"],
+            hooks=[
+                "format",
+                "lint",
+                "typecheck",
+                "block-rm-rf",
+                "block-env",
+                "block-main",
+                "session-context",
+                "stop-validator",
+            ],
             commands=["fix-issue", "review", "test", "plan", "learn", "assumptions", "refactor"],
         )
         lines = _run_and_capture(config, tmp_path)

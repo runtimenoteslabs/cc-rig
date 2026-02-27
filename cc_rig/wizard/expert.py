@@ -53,7 +53,7 @@ def run_expert(config: ProjectConfig, io: IO) -> ProjectConfig:
         f = config.features
 
         memory = confirm(
-            "  Enable memory (session logs, decisions, patterns)?",
+            "  Enable team memory (git-tracked decisions, patterns, team knowledge)?",
             default=f.memory,
             io=io,
         )

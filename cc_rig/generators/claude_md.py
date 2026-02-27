@@ -141,9 +141,9 @@ def _section_workflow_principles() -> str:
         "- **Demand elegance.** After getting code working, "
         "consider a refactor pass. Leave code measurably better "
         "than you found it.\n"
-        "- **Save learnings.** Use `/remember` to capture "
-        "decisions, patterns, and gotchas. Future sessions will "
-        "thank you.\n"
+        "- **Save learnings.** Auto-memory handles personal "
+        "continuity. Use `/remember` for team knowledge — "
+        "decisions, patterns, and gotchas.\n"
     )
 
 
@@ -158,16 +158,13 @@ def _section_framework_rules(config: ProjectConfig) -> str:
 
 
 def _section_agent_docs(config: ProjectConfig) -> str:
-    return (
-        "## Agent Docs\n"
-        "\n"
-        "Read these files for project-specific guidance:\n"
-        "- `agent_docs/architecture.md` — system design\n"
-        "- `agent_docs/conventions.md` — coding standards\n"
-        "- `agent_docs/testing.md` — test patterns\n"
-        "- `agent_docs/deployment.md` — deploy process\n"
-        "- `agent_docs/cache-friendly-workflow.md` — prompt cache tips\n"
-    )
+    lines = [
+        "## Agent Docs\n",
+        "Read @agent_docs/architecture.md @agent_docs/conventions.md for core context.",
+        "Additional docs: @agent_docs/testing.md @agent_docs/deployment.md",
+        "@agent_docs/cache-friendly-workflow.md\n",
+    ]
+    return "\n".join(lines)
 
 
 def _section_recommended_skills(config: ProjectConfig) -> str:
@@ -197,8 +194,13 @@ def _section_memory(config: ProjectConfig) -> str:
     return (
         "## Memory\n"
         "\n"
-        "Project memory is stored in `memory/`. Load files via Read "
-        "tool when context is needed.\n"
+        "Two memory systems work together:\n"
+        "- **Auto-memory** (`~/.claude/projects/`): Personal notes, "
+        "loaded automatically each session.\n"
+        "- **Team memory** (`memory/`): Git-tracked shared knowledge "
+        "for the whole team.\n"
+        "\n"
+        "Team memory files — load via Read tool when context is needed:\n"
         "- `memory/decisions.md` — architectural decisions\n"
         "- `memory/patterns.md` — discovered patterns\n"
         "- `memory/gotchas.md` — known issues and surprises\n"

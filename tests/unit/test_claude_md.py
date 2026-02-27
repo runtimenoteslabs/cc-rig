@@ -97,6 +97,29 @@ class TestFrameworkSpecificContent:
         assert "## Framework Rules" in content
 
 
+class TestAgentDocsImports:
+    def test_agent_docs_uses_at_imports(self, tmp_path):
+        content = _generate_claude_md("fastapi", "standard", tmp_path)
+        assert "@agent_docs/architecture.md" in content
+        assert "@agent_docs/conventions.md" in content
+
+    def test_agent_docs_no_plain_text_pointers(self, tmp_path):
+        content = _generate_claude_md("fastapi", "standard", tmp_path)
+        assert "Read these files for project-specific guidance:" not in content
+
+
+class TestMemorySection:
+    def test_memory_section_explains_both_systems(self, tmp_path):
+        content = _generate_claude_md("fastapi", "standard", tmp_path)
+        assert "Auto-memory" in content
+        assert "Team memory" in content
+
+    def test_memory_section_has_file_list(self, tmp_path):
+        content = _generate_claude_md("fastapi", "standard", tmp_path)
+        assert "memory/decisions.md" in content
+        assert "memory/patterns.md" in content
+
+
 class TestProjectIdentity:
     def test_project_name_in_output(self, tmp_path):
         from cc_rig.generators.claude_md import generate_claude_md

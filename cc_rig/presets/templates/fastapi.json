@@ -61,6 +61,13 @@
       "source": "akin-ozer/cc-devops-skills",
       "install": "npx skills add akin-ozer/cc-devops-skills --skill dockerfile-generator",
       "description": "Dockerfile generation with best practices"
+    },
+    {
+      "name": "webapp-testing",
+      "sdlc_phase": "testing",
+      "source": "anthropics/skills",
+      "install": "npx skills add anthropics/skills --skill webapp-testing",
+      "description": "Web application testing patterns from Anthropic"
     }
   ],
   "default_mcps": ["github", "postgres"]

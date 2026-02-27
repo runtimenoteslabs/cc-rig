@@ -31,7 +31,9 @@ tests/
 
 ## E2E Test Matrix
 
-The E2E test matrix (`tests/integration/test_e2e_matrix.py`) provides systematic verification of `cc-rig init` output across all configuration dimensions: 7 templates × 5 workflows × 4 harness levels × 4 feature flags. 188 tests covering 12 representative scenarios plus full cross-product validation.
+The E2E test matrix (`tests/integration/test_e2e_matrix.py`) provides systematic verification of `cc-rig init` output across all configuration dimensions: 7 templates × 5 workflows × 4 harness levels × 4 feature flags. 192 tests covering 12 representative scenarios plus full cross-product validation.
 
 - **Run**: `pytest tests/integration/test_e2e_matrix.py -v`
 - **Spec**: `specs/e2e-test-matrix.md` — full scenario descriptions, expected outputs, coverage matrix
+
+Each generated project includes `CLAUDE.local.md` (personal preferences, gitignored) and uses `@import` syntax for agent docs in CLAUDE.md. The E2E suite validates both features.

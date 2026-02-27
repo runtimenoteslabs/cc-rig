@@ -22,7 +22,7 @@
 
 A properly configured Claude Code project needs `CLAUDE.md`, hooks, agents, slash commands, skills, permissions, MCP servers and memory files. Each has specific formats, frontmatter and cross-references. That takes hours of manual work and most people skip it.
 
-**cc-rig generates all of it.** Tell it what you're building and how you like to work. It writes 30-60 native Claude Code files tuned to your framework. No runtime dependency. No lock-in. Just files that Claude Code reads on startup.
+**cc-rig generates all of it.** Tell it what you're building and how you like to work. It writes 30-65 native Claude Code files tuned to your framework. No runtime dependency. No lock-in. Just files that Claude Code reads on startup.
 
 ```
 $ cc-rig init
@@ -36,9 +36,10 @@ $ cc-rig init
   Workflow:    Standard
 
   ✓ CLAUDE.md              ✓ .claude/agents/
-  ✓ .claude/settings.json  ✓ .claude/commands/
-  ✓ .claude/skills/        ✓ .mcp.json
-  ✓ agent_docs/            ✓ memory/
+  ✓ CLAUDE.local.md        ✓ .claude/commands/
+  ✓ .claude/settings.json  ✓ .claude/skills/
+  ✓ .mcp.json              ✓ agent_docs/
+  ✓ memory/
 
   Done. Run `claude` and go.
 ```
@@ -107,6 +108,7 @@ cc-rig generates **native Claude Code files**, the same formats from the [offici
 ```
 your-project/
 ├── CLAUDE.md                       # Project rules Claude follows
+├── CLAUDE.local.md                 # Personal preferences (not git-tracked)
 ├── .mcp.json                       # MCP server integrations
 ├── .claude/
 │   ├── settings.json               # Permissions, hooks, safety guards
@@ -116,7 +118,7 @@ your-project/
 │   └── skills/                     # Auto-invoked behaviors (TDD, debugging)
 ├── agent_docs/                     # Framework-specific guides for Claude
 ├── docs/                           # Recommended skills and plugins
-└── memory/                         # Persistent knowledge across sessions
+└── memory/                         # Git-tracked team knowledge across sessions
 ```
 
 Everything is tracked in a manifest, so `cc-rig clean` removes exactly what was generated. Nothing more.
@@ -125,7 +127,9 @@ Everything is tracked in a manifest, so `cc-rig clean` removes exactly what was 
 
 Targets under 100 lines. Static content first, dynamic content last. Claude Code's prompt cache is prefix-matched, so every wasted token costs money on every API call.
 
-Includes project identity, stack, tool commands, guardrails, framework-specific rules and pointers to deeper docs. Not a wall of text. A tight brief that Claude actually reads.
+Includes project identity, stack, tool commands, guardrails, framework-specific rules and `@import` references to deeper docs (auto-loaded by Claude Code). Not a wall of text. A tight brief that Claude actually reads.
+
+A companion `CLAUDE.local.md` is generated for personal preferences (not git-tracked). Use it for per-developer customization without affecting the shared config.
 
 ### Agents
 
@@ -205,7 +209,7 @@ Auto-invoked behaviors in `.claude/skills/`. Claude loads them when the task mat
 **Tier 2 - Recommended** (cc-rig documents install commands, doesn't bundle):
 - Each template preset defines framework-specific skills across 7 SDLC phases (coding, testing, review, security, database, devops, planning)
 - 9 curated sources: anthropics/skills, obra/superpowers, trailofbits/skills, vercel-labs, planetscale, supabase, akin-ozer/cc-devops-skills, agamm/claude-code-owasp, wshobson/agents
-- Workflow presets control which phases are active and which cross-cutting skill packs (obra/superpowers, trailofbits core, OWASP) to merge in
+- Workflow presets control which phases are active and which cross-cutting skill packs (anthropics/skills, obra/superpowers, trailofbits core, OWASP) to merge in
 - Smart defaults engine merges template + workflow skills, filters by active phases, deduplicates
 - Install commands rendered in CLAUDE.md; full catalog in `docs/recommended-skills.md`
 
@@ -217,7 +221,12 @@ Why only 2 bundled? Skills like OWASP security already exist as well-maintained 
 
 ### Memory
 
-Persistent knowledge in `memory/` that survives across sessions and context compaction.
+Two complementary memory systems:
+
+- **Auto-memory** (`~/.claude/projects/`) — personal, per-machine notes managed automatically by Claude Code. Always on. Use for personal preferences and local context.
+- **Team memory** (`memory/`) — git-tracked shared knowledge that travels with the repo. Use for decisions, patterns, gotchas and conventions that every contributor should know.
+
+cc-rig generates the team memory layer:
 
 | File | Purpose |
 |------|---------|
@@ -227,9 +236,9 @@ Persistent knowledge in `memory/` that survives across sessions and context comp
 | `people.md` | Team ownership and responsibilities |
 | `session-log.md` | Brief per-session progress log |
 
-A `Stop` hook prompts Claude to save learnings before ending. A `PreCompact` hook does the same before context compaction wipes working memory.
+A `Stop` hook prompts Claude to save team-relevant learnings before ending. A `PreCompact` hook does the same before context compaction wipes working memory. The `/remember` command routes personal notes to auto-memory and team knowledge to `memory/` files.
 
-Memory files are **not** baked into CLAUDE.md. They load via Read tool on demand. This keeps the cached prompt prefix stable across sessions.
+Team memory files are **not** baked into CLAUDE.md. They load via Read tool on demand. This keeps the cached prompt prefix stable across sessions.
 
 ### Permissions & Safety
 
@@ -270,7 +279,7 @@ Framework-specific reference in `agent_docs/`. Real content, not placeholder tex
 - **deployment.md** - deployment workflow and infrastructure patterns for your stack
 - **cache-friendly-workflow.md** - practices for maximizing prompt cache hit rates
 
-These load on demand (not in the cached prefix), so they don't cost tokens until Claude needs them.
+CLAUDE.md references these via `@import` syntax, so Claude Code auto-loads them without Read tool calls. They're still outside the cached prefix to keep token costs low.
 
 ---
 
@@ -450,7 +459,7 @@ cc-rig's defaults encode seven workflow principles distilled from how the Claude
 |-----------|----------------------|
 | **Plan before coding** | `/plan` and `/assumptions` commands, `/research` for codebase exploration, CLAUDE.md workflow guidance |
 | **Use subagents for research** | `/research` command, `explorer` agent (Haiku), `parallel-worker` for worktree isolation |
-| **Self-improvement loop** | Memory system (`/remember`, `memory-stop` hook, `memory-precompact` hook), persistent `memory/` files |
+| **Self-improvement loop** | Auto-memory (personal), team memory (`/remember`, `memory-stop` hook, `memory-precompact` hook), persistent `memory/` files |
 | **Verify before done** | Hooks (format, lint, typecheck), B2+ verification gates, guardrails in CLAUDE.md |
 | **Demand elegance** | `/refactor` command, `refactorer` agent, workflow principles in CLAUDE.md |
 | **Fix failures immediately** | B1+ budget guide, B2+ retry logic in verification gates, B3 autonomy loop (3 retries) |
@@ -483,7 +492,7 @@ Yes. `cc-rig init --migrate` scans your repo, detects your stack and proposes wh
 <details>
 <summary><strong>Can I edit the generated files?</strong></summary>
 
-Yes. Everything is plain text. Edit whatever you want. cc-rig won't overwrite your changes. There's no "update" command. Generate once, own forever.
+Yes. Everything is plain text. Edit whatever you want. cc-rig won't overwrite your changes. There's no "update" command. Generate once, own forever. For personal preferences, use `CLAUDE.local.md` (not git-tracked) to avoid conflicts with team config.
 </details>
 
 <details>

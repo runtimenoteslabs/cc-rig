@@ -65,6 +65,7 @@
       "using-git-worktrees",
       "finishing-a-development-branch"
     ],
-    "trailofbits_core": "reference"
+    "trailofbits_core": "reference",
+    "anthropic_official": ["mcp-builder", "skill-creator"]
   }
 }

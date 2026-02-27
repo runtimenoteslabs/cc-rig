@@ -40,6 +40,7 @@
   },
   "skill_packs": {
     "superpowers": [],
-    "trailofbits_core": []
+    "trailofbits_core": [],
+    "anthropic_official": []
   }
 }

@@ -381,6 +381,11 @@ def _write_project_patterns_stub(
         "## Code Organization\n"
         "\n"
         "(Add your code organization rules here.)\n"
+        "\n"
+        "## Tip\n"
+        "\n"
+        "Use `npx skills add anthropics/skills --skill skill-creator` "
+        "to have Claude help you write this skill.\n"
     )
 
     rel = ".claude/skills/project-patterns/SKILL.md"
@@ -424,6 +429,11 @@ def _write_deployment_checklist_stub(
         "## Post-Deploy Verification\n"
         "\n"
         "(Add post-deploy verification steps here.)\n"
+        "\n"
+        "## Tip\n"
+        "\n"
+        "Use `npx skills add anthropics/skills --skill skill-creator` "
+        "to have Claude help you write this skill.\n"
     )
 
     rel = ".claude/skills/deployment-checklist/SKILL.md"

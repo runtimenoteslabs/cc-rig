@@ -12,7 +12,7 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 
 **Test file**: `tests/integration/test_e2e_matrix.py`
 **Runner**: `pytest tests/integration/test_e2e_matrix.py`
-**Total tests**: 188 (all passing)
+**Total tests**: 192 (all passing)
 **Runtime**: ~1.2 seconds
 
 ## Test Dimensions
@@ -31,8 +31,8 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 
 ### S01: FastAPI + Standard + B0
 - **Purpose**: Baseline — most common path, default everything
-- **Tests**: 21
-- **Verifies**: 44 files, 5 agents, 9 commands, 9 hook scripts, memory/, no specs/, no tasks/, permissive permissions, manifest consistency, no duplicates, hooks executable, CLAUDE.md content
+- **Tests**: 25
+- **Verifies**: 45 files, 5 agents, 9 commands, 9 hook scripts, memory/, no specs/, no tasks/, permissive permissions, manifest consistency, no duplicates, hooks executable, CLAUDE.md content, CLAUDE.local.md present, @import agent docs syntax, dual memory system explained, team memory in session-context
 
 ### S02: FastAPI + Verify-Heavy + B3 Autonomy
 - **Purpose**: Maximum rigor — all agents, all commands, autonomy harness
@@ -47,7 +47,7 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 ### S04: FastAPI + Speedrun + B0
 - **Purpose**: Minimal config — fewest files
 - **Tests**: 13
-- **Verifies**: 30 files, 3 agents, 6 commands, 6 hooks (no typecheck, no stop-validator, no memory), no memory/, no remember/refactor commands, default permissions
+- **Verifies**: 31 files, 3 agents, 6 commands, 6 hooks (no typecheck, no stop-validator, no memory), no memory/, no remember/refactor commands, default permissions, CLAUDE.local.md present
 
 ### S05: NextJS + Standard + B2
 - **Purpose**: Non-Python template — template-specific hooks
@@ -77,7 +77,7 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 ### S10: Django + Speedrun + B0
 - **Purpose**: Different Python template + minimal
 - **Tests**: 12
-- **Verifies**: django/python in CLAUDE.md, manage.py test in config, 30 files, 3 agents, 6 commands, no memory/specs/tasks, default permissions
+- **Verifies**: django/python in CLAUDE.md, manage.py test in config, 31 files, 3 agents, 6 commands, no memory/specs/tasks, default permissions, CLAUDE.local.md present
 
 ### S11: Rerun — Standard → Verify-Heavy
 - **Purpose**: Re-init with workflow change, orphan cleanup
