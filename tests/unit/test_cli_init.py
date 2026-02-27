@@ -1,8 +1,21 @@
 """Tests for CLI init subcommand: zero-config, arg parsing, preset list."""
 
 import json
+from unittest.mock import patch
+
+import pytest
 
 from cc_rig.cli import build_parser, main
+from cc_rig.skills.downloader import SkillInstallReport
+
+
+@pytest.fixture(autouse=True)
+def _mock_skill_downloads():
+    """Mock skill downloads to avoid network calls in CLI tests."""
+    report = SkillInstallReport()
+    object.__setattr__(report, "_files", [])
+    with patch("cc_rig.generators.skills.download_skills", return_value=report):
+        yield
 
 
 class TestZeroConfig:
