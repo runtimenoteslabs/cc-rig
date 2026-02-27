@@ -229,6 +229,56 @@ def build_parser() -> argparse.ArgumentParser:
         help="Project directory (default: current)",
     )
 
+    # skills
+    skills_parser = subparsers.add_parser(
+        "skills",
+        help="Manage community skills",
+    )
+    skills_sub = skills_parser.add_subparsers(dest="skills_command")
+
+    skills_list_p = skills_sub.add_parser("list", help="Show installed skills")
+    skills_list_p.add_argument(
+        "-d",
+        "--dir",
+        default=".",
+        help="Project directory",
+    )
+
+    skills_catalog_p = skills_sub.add_parser("catalog", help="Show all available skills")
+    skills_catalog_p.add_argument(
+        "--phase",
+        help="Filter by SDLC phase",
+    )
+
+    skills_add_p = skills_sub.add_parser("add", help="Install a skill from catalog")
+    skills_add_p.add_argument("name", help="Skill name (from catalog)")
+    skills_add_p.add_argument(
+        "-d",
+        "--dir",
+        default=".",
+        help="Project directory",
+    )
+
+    skills_remove_p = skills_sub.add_parser("remove", help="Remove an installed skill")
+    skills_remove_p.add_argument("name", help="Skill name to remove")
+    skills_remove_p.add_argument(
+        "-d",
+        "--dir",
+        default=".",
+        help="Project directory",
+    )
+
+    skills_install_p = skills_sub.add_parser(
+        "install",
+        help="Retry failed downloads from init",
+    )
+    skills_install_p.add_argument(
+        "-d",
+        "--dir",
+        default=".",
+        help="Project directory",
+    )
+
     # clean
     clean_parser = subparsers.add_parser("clean", help="Remove generated files")
     clean_parser.add_argument(
@@ -263,6 +313,8 @@ def main(argv: list[str] | None = None) -> int:
             return _cmd_config(args)
         if args.command == "harness":
             return _cmd_harness(args)
+        if args.command == "skills":
+            return _cmd_skills(args)
         if args.command == "doctor":
             return _cmd_doctor(args)
         if args.command == "clean":
@@ -684,6 +736,220 @@ def _cmd_clean(args: argparse.Namespace) -> int:
 
     print("Clean complete.")
     return 0
+
+
+def _cmd_skills(args: argparse.Namespace) -> int:
+    """Dispatch skills subcommands."""
+    cmd = getattr(args, "skills_command", None)
+    if cmd == "list":
+        return _skills_list(args)
+    if cmd == "catalog":
+        return _skills_catalog(args)
+    if cmd == "add":
+        return _skills_add(args)
+    if cmd == "remove":
+        return _skills_remove(args)
+    if cmd == "install":
+        return _skills_install(args)
+    # Default to list
+    return _skills_list(args)
+
+
+def _skills_list(args: argparse.Namespace) -> int:
+    """Show installed skills grouped by phase."""
+    from pathlib import Path
+
+    from cc_rig.skills.registry import SKILL_CATALOG
+
+    project_dir = Path(getattr(args, "dir", ".")).resolve()
+    skills_dir = project_dir / ".claude" / "skills"
+
+    if not skills_dir.is_dir():
+        print("No skills installed. Run 'cc-rig init' to set up your project.")
+        return 0
+
+    # Find installed skills
+    installed: list[tuple[str, str, str]] = []  # (name, phase, source)
+    for skill_dir in sorted(skills_dir.iterdir()):
+        if not skill_dir.is_dir():
+            continue
+        skill_md = skill_dir / "SKILL.md"
+        if not skill_md.exists():
+            continue
+        name = skill_dir.name
+        spec = SKILL_CATALOG.get(name)
+        phase = spec.sdlc_phase if spec else "local"
+        source = spec.repo if spec else "local"
+        installed.append((name, phase, source))
+
+    if not installed:
+        print("No skills installed.")
+        return 0
+
+    # Group by phase
+    by_phase: dict[str, list[tuple[str, str]]] = {}
+    for name, phase, source in installed:
+        by_phase.setdefault(phase, []).append((name, source))
+
+    print(f"\nInstalled skills ({len(installed)}):\n")
+    for phase in (
+        "coding",
+        "testing",
+        "review",
+        "security",
+        "database",
+        "devops",
+        "planning",
+        "local",
+    ):
+        entries = by_phase.get(phase, [])
+        if entries:
+            print(f"  {phase.upper()}")
+            for name, source in entries:
+                print(f"    {name:<35} ({source})")
+    print()
+    return 0
+
+
+def _skills_catalog(args: argparse.Namespace) -> int:
+    """Show all available skills in the registry."""
+    from cc_rig.skills.registry import SKILL_CATALOG
+
+    phase_filter = getattr(args, "phase", None)
+
+    # Group by phase
+    by_phase: dict[str, list] = {}
+    for spec in SKILL_CATALOG.values():
+        if phase_filter and spec.sdlc_phase != phase_filter:
+            continue
+        by_phase.setdefault(spec.sdlc_phase, []).append(spec)
+
+    if not by_phase:
+        print(f"No skills found for phase: {phase_filter}")
+        return 0
+
+    print(f"\nSkill catalog ({len(SKILL_CATALOG)} skills):\n")
+    phase_order = ["coding", "testing", "review", "security", "database", "devops", "planning"]
+    for phase in phase_order:
+        specs = by_phase.get(phase, [])
+        if specs:
+            print(f"  {phase.upper()}")
+            for s in specs:
+                print(f"    {s.name:<35} {s.description}")
+                print(f"    {'':35} {s.repo}")
+    print()
+    return 0
+
+
+def _skills_add(args: argparse.Namespace) -> int:
+    """Download and install a skill from the catalog."""
+    from pathlib import Path
+
+    from cc_rig.skills.downloader import download_skills
+    from cc_rig.skills.registry import SKILL_CATALOG
+
+    project_dir = Path(args.dir).resolve()
+    name = args.name
+
+    spec = SKILL_CATALOG.get(name)
+    if not spec:
+        print(f"Unknown skill: {name}")
+        print("Run 'cc-rig skills catalog' to see available skills.")
+        return 1
+
+    # Check if already installed
+    skill_md = project_dir / ".claude" / "skills" / name / "SKILL.md"
+    if skill_md.exists():
+        print(f"Skill '{name}' is already installed.")
+        return 0
+
+    print(f"Installing {name} from {spec.repo}...")
+    report = download_skills([spec], project_dir)
+
+    if name in report.installed:
+        print(f"Installed: {name}")
+        for f in report.all_files:
+            print(f"  + {f}")
+        return 0
+    else:
+        reason = dict(report.failed).get(name, "unknown error")
+        print(f"Failed to install {name}: {reason}")
+        return 1
+
+
+def _skills_remove(args: argparse.Namespace) -> int:
+    """Remove an installed skill."""
+    import shutil
+    from pathlib import Path
+
+    project_dir = Path(args.dir).resolve()
+    name = args.name
+    skill_dir = project_dir / ".claude" / "skills" / name
+
+    if not skill_dir.is_dir():
+        print(f"Skill '{name}' is not installed.")
+        return 1
+
+    shutil.rmtree(skill_dir)
+    print(f"Removed: {name}")
+    return 0
+
+
+def _skills_install(args: argparse.Namespace) -> int:
+    """Retry failed downloads — install all resolved skills for the project."""
+    import json
+    from pathlib import Path
+
+    from cc_rig.config.project import ProjectConfig
+    from cc_rig.skills.downloader import download_skills
+    from cc_rig.skills.registry import resolve_skills
+
+    project_dir = Path(args.dir).resolve()
+    cc_rig_json = project_dir / ".cc-rig.json"
+
+    if not cc_rig_json.exists():
+        print("No .cc-rig.json found. Run 'cc-rig init' first.")
+        return 1
+
+    try:
+        config = ProjectConfig.from_json(cc_rig_json.read_text())
+    except (json.JSONDecodeError, KeyError) as exc:
+        print(f"Error reading .cc-rig.json: {exc}")
+        return 1
+
+    # Resolve which skills should be installed
+    specs = resolve_skills(
+        config.template_preset or config.framework or "",
+        config.workflow or "standard",
+        config.default_mcps,
+    )
+
+    if not specs:
+        print("No skills to install for this configuration.")
+        return 0
+
+    # Filter to skills not already installed
+    skills_dir = project_dir / ".claude" / "skills"
+    missing = [s for s in specs if not (skills_dir / s.name / "SKILL.md").exists()]
+
+    if not missing:
+        print(f"All {len(specs)} skills already installed.")
+        return 0
+
+    print(f"Installing {len(missing)} missing skill(s)...")
+    report = download_skills(missing, project_dir)
+
+    if report.installed:
+        print(f"\nInstalled ({len(report.installed)}):")
+        for name in report.installed:
+            print(f"  + {name}")
+
+    if report.failed:
+        print(f"\nFailed ({len(report.failed)}):")
+        for name, reason in report.failed:
+            print(f"  x {name}: {reason}")
+
+    return 0 if not report.failed else 1
 
 
 def _preset_list(args: argparse.Namespace | None = None) -> int:

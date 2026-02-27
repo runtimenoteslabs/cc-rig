@@ -24,6 +24,7 @@ from __future__ import annotations
 import json
 import stat
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -31,6 +32,19 @@ from cc_rig.clean import cleanup_files, load_manifest, run_clean
 from cc_rig.config.defaults import compute_defaults
 from cc_rig.config.project import HarnessConfig, ProjectConfig
 from cc_rig.generators.orchestrator import generate_all
+from cc_rig.skills.downloader import SkillInstallReport
+
+# ── Mock skill downloads ──────────────────────────────────────────────
+
+
+@pytest.fixture(autouse=True)
+def _mock_skill_downloads():
+    """Mock skill downloads to avoid network calls in E2E tests."""
+    report = SkillInstallReport()
+    object.__setattr__(report, "_files", [])
+    with patch("cc_rig.generators.skills.download_skills", return_value=report):
+        yield
+
 
 # ── Helpers ───────────────────────────────────────────────────────────
 
@@ -126,7 +140,7 @@ class TestS01FastapiStandardB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 45, f"Expected 45 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 41, f"Expected 41 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
@@ -234,13 +248,13 @@ class TestS01FastapiStandardB0:
 
     def test_skills_present(self):
         skills_dir = self.root / ".claude" / "skills"
-        assert (skills_dir / "tdd" / "SKILL.md").exists()
-        assert (skills_dir / "systematic-debug" / "SKILL.md").exists()
         assert (skills_dir / "project-patterns" / "SKILL.md").exists()
-        assert (skills_dir / "deployment-checklist" / "SKILL.md").exists()
+        # tdd/debug are only generated as fallbacks for speedrun or failed downloads
+        assert not (skills_dir / "deployment-checklist" / "SKILL.md").exists()
 
-    def test_recommended_skills_doc(self):
-        assert (self.root / "docs" / "recommended-skills.md").exists()
+    def test_no_recommended_skills_doc(self):
+        """recommended-skills.md is no longer generated (skills auto-installed)."""
+        assert not (self.root / "docs" / "recommended-skills.md").exists()
 
     def test_no_harness_files(self):
         assert not (self.root / "loop.sh").exists()
@@ -432,7 +446,7 @@ class TestS04FastapiSpeedrunB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 31, f"Expected 31 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 29, f"Expected 29 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
@@ -851,7 +865,7 @@ class TestS10DjangoSpeedrunB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 31, f"Expected 31 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 29, f"Expected 29 files, got {len(files)}: {sorted(files)}"
 
     def test_hooks_executable(self):
         _assert_hooks_executable(self.root)

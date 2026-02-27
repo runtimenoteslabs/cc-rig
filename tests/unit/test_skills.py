@@ -1,18 +1,18 @@
-"""Tests for skills generator output: Tier 1 content, Tier 3 stubs,
-and recommended skills guide.
+"""Tests for skills generator output: bundled fallbacks, project-patterns stub,
+and download integration.
 
-Covers spec scenarios S07–S09 from specs/skills-test-matrix.md.
+Updated for auto-install architecture: community skills are downloaded (mocked
+in tests), bundled tdd/debug are fallbacks for speedrun or offline.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
-import pytest
-
-from cc_rig.config.defaults import compute_defaults
-from cc_rig.config.project import ProjectConfig, SkillRecommendation
+from cc_rig.config.project import ProjectConfig
 from cc_rig.generators.skills import generate_skills
+from cc_rig.skills.downloader import SkillInstallReport
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -24,8 +24,8 @@ def _generate(
     framework: str = "fastapi",
     language: str = "python",
     test_cmd: str = "pytest",
-    recommended_skills: list[SkillRecommendation] | None = None,
     workflow: str = "standard",
+    template_preset: str = "",
 ) -> Path:
     """Generate skills into tmp_path and return it."""
     config = ProjectConfig(
@@ -34,9 +34,40 @@ def _generate(
         language=language,
         test_cmd=test_cmd,
         workflow=workflow,
-        recommended_skills=recommended_skills or [],
+        template_preset=template_preset or framework,
+        default_mcps=["github", "postgres"],
     )
-    generate_skills(config, tmp_path)
+    # Mock downloads to avoid network calls — return empty report (all fail)
+    with patch("cc_rig.generators.skills.download_skills") as mock_dl:
+        report = SkillInstallReport()
+        object.__setattr__(report, "_files", [])
+        mock_dl.return_value = report
+        generate_skills(config, tmp_path)
+    return tmp_path
+
+
+def _generate_speedrun(
+    tmp_path: Path,
+    framework: str = "fastapi",
+    language: str = "python",
+    test_cmd: str = "pytest",
+) -> Path:
+    """Generate skills in speedrun mode (always generates bundled tdd/debug)."""
+    config = ProjectConfig(
+        project_name="test",
+        framework=framework,
+        language=language,
+        test_cmd=test_cmd,
+        workflow="speedrun",
+        template_preset=framework,
+        default_mcps=["github", "postgres"],
+    )
+    # Mock downloads to avoid network calls
+    with patch("cc_rig.generators.skills.download_skills") as mock_dl:
+        report = SkillInstallReport()
+        object.__setattr__(report, "_files", [])
+        mock_dl.return_value = report
+        generate_skills(config, tmp_path)
     return tmp_path
 
 
@@ -45,121 +76,121 @@ def _read_skill(tmp_path: Path, skill_name: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# S07: Tier 1 TDD Content — 8 tests
+# Bundled TDD Fallback Content (speedrun mode) — 8 tests
 # ---------------------------------------------------------------------------
 
 
-class TestTier1TddContent:
-    """Verify framework-specific TDD guidance per template."""
+class TestBundledTddContent:
+    """Verify framework-specific TDD guidance in bundled fallback (speedrun)."""
 
     def test_tdd_fastapi(self, tmp_path):
-        _generate(tmp_path, framework="fastapi")
+        _generate_speedrun(tmp_path, framework="fastapi")
         content = _read_skill(tmp_path, "tdd")
         assert "TestClient" in content
         assert "starlette" in content
         assert "fastapi" in content.lower()
 
     def test_tdd_django(self, tmp_path):
-        _generate(tmp_path, framework="django")
+        _generate_speedrun(tmp_path, framework="django")
         content = _read_skill(tmp_path, "tdd")
         assert "django.test.TestCase" in content
 
     def test_tdd_nextjs(self, tmp_path):
-        _generate(tmp_path, framework="nextjs", language="typescript")
+        _generate_speedrun(tmp_path, framework="nextjs", language="typescript")
         content = _read_skill(tmp_path, "tdd")
         assert "Jest or Vitest" in content
         assert "React Testing Library" in content
 
     def test_tdd_gin(self, tmp_path):
-        _generate(tmp_path, framework="gin", language="go", test_cmd="go test ./...")
+        _generate_speedrun(tmp_path, framework="gin", language="go", test_cmd="go test ./...")
         content = _read_skill(tmp_path, "tdd")
         assert "httptest.NewRecorder" in content
         assert "t.Run()" in content
 
     def test_tdd_echo(self, tmp_path):
-        _generate(tmp_path, framework="echo", language="go", test_cmd="go test ./...")
+        _generate_speedrun(tmp_path, framework="echo", language="go", test_cmd="go test ./...")
         content = _read_skill(tmp_path, "tdd")
         assert "echo.New()" in content
 
     def test_tdd_clap(self, tmp_path):
-        _generate(tmp_path, framework="clap", language="rust", test_cmd="cargo test")
+        _generate_speedrun(tmp_path, framework="clap", language="rust", test_cmd="cargo test")
         content = _read_skill(tmp_path, "tdd")
         assert "assert_cmd" in content
         assert "#[test]" in content
 
     def test_tdd_flask(self, tmp_path):
-        _generate(tmp_path, framework="flask")
+        _generate_speedrun(tmp_path, framework="flask")
         content = _read_skill(tmp_path, "tdd")
         assert "test_client()" in content
         assert "FlaskClient" in content
 
     def test_tdd_unknown_generic(self, tmp_path):
-        _generate(tmp_path, framework="unknown-framework")
+        _generate_speedrun(tmp_path, framework="unknown-framework")
         content = _read_skill(tmp_path, "tdd")
         assert "established test patterns" in content
 
 
 # ---------------------------------------------------------------------------
-# S07: Tier 1 Debug Content — 8 tests
+# Bundled Debug Fallback Content (speedrun mode) — 8 tests
 # ---------------------------------------------------------------------------
 
 
-class TestTier1DebugContent:
-    """Verify framework-specific debug guidance per template."""
+class TestBundledDebugContent:
+    """Verify framework-specific debug guidance in bundled fallback (speedrun)."""
 
     def test_debug_fastapi(self, tmp_path):
-        _generate(tmp_path, framework="fastapi")
+        _generate_speedrun(tmp_path, framework="fastapi")
         content = _read_skill(tmp_path, "systematic-debug")
         assert "Depends" in content or "dependency injection" in content.lower()
         assert "uvicorn" in content
 
     def test_debug_django(self, tmp_path):
-        _generate(tmp_path, framework="django")
+        _generate_speedrun(tmp_path, framework="django")
         content = _read_skill(tmp_path, "systematic-debug")
         assert "django-debug-toolbar" in content
 
     def test_debug_nextjs(self, tmp_path):
-        _generate(tmp_path, framework="nextjs", language="typescript")
+        _generate_speedrun(tmp_path, framework="nextjs", language="typescript")
         content = _read_skill(tmp_path, "systematic-debug")
         assert "React DevTools" in content
         assert "ydration" in content  # "Hydration" or "hydration"
 
     def test_debug_gin(self, tmp_path):
-        _generate(tmp_path, framework="gin", language="go", test_cmd="go test ./...")
+        _generate_speedrun(tmp_path, framework="gin", language="go", test_cmd="go test ./...")
         content = _read_skill(tmp_path, "systematic-debug")
         assert "DebugMode" in content
         assert "pprof" in content
 
     def test_debug_echo(self, tmp_path):
-        _generate(tmp_path, framework="echo", language="go", test_cmd="go test ./...")
+        _generate_speedrun(tmp_path, framework="echo", language="go", test_cmd="go test ./...")
         content = _read_skill(tmp_path, "systematic-debug")
         assert "echo.Debug" in content or "echo" in content.lower()
 
     def test_debug_clap(self, tmp_path):
-        _generate(tmp_path, framework="clap", language="rust", test_cmd="cargo test")
+        _generate_speedrun(tmp_path, framework="clap", language="rust", test_cmd="cargo test")
         content = _read_skill(tmp_path, "systematic-debug")
         assert "RUST_BACKTRACE" in content
         assert "dbg!()" in content
 
     def test_debug_flask(self, tmp_path):
-        _generate(tmp_path, framework="flask")
+        _generate_speedrun(tmp_path, framework="flask")
         content = _read_skill(tmp_path, "systematic-debug")
         assert "debug=True" in content
         assert "flask shell" in content
 
     def test_debug_unknown_generic(self, tmp_path):
-        _generate(tmp_path, framework="unknown-framework")
+        _generate_speedrun(tmp_path, framework="unknown-framework")
         content = _read_skill(tmp_path, "systematic-debug")
         assert "standard debugging tools" in content
 
 
 # ---------------------------------------------------------------------------
-# S08: Tier 3 Stub Content — 6 tests
+# Project Patterns Stub — 3 tests
 # ---------------------------------------------------------------------------
 
 
-class TestTier3Stubs:
-    """Verify Tier 3 stub structure and skill-creator tip."""
+class TestProjectPatternsStub:
+    """Verify project-patterns stub structure and skill-creator tip."""
 
     def test_project_patterns_has_sections(self, tmp_path):
         _generate(tmp_path)
@@ -179,108 +210,111 @@ class TestTier3Stubs:
         content = _read_skill(tmp_path, "project-patterns")
         assert "(Add your" in content
 
-    def test_deployment_checklist_has_sections(self, tmp_path):
-        _generate(tmp_path)
-        content = _read_skill(tmp_path, "deployment-checklist")
-        assert "## Pre-Deploy" in content
-        assert "## Deploy Steps" in content
-        assert "## Post-Deploy" in content
-
-    def test_deployment_checklist_has_skill_creator_tip(self, tmp_path):
-        _generate(tmp_path)
-        content = _read_skill(tmp_path, "deployment-checklist")
-        assert "skill-creator" in content
-        assert "## Tip" in content
-
-    def test_deployment_checklist_is_stub(self, tmp_path):
-        _generate(tmp_path)
-        content = _read_skill(tmp_path, "deployment-checklist")
-        assert "(Add " in content
-
 
 # ---------------------------------------------------------------------------
-# S09: Recommended Skills Guide — 10 tests
+# Speedrun generates bundled tdd + debug — 4 tests
 # ---------------------------------------------------------------------------
 
 
-class TestRecommendedSkillsGuide:
-    """Verify generated docs/recommended-skills.md content."""
+class TestSpeedrunBundledSkills:
+    """Speedrun always generates bundled tdd/debug regardless of download."""
 
-    @pytest.fixture()
-    def guide_content(self, tmp_path) -> str:
-        """Generate a standard fastapi config and return guide content."""
-        config = compute_defaults("fastapi", "standard", project_name="test")
-        generate_skills(config, tmp_path)
-        return (tmp_path / "docs" / "recommended-skills.md").read_text()
+    def test_speedrun_generates_tdd(self, tmp_path):
+        _generate_speedrun(tmp_path)
+        assert (tmp_path / ".claude" / "skills" / "tdd" / "SKILL.md").exists()
 
-    def test_guide_header_mentions_framework(self, guide_content):
-        assert "fastapi" in guide_content
+    def test_speedrun_generates_debug(self, tmp_path):
+        _generate_speedrun(tmp_path)
+        assert (tmp_path / ".claude" / "skills" / "systematic-debug" / "SKILL.md").exists()
 
-    def test_guide_header_mentions_workflow(self, guide_content):
-        assert "standard" in guide_content
+    def test_speedrun_generates_project_patterns(self, tmp_path):
+        _generate_speedrun(tmp_path)
+        assert (tmp_path / ".claude" / "skills" / "project-patterns" / "SKILL.md").exists()
 
-    def test_guide_groups_by_phase(self, guide_content):
-        assert "## Coding" in guide_content
-        assert "## Testing" in guide_content
-        assert "## Security" in guide_content
+    def test_speedrun_no_deployment_checklist(self, tmp_path):
+        """deployment-checklist stub was killed."""
+        _generate_speedrun(tmp_path)
+        assert not (tmp_path / ".claude" / "skills" / "deployment-checklist" / "SKILL.md").exists()
 
-    def test_guide_phase_ordering(self, guide_content):
-        """Phases should appear in SDLC order."""
-        coding_pos = guide_content.index("## Coding")
-        testing_pos = guide_content.index("## Testing")
-        review_pos = guide_content.index("## Review")
-        security_pos = guide_content.index("## Security")
-        assert coding_pos < testing_pos < review_pos < security_pos
 
-    def test_guide_has_install_commands(self, guide_content):
-        assert "```bash" in guide_content
-        assert "npx skills add" in guide_content
+# ---------------------------------------------------------------------------
+# Standard+ uses downloads (mocked) — 5 tests
+# ---------------------------------------------------------------------------
 
-    def test_guide_has_discovery_links(self, guide_content):
-        assert "skills.sh" in guide_content
-        assert "awesome-claude-code" in guide_content
-        assert "awesome-claude-skills" in guide_content
 
-    def test_guide_no_empty_phases(self, guide_content):
-        """Each phase header should have at least one skill under it."""
-        import re
+class TestDownloadIntegration:
+    """Standard+ workflows attempt to download community skills."""
 
-        # Split into sections by ## headers
-        sections = re.split(r"^## ", guide_content, flags=re.MULTILINE)
-        for section in sections:
-            if not section.strip() or section.startswith("Discover More"):
-                continue
-            # Skip the preamble (before first ## header)
-            if section.startswith("# "):
-                continue
-            # Each phase section should contain at least one ### skill entry
-            header = section.split("\n", 1)[0]
-            assert "###" in section, f"Empty phase section: ## {header}"
-
-    def test_guide_not_generated_when_no_skills(self, tmp_path):
-        """Config with empty recommended_skills produces no guide file."""
+    def test_standard_calls_download(self, tmp_path):
         config = ProjectConfig(
             project_name="test",
             framework="fastapi",
             language="python",
-            recommended_skills=[],
+            workflow="standard",
+            template_preset="fastapi",
+            default_mcps=["github", "postgres"],
         )
-        generate_skills(config, tmp_path)
+        with patch("cc_rig.generators.skills.download_skills") as mock_dl:
+            report = SkillInstallReport()
+            object.__setattr__(report, "_files", [])
+            mock_dl.return_value = report
+            generate_skills(config, tmp_path)
+            mock_dl.assert_called_once()
+
+    def test_successful_download_creates_files(self, tmp_path):
+        config = ProjectConfig(
+            project_name="test",
+            framework="fastapi",
+            language="python",
+            workflow="standard",
+            template_preset="fastapi",
+            default_mcps=["github", "postgres"],
+        )
+        with patch("cc_rig.generators.skills.download_skills") as mock_dl:
+            report = SkillInstallReport()
+            object.__setattr__(report, "_files", [".claude/skills/owasp-security/SKILL.md"])
+            report.installed.append("owasp-security")
+            mock_dl.return_value = report
+            files = generate_skills(config, tmp_path)
+            assert ".claude/skills/owasp-security/SKILL.md" in files
+
+    def test_failed_tdd_download_generates_fallback(self, tmp_path):
+        """When TDD download fails for spec-driven+, fallback is generated."""
+        config = ProjectConfig(
+            project_name="test",
+            framework="fastapi",
+            language="python",
+            workflow="spec-driven",
+            template_preset="fastapi",
+            default_mcps=["github", "postgres"],
+        )
+        with patch("cc_rig.generators.skills.download_skills") as mock_dl:
+            report = SkillInstallReport()
+            object.__setattr__(report, "_files", [])
+            report.failed.append(("test-driven-development", "timeout"))
+            mock_dl.return_value = report
+            generate_skills(config, tmp_path)
+            assert (tmp_path / ".claude" / "skills" / "tdd" / "SKILL.md").exists()
+
+    def test_failed_debug_download_generates_fallback(self, tmp_path):
+        """When debug download fails for spec-driven+, fallback is generated."""
+        config = ProjectConfig(
+            project_name="test",
+            framework="fastapi",
+            language="python",
+            workflow="spec-driven",
+            template_preset="fastapi",
+            default_mcps=["github", "postgres"],
+        )
+        with patch("cc_rig.generators.skills.download_skills") as mock_dl:
+            report = SkillInstallReport()
+            object.__setattr__(report, "_files", [])
+            report.failed.append(("systematic-debugging", "timeout"))
+            mock_dl.return_value = report
+            generate_skills(config, tmp_path)
+            assert (tmp_path / ".claude" / "skills" / "systematic-debug" / "SKILL.md").exists()
+
+    def test_no_recommended_skills_guide(self, tmp_path):
+        """recommended-skills.md is no longer generated."""
+        _generate(tmp_path)
         assert not (tmp_path / "docs" / "recommended-skills.md").exists()
-
-    def test_guide_skill_count_matches_config(self, tmp_path):
-        """Number of ### entries should match config.recommended_skills count."""
-        config = compute_defaults("fastapi", "standard", project_name="test")
-        generate_skills(config, tmp_path)
-        content = (tmp_path / "docs" / "recommended-skills.md").read_text()
-        h3_count = content.count("### ")
-        assert h3_count == len(config.recommended_skills)
-
-    def test_guide_all_skills_have_descriptions(self, tmp_path):
-        """Every skill in the guide should have a description line."""
-        config = compute_defaults("fastapi", "standard", project_name="test")
-        generate_skills(config, tmp_path)
-        content = (tmp_path / "docs" / "recommended-skills.md").read_text()
-        for skill in config.recommended_skills:
-            if skill.description:
-                assert skill.description in content, f"Missing description for {skill.name}"

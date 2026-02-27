@@ -1,4 +1,4 @@
-"""Generate .claude/skills/ — bundled Tier 1 and stub Tier 3 skills."""
+"""Generate .claude/skills/ — download community skills + bundled fallbacks."""
 
 from __future__ import annotations
 
@@ -6,6 +6,8 @@ from pathlib import Path
 
 from cc_rig.config.project import ProjectConfig
 from cc_rig.generators.fileops import FileTracker
+from cc_rig.skills.downloader import SkillInstallReport, download_skills
+from cc_rig.skills.registry import resolve_skills
 
 
 def generate_skills(
@@ -13,42 +15,69 @@ def generate_skills(
     output_dir: Path,
     tracker: FileTracker | None = None,
 ) -> list[str]:
-    """Generate skill SKILL.md files in .claude/skills/.
+    """Generate skill files in .claude/skills/.
 
-    Tier 1 (bundled): tdd, systematic-debug — real, customized content.
-    Tier 3 (stubs): project-patterns, deployment-checklist — minimal.
+    Downloads community skills from the curated registry, with offline
+    fallbacks for tdd/debug. Always generates the project-patterns stub.
 
     Returns list of relative file paths written.
     """
     files_written: list[str] = []
 
-    # Tier 1: TDD skill
-    files_written.extend(_write_tdd_skill(config, output_dir, tracker))
+    # Resolve which skills to install
+    specs = resolve_skills(
+        config.template_preset or config.framework or "",
+        config.workflow or "standard",
+        config.default_mcps,
+    )
 
-    # Tier 1: Systematic debug skill
-    files_written.extend(_write_debug_skill(config, output_dir, tracker))
+    # Attempt to download community skills
+    report = _download_community_skills(specs, output_dir, tracker)
+    files_written.extend(report.all_files)
 
-    # Tier 3: Project patterns stub
+    # Speedrun bundled_only: generate thin tdd/debug instead of downloading
+    if config.workflow == "speedrun":
+        files_written.extend(_write_tdd_fallback(config, output_dir, tracker))
+        files_written.extend(_write_debug_fallback(config, output_dir, tracker))
+    else:
+        # Offline fallback: if tdd/debug download failed and workflow needs them
+        if "test-driven-development" in report.failed_names:
+            files_written.extend(_write_tdd_fallback(config, output_dir, tracker))
+        if "systematic-debugging" in report.failed_names:
+            files_written.extend(_write_debug_fallback(config, output_dir, tracker))
+
+    # Always generate project-patterns stub
     files_written.extend(_write_project_patterns_stub(config, output_dir, tracker))
-
-    # Tier 3: Deployment checklist stub
-    files_written.extend(_write_deployment_checklist_stub(config, output_dir, tracker))
-
-    # Community skills guide
-    if config.recommended_skills:
-        files_written.extend(_write_recommended_skills_guide(config, output_dir, tracker))
 
     return files_written
 
 
-# ── Tier 1: TDD ───────────────────────────────────────────────────
+def _download_community_skills(
+    specs: list,
+    output_dir: Path,
+    tracker: FileTracker | None,
+) -> SkillInstallReport:
+    """Download skills, returning a report. Never raises."""
+    try:
+        return download_skills(specs, output_dir, tracker=tracker)
+    except Exception:
+        # Total download failure — return empty report
+        report = SkillInstallReport()
+        object.__setattr__(report, "_files", [])
+        for spec in specs:
+            report.failed.append((spec.name, "download system failure"))
+        return report
 
 
-def _write_tdd_skill(
+# ── Bundled fallback: TDD ──────────────────────────────────────────────
+
+
+def _write_tdd_fallback(
     config: ProjectConfig,
     output_dir: Path,
     tracker: FileTracker | None = None,
 ) -> list[str]:
+    """Write thin bundled TDD skill (offline fallback or speedrun)."""
     skills_dir = output_dir / ".claude" / "skills" / "tdd"
     skills_dir.mkdir(parents=True, exist_ok=True)
 
@@ -56,7 +85,6 @@ def _write_tdd_skill(
     lang = config.language or "the project language"
     framework = config.framework or "the project framework"
 
-    # Build framework-specific testing guidance
     test_guidance = _tdd_guidance_for(framework)
 
     content = (
@@ -190,14 +218,15 @@ def _tdd_guidance_for(framework: str) -> str:
     )
 
 
-# ── Tier 1: Systematic Debug ──────────────────────────────────────
+# ── Bundled fallback: Systematic Debug ─────────────────────────────────
 
 
-def _write_debug_skill(
+def _write_debug_fallback(
     config: ProjectConfig,
     output_dir: Path,
     tracker: FileTracker | None = None,
 ) -> list[str]:
+    """Write thin bundled debug skill (offline fallback or speedrun)."""
     skills_dir = output_dir / ".claude" / "skills" / "systematic-debug"
     skills_dir.mkdir(parents=True, exist_ok=True)
 
@@ -348,7 +377,7 @@ def _debug_guidance_for(framework: str) -> str:
     )
 
 
-# ── Tier 3: Project Patterns (stub) ──────────────────────────────
+# ── Project Patterns (always generated) ────────────────────────────────
 
 
 def _write_project_patterns_stub(
@@ -394,111 +423,4 @@ def _write_project_patterns_stub(
     else:
         path = skills_dir / "SKILL.md"
         path.write_text(content)
-    return [rel]
-
-
-# ── Tier 3: Deployment Checklist (stub) ──────────────────────────
-
-
-def _write_deployment_checklist_stub(
-    config: ProjectConfig,
-    output_dir: Path,
-    tracker: FileTracker | None = None,
-) -> list[str]:
-    skills_dir = output_dir / ".claude" / "skills" / "deployment-checklist"
-    skills_dir.mkdir(parents=True, exist_ok=True)
-
-    content = (
-        "# Deployment Checklist Skill\n"
-        "\n"
-        "Project-specific deployment steps and verification.\n"
-        "\n"
-        "## Instructions\n"
-        "\n"
-        "Fill in your project-specific deployment checklist. "
-        "Claude will follow these steps when deploying.\n"
-        "\n"
-        "## Pre-Deploy\n"
-        "\n"
-        "(Add pre-deployment checks here.)\n"
-        "\n"
-        "## Deploy Steps\n"
-        "\n"
-        "(Add deployment steps here.)\n"
-        "\n"
-        "## Post-Deploy Verification\n"
-        "\n"
-        "(Add post-deploy verification steps here.)\n"
-        "\n"
-        "## Tip\n"
-        "\n"
-        "Use `npx skills add anthropics/skills --skill skill-creator` "
-        "to have Claude help you write this skill.\n"
-    )
-
-    rel = ".claude/skills/deployment-checklist/SKILL.md"
-    if tracker is not None:
-        tracker.write_text(rel, content)
-    else:
-        path = skills_dir / "SKILL.md"
-        path.write_text(content)
-    return [rel]
-
-
-# ── Recommended Skills Guide (generated from config) ────────────
-
-
-def _write_recommended_skills_guide(
-    config: ProjectConfig,
-    output_dir: Path,
-    tracker: FileTracker | None = None,
-) -> list[str]:
-    """Generate docs/recommended-skills.md with categorized install commands."""
-    docs_dir = output_dir / "docs"
-    docs_dir.mkdir(parents=True, exist_ok=True)
-
-    lines = [
-        "# Recommended Skills\n",
-        f"Community skills curated for **{config.framework}** "
-        f"({config.language}) with **{config.workflow}** workflow.\n",
-        "",
-    ]
-
-    # Group skills by SDLC phase
-    by_phase: dict[str, list[tuple[str, str, str]]] = {}
-    for skill in config.recommended_skills:
-        phase = skill.sdlc_phase or "other"
-        by_phase.setdefault(phase, []).append((skill.name, skill.description, skill.install))
-
-    phase_order = ("coding", "testing", "review", "security", "database", "devops", "planning")
-    for phase in phase_order:
-        skills = by_phase.get(phase, [])
-        if not skills:
-            continue
-        lines.append(f"## {phase.title()}\n")
-        for name, desc, install in skills:
-            lines.append(f"### {name}\n")
-            if desc:
-                lines.append(f"{desc}\n")
-            lines.append(f"```bash\n{install}\n```\n")
-
-    # Ecosystem discovery links
-    lines.append("## Discover More Skills\n")
-    lines.append("- [skills.sh](https://skills.sh/) — 73K+ skills directory")
-    lines.append(
-        "- [awesome-claude-code](https://github.com/hesreallyhim/awesome-claude-code) "
-        "— Community master index"
-    )
-    lines.append(
-        "- [awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) "
-        "— Composio curated list"
-    )
-    lines.append("")
-
-    rel = "docs/recommended-skills.md"
-    if tracker is not None:
-        tracker.write_text(rel, "\n".join(lines))
-    else:
-        path = docs_dir / "recommended-skills.md"
-        path.write_text("\n".join(lines))
     return [rel]

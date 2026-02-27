@@ -29,7 +29,6 @@ class TestTemplatePresets:
         assert "tool_commands" in data
         assert "source_dir" in data
         assert "test_dir" in data
-        assert "recommended_skills" in data
         assert "default_mcps" in data
 
     @pytest.mark.parametrize("name", BUILTIN_TEMPLATES)

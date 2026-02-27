@@ -6,6 +6,7 @@ from pathlib import Path
 
 from cc_rig.config.project import ProjectConfig
 from cc_rig.generators.fileops import FileTracker
+from cc_rig.skills.registry import resolve_skills
 from cc_rig.templates import get_framework_content
 
 
@@ -41,9 +42,10 @@ def generate_claude_md(
     # ── Section 5: Agent Docs pointers (STATIC) ────────────────────
     sections.append(_section_agent_docs(config))
 
-    # ── Section 5.5: Recommended Skills (STATIC, if any) ──────────
-    if config.recommended_skills:
-        sections.append(_section_recommended_skills(config))
+    # ── Section 5.5: Installed Skills (STATIC, if any) ──────────
+    skills_section = _section_installed_skills(config)
+    if skills_section:
+        sections.append(skills_section)
 
     # ── Section 6: Memory pointers (SEMI-STATIC, if enabled) ──────
     if config.features.memory:
@@ -167,26 +169,39 @@ def _section_agent_docs(config: ProjectConfig) -> str:
     return "\n".join(lines)
 
 
-def _section_recommended_skills(config: ProjectConfig) -> str:
+def _section_installed_skills(config: ProjectConfig) -> str:
+    """List auto-installed community skills grouped by phase.
+
+    Returns empty string if no skills are resolved (e.g. unknown template).
+    """
+    specs = resolve_skills(
+        config.template_preset or config.framework or "",
+        config.workflow or "standard",
+        config.default_mcps,
+    )
+    if not specs:
+        return ""
+
     lines = [
-        "## Recommended Skills\n",
-        "Install community skills to enhance Claude Code:\n",
+        "## Installed Skills\n",
+        "Community skills auto-installed by cc-rig:\n",
     ]
-    # Group by SDLC phase, show top skills with install commands
+
+    # Group by SDLC phase
     by_phase: dict[str, list[str]] = {}
-    for skill in config.recommended_skills:
-        phase = skill.sdlc_phase or "other"
-        by_phase.setdefault(phase, []).append(f"`{skill.install}`")
+    for spec in specs:
+        phase = spec.sdlc_phase or "other"
+        by_phase.setdefault(phase, []).append(f"{spec.name} ({spec.repo})")
 
     for phase in ("coding", "testing", "review", "security", "database", "devops", "planning"):
-        cmds = by_phase.get(phase, [])
-        if cmds:
-            lines.append(f"- **{phase.title()}**: {cmds[0]}")
-            for cmd in cmds[1:]:
-                lines.append(f"  - {cmd}")
+        entries = by_phase.get(phase, [])
+        if entries:
+            lines.append(f"- **{phase.title()}**: {entries[0]}")
+            for entry in entries[1:]:
+                lines.append(f"  - {entry}")
 
     lines.append("")
-    lines.append("See `docs/recommended-skills.md` for the full catalog.\n")
+    lines.append("Manage: `cc-rig skills list` | Browse: [skills.sh](https://skills.sh/)\n")
     return "\n".join(lines)
 
 

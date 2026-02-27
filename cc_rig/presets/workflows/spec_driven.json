@@ -45,27 +45,5 @@
     "gtd": false,
     "worktrees": true
   },
-  "permission_mode": "permissive",
-  "skill_phases": {
-    "planning": true,
-    "coding": true,
-    "testing": true,
-    "review": true,
-    "security": true,
-    "database": "if_applicable",
-    "devops": true
-  },
-  "skill_packs": {
-    "superpowers": [
-      "brainstorming",
-      "writing-plans",
-      "executing-plans",
-      "requesting-code-review",
-      "receiving-code-review",
-      "using-git-worktrees",
-      "finishing-a-development-branch"
-    ],
-    "trailofbits_core": "reference",
-    "anthropic_official": ["mcp-builder", "skill-creator"]
-  }
+  "permission_mode": "permissive"
 }

@@ -12,6 +12,7 @@ from typing import Any
 from cc_rig import __version__
 from cc_rig.config.project import Features, ProjectConfig, SkillRecommendation
 from cc_rig.presets.manager import load_template, load_workflow
+from cc_rig.skills.registry import resolve_skills as _registry_resolve
 
 # Hooks that require a specific tool command to be present.
 # If the template doesn't provide the tool command, the hook is skipped.
@@ -284,9 +285,25 @@ def compute_defaults(
     if not features.worktrees:
         commands = [c for c in commands if c not in _WORKTREE_COMMANDS]
 
-    # Step 7: Build recommended_skills with SDLC-aware merging
+    # Step 7: Build recommended_skills from registry resolver
     default_mcps = list(tmpl.get("default_mcps", []))
-    recommended_skills = _merge_skills(tmpl, wf, default_mcps)
+    specs = _registry_resolve(template, workflow, default_mcps)
+    recommended_skills = [
+        SkillRecommendation(
+            name=s.name,
+            sdlc_phase=s.sdlc_phase,
+            source=s.repo,
+            install=f"npx skills add {s.repo} --skill {s.name}"
+            if "owasp" not in s.name
+            else (
+                "curl -sL https://raw.githubusercontent.com/"
+                f"{s.repo}/main/{s.repo_path}/SKILL.md "
+                f"-o .claude/skills/{s.name}/SKILL.md --create-dirs"
+            ),
+            description=s.description,
+        )
+        for s in specs
+    ]
 
     return ProjectConfig(
         project_name=project_name,

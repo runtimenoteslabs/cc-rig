@@ -28,19 +28,5 @@
     "gtd": false,
     "worktrees": false
   },
-  "permission_mode": "default",
-  "skill_phases": {
-    "planning": false,
-    "coding": true,
-    "testing": "bundled_only",
-    "review": false,
-    "security": "reference",
-    "database": "if_applicable",
-    "devops": false
-  },
-  "skill_packs": {
-    "superpowers": [],
-    "trailofbits_core": [],
-    "anthropic_official": []
-  }
+  "permission_mode": "default"
 }

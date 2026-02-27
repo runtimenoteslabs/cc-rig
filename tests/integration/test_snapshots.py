@@ -6,11 +6,22 @@ changes, these tests will fail — update the snapshots deliberately.
 """
 
 import json
+from unittest.mock import patch
 
 import pytest
 
 from cc_rig.config.defaults import compute_defaults
 from cc_rig.generators.orchestrator import generate_all
+from cc_rig.skills.downloader import SkillInstallReport
+
+
+@pytest.fixture(autouse=True)
+def _mock_skill_downloads():
+    """Mock skill downloads to avoid network calls in snapshot tests."""
+    report = SkillInstallReport()
+    object.__setattr__(report, "_files", [])
+    with patch("cc_rig.generators.skills.download_skills", return_value=report):
+        yield
 
 
 def _generate(template, workflow, output_dir):
@@ -94,6 +105,67 @@ class TestFileManifestSnapshot:
         assert "tasks/inbox.md" in files
         assert "tasks/todo.md" in files
         assert "tasks/someday.md" in files
+
+
+class TestSkillsSnapshot:
+    """Verify skill file properties are stable across combos."""
+
+    def test_project_patterns_always_present(self, tmp_path):
+        """project-patterns stub is always generated."""
+        for template, workflow in _SNAPSHOT_COMBOS:
+            output = tmp_path / f"{template}-{workflow}"
+            _, manifest = _generate(template, workflow, output)
+            files = set(manifest["files"])
+            assert ".claude/skills/project-patterns/SKILL.md" in files, (
+                f"{template}+{workflow}: missing project-patterns"
+            )
+
+    def test_speedrun_has_bundled_tdd_and_debug(self, tmp_path):
+        """Speedrun always generates bundled tdd + debug fallbacks."""
+        output = tmp_path / "out"
+        _, manifest = _generate("fastapi", "speedrun", output)
+        files = set(manifest["files"])
+        assert ".claude/skills/tdd/SKILL.md" in files
+        assert ".claude/skills/systematic-debug/SKILL.md" in files
+
+    def test_standard_no_bundled_tdd_debug(self, tmp_path):
+        """Standard with mocked downloads: no tdd/debug fallbacks (not in resolved set)."""
+        output = tmp_path / "out"
+        _, manifest = _generate("fastapi", "standard", output)
+        files = set(manifest["files"])
+        assert ".claude/skills/tdd/SKILL.md" not in files
+        assert ".claude/skills/systematic-debug/SKILL.md" not in files
+
+    def test_no_deployment_checklist(self, tmp_path):
+        """deployment-checklist stub was killed — never generated."""
+        for template, workflow in _SNAPSHOT_COMBOS:
+            output = tmp_path / f"{template}-{workflow}"
+            _, manifest = _generate(template, workflow, output)
+            files = set(manifest["files"])
+            assert ".claude/skills/deployment-checklist/SKILL.md" not in files
+
+    def test_no_recommended_skills_doc(self, tmp_path):
+        """recommended-skills.md is no longer generated."""
+        for template, workflow in _SNAPSHOT_COMBOS:
+            output = tmp_path / f"{template}-{workflow}"
+            _, manifest = _generate(template, workflow, output)
+            files = set(manifest["files"])
+            assert "docs/recommended-skills.md" not in files
+
+    def test_claude_md_has_installed_skills_section(self, tmp_path):
+        """CLAUDE.md includes the Installed Skills section (non-speedrun)."""
+        output = tmp_path / "out"
+        _generate("fastapi", "standard", output)
+        content = (output / "CLAUDE.md").read_text()
+        assert "## Installed Skills" in content
+
+    def test_speedrun_no_installed_skills_section(self, tmp_path):
+        """Speedrun has no cross-cutting skills, so no Installed Skills section."""
+        output = tmp_path / "out"
+        _generate("rust-cli", "speedrun", output)
+        content = (output / "CLAUDE.md").read_text()
+        # rust-cli + speedrun resolves 0 skills → section omitted
+        assert "## Installed Skills" not in content
 
 
 class TestSettingsSnapshot:

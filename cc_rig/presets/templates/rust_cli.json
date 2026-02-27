@@ -12,28 +12,5 @@
   },
   "source_dir": "src",
   "test_dir": "tests",
-  "recommended_skills": [
-    {
-      "name": "property-based-testing",
-      "sdlc_phase": "testing",
-      "source": "trailofbits/skills",
-      "install": "npx skills add trailofbits/skills --skill property-based-testing",
-      "description": "Multi-language property testing (Rust/proptest)"
-    },
-    {
-      "name": "static-analysis",
-      "sdlc_phase": "security",
-      "source": "trailofbits/skills",
-      "install": "npx skills add trailofbits/skills --skill static-analysis",
-      "description": "CodeQL, Semgrep, SARIF parsing"
-    },
-    {
-      "name": "github-actions-generator",
-      "sdlc_phase": "devops",
-      "source": "akin-ozer/cc-devops-skills",
-      "install": "npx skills add akin-ozer/cc-devops-skills --skill github-actions-generator",
-      "description": "GitHub Actions CI/CD pipeline generation"
-    }
-  ],
   "default_mcps": ["github"]
 }

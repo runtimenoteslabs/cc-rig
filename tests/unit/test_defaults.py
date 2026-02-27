@@ -531,7 +531,7 @@ class TestStandardSkills:
     def test_owasp_included(self):
         config = compute_defaults("fastapi", "standard", project_name="test")
         names = {s.name for s in config.recommended_skills}
-        assert "claude-code-owasp" in names
+        assert "owasp-security" in names
 
     def test_superpowers_review_skills(self):
         config = compute_defaults("fastapi", "standard", project_name="test")
@@ -560,11 +560,12 @@ class TestVerifyHeavySkills:
         for phase in ("coding", "testing", "review", "security", "devops", "planning"):
             assert phase in phases, f"verify-heavy missing phase: {phase}"
 
-    def test_trailofbits_core_included(self):
+    def test_verify_heavy_unique_skills(self):
+        """Verify-heavy includes skills not in lower tiers."""
         config = compute_defaults("fastapi", "verify-heavy", project_name="test")
         names = {s.name for s in config.recommended_skills}
-        assert "static-analysis" in names
-        assert "second-opinion" in names
+        assert "verification-before-completion" in names
+        assert "subagent-driven-development" in names
 
     def test_full_superpowers(self):
         config = compute_defaults("fastapi", "verify-heavy", project_name="test")
@@ -586,13 +587,12 @@ class TestAnthropicOfficialSkills:
         config = compute_defaults("fastapi", "verify-heavy", project_name="test")
         names = {s.name for s in config.recommended_skills}
         assert "webapp-testing" in names
-        assert "mcp-builder" in names
         assert "skill-creator" in names
 
-    def test_standard_has_mcp_builder(self):
+    def test_standard_has_webapp_testing(self):
         config = compute_defaults("fastapi", "standard", project_name="test")
         names = {s.name for s in config.recommended_skills}
-        assert "mcp-builder" in names
+        assert "webapp-testing" in names
 
     def test_standard_no_skill_creator(self):
         config = compute_defaults("fastapi", "standard", project_name="test")
@@ -604,17 +604,15 @@ class TestAnthropicOfficialSkills:
         sources = {s.source for s in config.recommended_skills}
         assert "anthropics/skills" not in sources
 
-    def test_spec_driven_has_mcp_builder_and_skill_creator(self):
+    def test_spec_driven_has_webapp_testing(self):
         config = compute_defaults("fastapi", "spec-driven", project_name="test")
         names = {s.name for s in config.recommended_skills}
-        assert "mcp-builder" in names
-        assert "skill-creator" in names
+        assert "webapp-testing" in names
 
-    def test_gtd_lite_has_mcp_builder_and_skill_creator(self):
+    def test_gtd_lite_has_webapp_testing(self):
         config = compute_defaults("fastapi", "gtd-lite", project_name="test")
         names = {s.name for s in config.recommended_skills}
-        assert "mcp-builder" in names
-        assert "skill-creator" in names
+        assert "webapp-testing" in names
 
 
 class TestSpecDrivenSkills:
@@ -803,7 +801,7 @@ class TestSkillCountScaling:
         assert 10 <= self._count("fastapi", "standard") <= 16
         assert 15 <= self._count("fastapi", "spec-driven") <= 22
         assert 15 <= self._count("fastapi", "gtd-lite") <= 22
-        assert 23 <= self._count("fastapi", "verify-heavy") <= 30
+        assert 18 <= self._count("fastapi", "verify-heavy") <= 25
 
     @pytest.mark.parametrize("template", TEMPLATES)
     @pytest.mark.parametrize("workflow", WORKFLOWS)
@@ -847,13 +845,11 @@ class TestGtdLiteSkills:
         }
         assert expected.issubset(names), f"Missing: {expected - names}"
 
-    def test_trailofbits_reference_excluded(self):
-        """trailofbits_core='reference' means no ToB skills in active list."""
+    def test_no_static_analysis_for_python_template(self):
+        """static-analysis is template-specific to Go/Rust, not Python."""
         config = compute_defaults("fastapi", "gtd-lite", project_name="test")
         names = {s.name for s in config.recommended_skills}
-        # ToB core skills should NOT be present (reference = docs-only)
         assert "static-analysis" not in names
-        assert "second-opinion" not in names
 
     def test_similar_skills_to_spec_driven(self):
         """GTD-lite and spec-driven should produce identical skill sets."""
