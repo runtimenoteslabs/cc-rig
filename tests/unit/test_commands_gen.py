@@ -65,3 +65,119 @@ class TestCommandContent:
         _generate_commands("fastapi", "standard", tmp_path)
         path = tmp_path / ".claude" / "commands" / "review.md"
         assert path.exists()
+
+
+def _read_command(tmp_path, name):
+    return (tmp_path / ".claude" / "commands" / f"{name}.md").read_text()
+
+
+class TestSpecCommandContent:
+    """Validate spec-create and spec-execute command content."""
+
+    def test_spec_create_description_mentions_specification(self, tmp_path):
+        _generate_commands("fastapi", "spec-driven", tmp_path)
+        content = _read_command(tmp_path, "spec-create")
+        assert "specification" in content.lower()
+
+    def test_spec_create_tools_include_read_write(self, tmp_path):
+        _generate_commands("fastapi", "spec-driven", tmp_path)
+        content = _read_command(tmp_path, "spec-create")
+        assert "Read" in content
+        assert "Write" in content
+
+    def test_spec_create_tools_exclude_bash(self, tmp_path):
+        _generate_commands("fastapi", "spec-driven", tmp_path)
+        content = _read_command(tmp_path, "spec-create")
+        # Extract allowed-tools line from frontmatter
+        for line in content.splitlines():
+            if line.startswith("allowed-tools:"):
+                assert "Bash" not in line
+                break
+
+    def test_spec_create_body_references_specs_dir(self, tmp_path):
+        _generate_commands("fastapi", "spec-driven", tmp_path)
+        content = _read_command(tmp_path, "spec-create")
+        assert "specs/" in content
+
+    def test_spec_create_has_arguments(self, tmp_path):
+        _generate_commands("fastapi", "spec-driven", tmp_path)
+        content = _read_command(tmp_path, "spec-create")
+        assert "$ARGUMENTS" in content
+
+    def test_spec_execute_description_mentions_task_and_spec(self, tmp_path):
+        _generate_commands("fastapi", "spec-driven", tmp_path)
+        content = _read_command(tmp_path, "spec-execute")
+        lower = content.lower()
+        assert "task" in lower
+        assert "spec" in lower
+
+    def test_spec_execute_tools_include_bash(self, tmp_path):
+        _generate_commands("fastapi", "spec-driven", tmp_path)
+        content = _read_command(tmp_path, "spec-execute")
+        for line in content.splitlines():
+            if line.startswith("allowed-tools:"):
+                assert "Bash" in line
+                break
+
+    def test_spec_execute_body_references_tests(self, tmp_path):
+        _generate_commands("fastapi", "spec-driven", tmp_path)
+        content = _read_command(tmp_path, "spec-execute")
+        assert "test" in content.lower()
+
+    def test_spec_commands_absent_in_speedrun(self, tmp_path):
+        config, _ = _generate_commands("fastapi", "speedrun", tmp_path)
+        assert "spec-create" not in config.commands
+        assert "spec-execute" not in config.commands
+
+
+class TestGtdCommandContent:
+    """Validate gtd-capture, gtd-process, and daily-plan command content."""
+
+    def test_gtd_capture_body_references_inbox(self, tmp_path):
+        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        content = _read_command(tmp_path, "gtd-capture")
+        assert "tasks/inbox.md" in content
+
+    def test_gtd_capture_tools_exclude_bash(self, tmp_path):
+        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        content = _read_command(tmp_path, "gtd-capture")
+        for line in content.splitlines():
+            if line.startswith("allowed-tools:"):
+                assert "Bash" not in line
+                break
+
+    def test_gtd_capture_has_arguments(self, tmp_path):
+        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        content = _read_command(tmp_path, "gtd-capture")
+        assert "$ARGUMENTS" in content
+
+    def test_gtd_process_references_inbox(self, tmp_path):
+        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        content = _read_command(tmp_path, "gtd-process")
+        assert "tasks/inbox.md" in content
+
+    def test_gtd_process_references_todo(self, tmp_path):
+        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        content = _read_command(tmp_path, "gtd-process")
+        assert "tasks/todo.md" in content
+
+    def test_gtd_process_references_someday(self, tmp_path):
+        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        content = _read_command(tmp_path, "gtd-process")
+        assert "tasks/someday.md" in content
+
+    def test_daily_plan_references_todo(self, tmp_path):
+        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        content = _read_command(tmp_path, "daily-plan")
+        assert "todo.md" in content
+
+    def test_daily_plan_references_session_log(self, tmp_path):
+        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        content = _read_command(tmp_path, "daily-plan")
+        assert "session-log.md" in content
+
+    def test_gtd_commands_absent_in_standard(self, tmp_path):
+        config, _ = _generate_commands("fastapi", "standard", tmp_path)
+        assert "gtd-capture" not in config.commands
+        assert "gtd-process" not in config.commands
+        assert "daily-plan" not in config.commands

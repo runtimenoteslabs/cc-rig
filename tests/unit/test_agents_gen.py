@@ -252,6 +252,66 @@ class TestToolRestrictions:
             )
 
 
+class TestSpecAgentContent:
+    """Validate pm-spec and implementer agent content for spec workflow."""
+
+    def test_pm_spec_model_is_opus(self, tmp_path):
+        config, _ = _generate_agents("fastapi", "spec-driven", tmp_path)
+        assert "pm-spec" in config.agents
+        content = (tmp_path / ".claude" / "agents" / "pm-spec.md").read_text()
+        fields, _ = _parse_frontmatter(content)
+        assert fields["model"] == "opus"
+
+    def test_pm_spec_tools_exclude_bash(self, tmp_path):
+        _generate_agents("fastapi", "spec-driven", tmp_path)
+        content = (tmp_path / ".claude" / "agents" / "pm-spec.md").read_text()
+        fields, _ = _parse_frontmatter(content)
+        tools = {t.strip() for t in fields["tools"].split(",")}
+        assert "Bash" not in tools
+
+    def test_pm_spec_body_mentions_interview(self, tmp_path):
+        _generate_agents("fastapi", "spec-driven", tmp_path)
+        content = (tmp_path / ".claude" / "agents" / "pm-spec.md").read_text()
+        _, body = _parse_frontmatter(content)
+        assert "interview" in body.lower()
+
+    def test_pm_spec_body_mentions_user_stories(self, tmp_path):
+        _generate_agents("fastapi", "spec-driven", tmp_path)
+        content = (tmp_path / ".claude" / "agents" / "pm-spec.md").read_text()
+        _, body = _parse_frontmatter(content)
+        assert "user stories" in body.lower()
+
+    def test_pm_spec_body_mentions_acceptance_criteria(self, tmp_path):
+        _generate_agents("fastapi", "spec-driven", tmp_path)
+        content = (tmp_path / ".claude" / "agents" / "pm-spec.md").read_text()
+        _, body = _parse_frontmatter(content)
+        assert "acceptance criteria" in body.lower()
+
+    def test_implementer_model_is_sonnet(self, tmp_path):
+        _generate_agents("fastapi", "spec-driven", tmp_path)
+        content = (tmp_path / ".claude" / "agents" / "implementer.md").read_text()
+        fields, _ = _parse_frontmatter(content)
+        assert fields["model"] == "sonnet"
+
+    def test_implementer_tools_include_bash(self, tmp_path):
+        _generate_agents("fastapi", "spec-driven", tmp_path)
+        content = (tmp_path / ".claude" / "agents" / "implementer.md").read_text()
+        fields, _ = _parse_frontmatter(content)
+        tools = {t.strip() for t in fields["tools"].split(",")}
+        assert "Bash" in tools
+
+    def test_implementer_body_mentions_test(self, tmp_path):
+        _generate_agents("fastapi", "spec-driven", tmp_path)
+        content = (tmp_path / ".claude" / "agents" / "implementer.md").read_text()
+        _, body = _parse_frontmatter(content)
+        assert "test" in body.lower()
+
+    def test_spec_agents_absent_in_speedrun(self, tmp_path):
+        config, _ = _generate_agents("fastapi", "speedrun", tmp_path)
+        assert "pm-spec" not in config.agents
+        assert "implementer" not in config.agents
+
+
 class TestAgentDefConsistency:
     """Verify _AGENT_DEFS is internally consistent."""
 

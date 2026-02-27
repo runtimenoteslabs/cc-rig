@@ -120,6 +120,46 @@ class TestMemorySection:
         assert "memory/patterns.md" in content
 
 
+class TestSpecSectionContent:
+    """Validate spec workflow section references correct commands and paths."""
+
+    def test_references_spec_create_command(self, tmp_path):
+        content = _generate_claude_md("fastapi", "spec-driven", tmp_path)
+        assert "/spec-create" in content
+
+    def test_references_spec_execute_command(self, tmp_path):
+        content = _generate_claude_md("fastapi", "spec-driven", tmp_path)
+        assert "/spec-execute" in content
+
+    def test_references_specs_directory(self, tmp_path):
+        content = _generate_claude_md("fastapi", "spec-driven", tmp_path)
+        assert "specs/" in content
+
+    def test_mentions_acceptance_criteria(self, tmp_path):
+        content = _generate_claude_md("fastapi", "spec-driven", tmp_path)
+        assert "acceptance criteria" in content.lower()
+
+
+class TestGtdSectionContent:
+    """Validate GTD section references all task files and commands."""
+
+    def test_references_all_task_files(self, tmp_path):
+        content = _generate_claude_md("fastapi", "gtd-lite", tmp_path)
+        assert "tasks/inbox.md" in content
+        assert "tasks/todo.md" in content
+        assert "tasks/someday.md" in content
+
+    def test_references_all_commands(self, tmp_path):
+        content = _generate_claude_md("fastapi", "gtd-lite", tmp_path)
+        assert "/gtd-capture" in content
+        assert "/gtd-process" in content
+        assert "/daily-plan" in content
+
+    def test_mentions_getting_things_done(self, tmp_path):
+        content = _generate_claude_md("fastapi", "gtd-lite", tmp_path)
+        assert "Getting Things Done" in content
+
+
 class TestProjectIdentity:
     def test_project_name_in_output(self, tmp_path):
         from cc_rig.generators.claude_md import generate_claude_md
