@@ -74,7 +74,7 @@ def format_summary(config: ProjectConfig) -> str:
     except ImportError:
         pass
     lines = [
-        heading("Review"),
+        heading("Configuration preview"),
         "",
         f"  Project:    {BOLD}{config.project_name}{RESET}",
         f"  Stack:      {config.language} / {config.framework}",

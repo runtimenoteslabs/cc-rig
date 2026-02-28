@@ -116,7 +116,7 @@ class WorkflowStep:
 
 class ReviewStep:
     name = "review"
-    title = "Review configuration"
+    title = "Configuration preview"
 
     def execute(self, state: dict[str, Any], io: IO) -> StepResult:
         from cc_rig.config.defaults import compute_defaults

@@ -17,12 +17,6 @@ htmlcov/
 .coverage
 .tox/
 .mypy_cache/
+.claude/
+memory/
 ref/
-CODE-QUALITY-FIXES.md
-IMPLEMENTATION-PLAN.md
-REQUIREMENTS.md
-REVIEW-FINDINGS-V2.md
-REVIEW-FINDINGS.md
-SKILLS-MATRIX.md
-SMART-DEFAULTS-MATRIX.md
-TEST-GAPS.md

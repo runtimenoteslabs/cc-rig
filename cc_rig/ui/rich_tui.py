@@ -35,7 +35,7 @@ def rich_format_summary(config: Any) -> str:
     from rich.console import Console
     from rich.table import Table
 
-    table = Table(title="Review", show_header=False, border_style="dim")
+    table = Table(title="Configuration preview", show_header=False, border_style="dim")
     table.add_column("Field", style="bold")
     table.add_column("Value")
 

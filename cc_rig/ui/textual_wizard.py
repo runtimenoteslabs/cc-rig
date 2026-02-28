@@ -42,25 +42,27 @@ Screen {
 
 #brand-header {
     dock: top;
-    height: 3;
-    background: $primary;
-    color: $text;
+    height: 1;
+    background: #0d7377;
+    color: #ffffff;
     padding: 0 2;
 }
 
 #brand-header #brand-logo {
     text-style: bold;
+    color: #ffffff;
     width: auto;
     content-align: left middle;
 }
 
 #brand-header #brand-step {
+    color: #b0d0d0;
     content-align: right middle;
     width: 1fr;
 }
 
 #body {
-    padding: 1 2;
+    padding: 2 3;
 }
 
 .screen-title {
@@ -86,6 +88,9 @@ SelectionList {
     height: 1fr;
     min-height: 10;
     margin: 1 0;
+    scrollbar-color: #0d7377;
+    scrollbar-color-hover: #10999e;
+    scrollbar-color-active: #10999e;
 }
 
 TabbedContent {
@@ -94,15 +99,18 @@ TabbedContent {
 }
 
 #workflow-details, #harness-details {
-    border: solid $primary;
+    border: solid #0d7377;
+    border-left: thick #10999e;
     padding: 1 2;
-    min-height: 8;
+    min-height: 5;
+    max-height: 12;
+    overflow-y: auto;
     margin: 1 0;
 }
 
 #banner {
     text-align: center;
-    color: $accent;
+    color: #10999e;
     margin-bottom: 1;
 }
 
@@ -115,7 +123,7 @@ TabbedContent {
 #summary-box {
     margin: 1 0;
     padding: 1 2;
-    border: solid $primary;
+    border: solid #0d7377;
 }
 
 .feature-group {
@@ -179,17 +187,19 @@ class BrandHeader(Horizontal):
     DEFAULT_CSS = """
     BrandHeader {
         dock: top;
-        height: 3;
-        background: $primary;
-        color: $text;
+        height: 1;
+        background: #0d7377;
+        color: #ffffff;
         padding: 0 2;
     }
     BrandHeader #brand-logo {
         text-style: bold;
+        color: #ffffff;
         width: auto;
         content-align: left middle;
     }
     BrandHeader #brand-step {
+        color: #b0d0d0;
         content-align: right middle;
         width: 1fr;
     }
@@ -448,7 +458,7 @@ class ReviewScreen(ModalScreen[Optional[dict]]):
         yield BrandHeader(self._state.get("step_label", ""))
         config = self._state.get("config")
         with VerticalScroll(id="body"):
-            yield Label("Review configuration", classes="screen-title")
+            yield Label("Configuration preview", classes="screen-title")
             yield Label(
                 "Your workflow pre-selected agents (specialized AI roles), "
                 "commands (slash commands you invoke), and hooks (auto-actions "
@@ -481,25 +491,25 @@ class ReviewScreen(ModalScreen[Optional[dict]]):
             f"  Type:       {config.project_type}",
             f"  Workflow:   {config.workflow}",
             "",
-            f"  Agents:     {', '.join(config.agents)}",
-            f"  Commands:   {', '.join(config.commands)}",
-            f"  Hooks:      {', '.join(config.hooks)}",
+            f"  Agents:     {len(config.agents)}",
+            f"  Commands:   {len(config.commands)}",
+            f"  Hooks:      {len(config.hooks)}",
             f"  Features:   {self._format_features(config.features)}",
             f"  Skills:     {len(config.recommended_skills)} recommended",
-            f"  MCPs:       {', '.join(config.default_mcps) or 'none'}",
+            f"  MCPs:       {len(config.default_mcps)}",
         ]
         return "\n".join(lines)
 
     def _format_features(self, features: Any) -> str:
         flags = []
         if features.memory:
-            flags.append("memory")
+            flags.append("Memory")
         if features.spec_workflow:
-            flags.append("spec-workflow")
+            flags.append("Spec workflow")
         if features.gtd:
-            flags.append("gtd")
+            flags.append("GTD")
         if features.worktrees:
-            flags.append("worktrees")
+            flags.append("Worktrees")
         return ", ".join(flags) or "none"
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -544,6 +554,16 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
         command_descs = get_command_descriptions()
         hook_descs = get_hook_descriptions()
 
+        agents_label = (
+            f"Agents ({len(current_agents)}/{len(VALID_AGENTS)} selected)"
+        )
+        cmds_label = (
+            f"Commands ({len(current_commands)}/{len(VALID_COMMANDS)} selected)"
+        )
+        hooks_label = (
+            f"Hooks ({len(current_hooks)}/{len(VALID_HOOKS)} selected)"
+        )
+
         with VerticalScroll(id="body"):
             yield Label("Expert customization", classes="screen-title")
             yield Label(
@@ -552,7 +572,7 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
             )
 
             with TabbedContent(id="expert-tabs"):
-                with TabPane(f"Agents ({len(current_agents)})", id="tab-agents"):
+                with TabPane(agents_label, id="tab-agents"):
                     yield SelectionList[str](
                         *[
                             (
@@ -564,7 +584,7 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
                         ],
                         id="sel-agents",
                     )
-                with TabPane(f"Commands ({len(current_commands)})", id="tab-commands"):
+                with TabPane(cmds_label, id="tab-commands"):
                     yield SelectionList[str](
                         *[
                             (
@@ -576,7 +596,7 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
                         ],
                         id="sel-commands",
                     )
-                with TabPane(f"Hooks ({len(current_hooks)})", id="tab-hooks"):
+                with TabPane(hooks_label, id="tab-hooks"):
                     yield SelectionList[str](
                         *[
                             (
@@ -939,7 +959,7 @@ _GUIDED_SCREENS: list[tuple[type, str, Any]] = [
     (BasicsScreen, "Project basics", None),
     (TemplateScreen, "Select your stack", None),
     (WorkflowScreen, "Select your workflow", None),
-    (ReviewScreen, "Review configuration", None),
+    (ReviewScreen, "Configuration preview", None),
     (SkillPacksScreen, "Skill packs", None),
     (ExpertScreen, "Customize", _wants_expert),
     (FeaturesScreen, "Features", _wants_expert),
@@ -951,7 +971,7 @@ _QUICK_SCREENS: list[tuple[type, str, Any]] = [
     (TemplateScreen, "Select your stack", None),
     (WorkflowScreen, "Select your workflow", None),
     (BasicsScreen, "Project name", None),
-    (ReviewScreen, "Review configuration", None),
+    (ReviewScreen, "Configuration preview", None),
     (SkillPacksScreen, "Skill packs", None),
     (ExpertScreen, "Customize", _wants_expert),
     (FeaturesScreen, "Features", _wants_expert),
@@ -993,8 +1013,16 @@ class WizardApp(App[Optional[dict]]):
                 step += 1
                 continue
 
-            total = len(self._screens)
-            state["step_label"] = f"  Step {step + 1} of {total} — {title}"
+            visible = [
+                s for s in self._screens
+                if s[2] is None or s[2](state)
+            ]
+            visible_idx = next(
+                i for i, s in enumerate(visible) if s[0] is screen_cls
+            )
+            state["step_label"] = (
+                f"  Step {visible_idx + 1} of {len(visible)} — {title}"
+            )
 
             # Compute config before review/confirm screens need it
             if screen_cls in (ReviewScreen, ConfirmScreen) and "config" not in state:
