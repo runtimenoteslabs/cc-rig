@@ -120,7 +120,8 @@ TabbedContent {
 
 #banner {
     text-align: center;
-    color: #10999e;
+    color: #5eeaef;
+    text-style: bold;
     margin-bottom: 1;
 }
 
