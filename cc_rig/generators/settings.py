@@ -468,12 +468,9 @@ def _script_stop_validator(config: ProjectConfig) -> str:
         '  echo "WARNING: There are uncommitted changes."\n'
         "fi\n"
         "\n"
-        "# Run tests to verify nothing is broken\n"
-        f"if {test_cmd} 2>/dev/null; then\n"
-        '  echo "Tests pass."\n'
-        "else\n"
-        '  echo "WARNING: Tests are failing."\n'
-        "fi\n"
+        "# Remind about tests — don't run the full suite on every stop\n"
+        f'echo "Reminder: run \\"{test_cmd}\\" before committing '
+        'if you have not already."\n'
         "\n"
         "exit 0\n"
     )
