@@ -273,8 +273,8 @@ def _guided_flow(
         TemplateStep(),
         WorkflowStep(),
         ReviewStep(),
-        SkillPacksStep(),
         ExpertStep(),
+        SkillPacksStep(),
         HarnessStep(),
         ConfirmStep(),
     ]

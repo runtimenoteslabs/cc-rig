@@ -252,10 +252,6 @@ class TestExpertFeaturesFlow:
             assert isinstance(app.screen, ReviewScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
-            # SkillPacks
-            assert isinstance(app.screen, SkillPacksScreen)
-            await pilot.click("#btn-next")
-            await pilot.pause()
             # Expert (agents/commands/hooks only)
             assert isinstance(app.screen, ExpertScreen)
             # Verify no feature checkboxes on ExpertScreen
@@ -269,6 +265,10 @@ class TestExpertFeaturesFlow:
             assert app.screen.query_one("#feat-spec") is not None
             assert app.screen.query_one("#feat-gtd") is not None
             assert app.screen.query_one("#feat-worktrees") is not None
+            await pilot.click("#btn-next")
+            await pilot.pause()
+            # SkillPacks (after Features)
+            assert isinstance(app.screen, SkillPacksScreen)
             await pilot.click("#btn-cancel")
 
     @pytest.mark.asyncio
@@ -396,7 +396,7 @@ class TestExpertScreenTabs:
         app = WizardApp(initial_state=_make_state(force_expert=True))
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Navigate: Welcome → Basics → Template → Workflow → Review → SkillPacks → Expert
+            # Navigate: Welcome → Basics → Template → Workflow → Review → Expert
             await pilot.click("#btn-next")  # Welcome → Basics
             await pilot.pause()
             await pilot.click("#btn-next")  # Basics → Template
@@ -405,9 +405,7 @@ class TestExpertScreenTabs:
             await pilot.pause()
             await pilot.click("#btn-next")  # Workflow → Review
             await pilot.pause()
-            await pilot.click("#btn-next")  # Review → SkillPacks
-            await pilot.pause()
-            await pilot.click("#btn-next")  # SkillPacks → Expert
+            await pilot.click("#btn-next")  # Review → Expert
             await pilot.pause()
             assert isinstance(app.screen, ExpertScreen)
             # Verify TabbedContent exists
@@ -434,9 +432,7 @@ class TestExpertScreenTabs:
             await pilot.pause()
             await pilot.click("#btn-next")  # Workflow → Review
             await pilot.pause()
-            await pilot.click("#btn-next")  # Review → SkillPacks
-            await pilot.pause()
-            await pilot.click("#btn-next")  # SkillPacks → Expert
+            await pilot.click("#btn-next")  # Review → Expert
             await pilot.pause()
             assert isinstance(app.screen, ExpertScreen)
             # Check that agent labels contain descriptions (not just bare names)
@@ -501,7 +497,7 @@ class TestQuickFlowReviewAndExpert:
         app = QuickWizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Template → Workflow → Basics → Review → SkillPacks → Expert
+            # Template → Workflow → Basics → Review → Expert
             await pilot.click("#btn-next")  # Template
             await pilot.pause()
             await pilot.click("#btn-next")  # Workflow
@@ -512,10 +508,7 @@ class TestQuickFlowReviewAndExpert:
             # Check the customize checkbox
             chk = app.screen.query_one("#chk-customize", Checkbox)
             chk.value = True
-            await pilot.click("#btn-next")  # Review → SkillPacks
-            await pilot.pause()
-            assert isinstance(app.screen, SkillPacksScreen)
-            await pilot.click("#btn-next")  # SkillPacks → Expert (because customize=True)
+            await pilot.click("#btn-next")  # Review → Expert (because customize=True)
             await pilot.pause()
             assert isinstance(app.screen, ExpertScreen)
             await pilot.click("#btn-cancel")

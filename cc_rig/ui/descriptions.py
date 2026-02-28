@@ -157,8 +157,11 @@ HARNESS_DETAILS: dict[str, str] = {
         "  PROMPT.md                    — Instructions Claude reads each cycle\n"
         "  agent_docs/autonomy-loop.md  — Safety rails documentation\n"
         "\n"
-        "Safety: max 20 iterations, commits after each task, halts when stuck.\n"
-        "The autonomy-loop hook will be enabled automatically at this level.\n"
+        "Safety rails:\n"
+        "  • Defaults to 20 iterations — adjustable in loop.sh\n"
+        "  • Commit after each task — every change is a rollback point\n"
+        "  • Halt when stuck — stops if tests fail twice in a row\n"
+        "  • autonomy-loop hook — auto-enabled to enforce the above\n"
         "\n"
         "Best for: Experienced users with well-tested codebases and clear tasks."
     ),
@@ -191,7 +194,7 @@ FEATURE_DETAILS: list[dict[str, str]] = [
             "no re-explaining your codebase or past choices. Use /remember to\n"
             "save specific notes."
         ),
-        "adds": "remember command, memory-stop + memory-precompact hooks",
+        "adds": "/remember command and auto-save at session end",
     },
     {
         "key": "spec_workflow",
@@ -202,7 +205,7 @@ FEATURE_DETAILS: list[dict[str, str]] = [
             "then Claude implements exactly what the spec says. Prevents scope\n"
             "creep and gives you a checkpoint between planning and coding."
         ),
-        "adds": "pm-spec + implementer agents, /spec-create + /spec-execute commands",
+        "adds": "Spec agents + /spec-create and /spec-execute commands",
     },
     {
         "key": "gtd",
@@ -213,7 +216,7 @@ FEATURE_DETAILS: list[dict[str, str]] = [
             "them into prioritized tasks later. Start each day with a focused\n"
             "plan so Claude knows what to work on first."
         ),
-        "adds": "/gtd-capture, /gtd-process, /daily-plan commands",
+        "adds": "/gtd-capture, /gtd-process, and /daily-plan commands",
     },
     {
         "key": "worktrees",
@@ -224,7 +227,7 @@ FEATURE_DETAILS: list[dict[str, str]] = [
             "checkouts for independent tasks — no stashing or branch-switching.\n"
             "Each worktree has its own working directory."
         ),
-        "adds": "parallel-worker agent, /worktree command",
+        "adds": "Parallel worker agent + /worktree command",
     },
 ]
 
