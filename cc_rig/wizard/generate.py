@@ -42,11 +42,21 @@ def run_generation(
             io.say("Cancelled.")
             return 0
 
+    # Check for existing CLAUDE.md
+    skip_claude_md = False
+    existing_claude_md = output_dir / "CLAUDE.md"
+    if existing_claude_md.exists():
+        io.say("")
+        io.say(f"  Existing CLAUDE.md found at {output_dir}/CLAUDE.md")
+        io.say("  Backup will be saved to .cc-rig-backup/CLAUDE.md.bak")
+        if not confirm("Overwrite existing CLAUDE.md?", default=False, io=io):
+            skip_claude_md = True
+
     io.say(heading("Generating project files..."))
     io.say("")
 
     # Generate
-    manifest = generate_all(config, output_dir)
+    manifest = generate_all(config, output_dir, skip_claude_md=skip_claude_md)
     files = manifest["files"]
 
     io.say(format_file_list(files))

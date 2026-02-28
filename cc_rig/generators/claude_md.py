@@ -14,6 +14,8 @@ def generate_claude_md(
     config: ProjectConfig,
     output_dir: Path,
     tracker: FileTracker | None = None,
+    *,
+    skip: bool = False,
 ) -> list[str]:
     """Generate CLAUDE.md with sections ordered for prompt-cache efficiency.
 
@@ -21,6 +23,9 @@ def generate_claude_md(
     Target line counts: speedrun ~60, standard ~86, spec-driven ~102,
     gtd-lite ~105, verify-heavy ~111.
     """
+    if skip:
+        return []
+
     sections: list[str] = []
 
     # ── Section 1: Project Identity (STATIC) ───────────────────────
@@ -69,7 +74,7 @@ def generate_claude_md(
     content = "\n".join(sections)
 
     if tracker is not None:
-        tracker.write_text("CLAUDE.md", content)
+        tracker.write_text("CLAUDE.md", content, preserve_on_clean=True)
     else:
         output_dir.mkdir(parents=True, exist_ok=True)
         (output_dir / "CLAUDE.md").write_text(content)

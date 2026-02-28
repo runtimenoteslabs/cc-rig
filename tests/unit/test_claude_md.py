@@ -172,3 +172,24 @@ class TestProjectIdentity:
     def test_language_in_output(self, tmp_path):
         content = _generate_claude_md("fastapi", "standard", tmp_path)
         assert "python" in content.lower() or "Python" in content
+
+
+class TestSkipParameter:
+    def test_skip_returns_empty(self, tmp_path):
+        """skip=True returns empty list and does not create CLAUDE.md."""
+        from cc_rig.generators.claude_md import generate_claude_md
+
+        config = compute_defaults("fastapi", "standard", project_name="test-project")
+        result = generate_claude_md(config, tmp_path, skip=True)
+        assert result == []
+        assert not (tmp_path / "CLAUDE.md").exists()
+
+    def test_skip_does_not_overwrite_existing(self, tmp_path):
+        """skip=True preserves an existing CLAUDE.md untouched."""
+        from cc_rig.generators.claude_md import generate_claude_md
+
+        (tmp_path / "CLAUDE.md").write_text("# My hand-crafted CLAUDE.md\n")
+        config = compute_defaults("fastapi", "standard", project_name="test-project")
+        result = generate_claude_md(config, tmp_path, skip=True)
+        assert result == []
+        assert (tmp_path / "CLAUDE.md").read_text() == "# My hand-crafted CLAUDE.md\n"

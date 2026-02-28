@@ -26,12 +26,15 @@ from cc_rig.generators.skills import generate_skills
 def generate_all(
     config: ProjectConfig,
     output_dir: Path,
+    *,
+    skip_claude_md: bool = False,
 ) -> dict[str, Any]:
     """Run every generator in order, collect file lists, write manifest.
 
     Args:
         config: Fully resolved project configuration.
         output_dir: Root directory for generated output.
+        skip_claude_md: If True, skip CLAUDE.md generation (user kept theirs).
 
     Returns:
         Manifest dict with version info and file listing.
@@ -41,7 +44,7 @@ def generate_all(
 
     # Run generators in dependency order (CLAUDE.md first since it's the
     # primary file, settings next for hooks, then everything else).
-    all_files.extend(generate_claude_md(config, output_dir, tracker=tracker))
+    all_files.extend(generate_claude_md(config, output_dir, tracker=tracker, skip=skip_claude_md))
     all_files.extend(generate_settings(config, output_dir, tracker=tracker))
     all_files.extend(generate_agents(config, output_dir, tracker=tracker))
     all_files.extend(generate_commands(config, output_dir, tracker=tracker))

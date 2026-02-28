@@ -55,8 +55,9 @@ class TestReInitConfirmation:
     def test_rerun_shows_prompt(self, tmp_path):
         """Re-running init shows a confirmation prompt with old config info."""
         config, _ = _generate(tmp_path, workflow="standard")
-        # Re-run — confirm() reads one input; default=True so empty → yes
-        io = _make_io_with_prompts(inputs=[""])
+        # Re-run — two prompts: manifest overwrite (default=True, "" → yes)
+        # and CLAUDE.md overwrite ("y" → yes)
+        io = _make_io_with_prompts(inputs=["", "y"])
         exit_code = run_generation(config, tmp_path, io)
         assert exit_code == 0
         # confirm() passes the prompt through io.ask(), captured in _prompts
@@ -93,7 +94,7 @@ class TestOrphanCleanup:
         from cc_rig.config.defaults import compute_defaults
 
         config_sr = compute_defaults("fastapi", "speedrun", project_name="test-proj")
-        io = make_io(inputs=[""])  # confirm overwrite
+        io = make_io(inputs=["", "y"])  # confirm manifest overwrite + CLAUDE.md overwrite
         exit_code = run_generation(config_sr, tmp_path, io)
         assert exit_code == 0
 
@@ -115,7 +116,7 @@ class TestOrphanCleanup:
         """Re-running with same config produces no orphans."""
         config, _ = _generate(tmp_path, workflow="standard")
 
-        io = make_io(inputs=[""])  # confirm overwrite
+        io = make_io(inputs=["", "y"])  # confirm manifest overwrite + CLAUDE.md overwrite
         exit_code = run_generation(config, tmp_path, io)
         assert exit_code == 0
 
@@ -136,7 +137,7 @@ class TestOrphanCleanup:
         from cc_rig.config.defaults import compute_defaults
 
         config_sr = compute_defaults("fastapi", "speedrun", project_name="test-proj")
-        io = make_io(inputs=[""])
+        io = make_io(inputs=["", "y"])  # confirm manifest overwrite + CLAUDE.md overwrite
         run_generation(config_sr, tmp_path, io)
 
         new_manifest = load_manifest(tmp_path)
@@ -156,7 +157,7 @@ class TestOrphanCleanup:
         from cc_rig.config.defaults import compute_defaults
 
         config_sr = compute_defaults("fastapi", "speedrun", project_name="test-proj")
-        io = make_io(inputs=[""])
+        io = make_io(inputs=["", "y"])  # confirm manifest overwrite + CLAUDE.md overwrite
         run_generation(config_sr, tmp_path, io)
 
         new_manifest = load_manifest(tmp_path)
