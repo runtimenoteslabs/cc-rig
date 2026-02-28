@@ -138,6 +138,7 @@ class TestStepRunner:
         output = "\n".join(io._output)
         assert "[1/2] Step A" in output
         assert "[2/2] Step B" in output
+        assert "─" in output
 
     def test_empty_step_list(self):
         io = _make_io([])

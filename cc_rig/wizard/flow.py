@@ -387,5 +387,5 @@ def _ask_workflow(io: IO) -> str:
     for w in BUILTIN_WORKFLOWS:
         data = load_workflow(w)
         descriptions[w] = data.get("description", w)
-    options = [(w, f"{w} — {descriptions[w]}") for w in BUILTIN_WORKFLOWS]
+    options = [(w, f"{w} - {descriptions[w]}") for w in BUILTIN_WORKFLOWS]
     return ask_choice("Select workflow:", options, "standard", io=io)

@@ -104,9 +104,9 @@ WORKFLOW_DETAILS: dict[str, str] = {
 
 HARNESS_DETAILS: dict[str, str] = {
     "none": (
-        "B0 — No harness\n"
+        "B0 - No harness\n"
         "\n"
-        "Your workflow's hooks, agents, and commands work as configured.\n"
+        "Your workflow's hooks, agents and commands work as configured.\n"
         "No additional files are generated. You decide what to work on\n"
         "and when to stop.\n"
         "\n"
@@ -115,7 +115,7 @@ HARNESS_DETAILS: dict[str, str] = {
         "Best for: Learning Claude Code, quick experiments, full manual control."
     ),
     "lite": (
-        "B1 — Task tracking + budget awareness\n"
+        "B1 - Task tracking + budget awareness\n"
         "\n"
         "Generates a task file and budget guide that Claude reads at session\n"
         "start. Claude will check tasks/todo.md for priorities and be mindful\n"
@@ -123,45 +123,45 @@ HARNESS_DETAILS: dict[str, str] = {
         "status when Claude stops.\n"
         "\n"
         "Adds to your scaffold:\n"
-        "  tasks/todo.md              — Task list Claude reads for priorities\n"
-        "  agent_docs/budget-guide.md — Budget rules and usage guidelines\n"
-        "  budget-reminder hook       — Prints budget status on Stop\n"
+        "  tasks/todo.md              - Task list Claude reads for priorities\n"
+        "  agent_docs/budget-guide.md - Budget rules and usage guidelines\n"
+        "  budget-reminder hook       - Prints budget status on Stop\n"
         "\n"
         "Best for: Solo work where you want cost visibility and task structure."
     ),
     "standard": (
-        "B2 — Verification gates\n"
+        "B2 - Verification gates\n"
         "\n"
         "Adds written instructions that tell Claude it must run tests and lint\n"
         "before considering a task done or ending a session. Your hooks still\n"
-        "fire on their events as usual — this adds explicit rules Claude follows\n"
+        "fire on their events as usual. This adds explicit rules Claude follows\n"
         "about when to verify and what to do on failure.\n"
         "\n"
         "Adds to B1:\n"
-        "  agent_docs/verification-gates.md — Rules: run tests + lint before\n"
-        "                                     committing, completing, or stopping\n"
-        "  agent_docs/review-notes.md       — Captures review learnings per session\n"
+        "  agent_docs/verification-gates.md - Rules: run tests + lint before\n"
+        "                                     committing, completing or stopping\n"
+        "  agent_docs/review-notes.md       - Captures review learnings per session\n"
         "\n"
         "Best for: Teams, production code, CI-like discipline in the editor."
     ),
     "autonomy": (
-        "B3 — Autonomous iteration\n"
+        "B3 - Autonomous iteration\n"
         "\n"
         "Generates a loop.sh script that restarts Claude in a loop. Each\n"
         "iteration, Claude reads PROMPT.md, picks a task from tasks/todo.md,\n"
-        "implements it, verifies, commits, and exits. The script then restarts\n"
+        "implements it, verifies, commits and exits. The script then restarts\n"
         "Claude with fresh context for the next task.\n"
         "\n"
         "Adds to B2:\n"
-        "  loop.sh                      — Bash loop that drives iteration\n"
-        "  PROMPT.md                    — Instructions Claude reads each cycle\n"
-        "  agent_docs/autonomy-loop.md  — Safety rails documentation\n"
+        "  loop.sh                      - Bash loop that drives iteration\n"
+        "  PROMPT.md                    - Instructions Claude reads each cycle\n"
+        "  agent_docs/autonomy-loop.md  - Safety rails documentation\n"
         "\n"
         "Safety rails:\n"
-        "  • Defaults to 20 iterations — adjustable in loop.sh\n"
-        "  • Commit after each task — every change is a rollback point\n"
-        "  • Halt when stuck — stops if tests fail twice in a row\n"
-        "  • autonomy-loop hook — auto-enabled to enforce the above\n"
+        "  • Defaults to 20 iterations, adjustable in loop.sh\n"
+        "  • Commit after each task. Every change is a rollback point\n"
+        "  • Halt when stuck. Stops if tests fail twice in a row\n"
+        "  • autonomy-loop hook auto-enabled to enforce the above\n"
         "\n"
         "Best for: Experienced users with well-tested codebases and clear tasks."
     ),
@@ -171,13 +171,13 @@ HARNESS_DETAILS: dict[str, str] = {
 # ── Template descriptions ────────────────────────────────────────────
 
 TEMPLATE_DESCRIPTIONS: dict[str, str] = {
-    "fastapi": "Python / FastAPI — Modern async API framework",
-    "django": "Python / Django — Batteries-included web framework",
-    "flask": "Python / Flask — Lightweight WSGI micro-framework",
-    "nextjs": "TypeScript / Next.js — Full-stack React framework",
-    "gin": "Go / Gin — High-performance HTTP web framework",
-    "echo": "Go / Echo — Minimalist web framework",
-    "rust-cli": "Rust / Clap — Command-line application toolkit",
+    "fastapi": "Python / FastAPI - Modern async API framework",
+    "django": "Python / Django - Batteries-included web framework",
+    "flask": "Python / Flask - Lightweight WSGI micro-framework",
+    "nextjs": "TypeScript / Next.js - Full-stack React framework",
+    "gin": "Go / Gin - High-performance HTTP web framework",
+    "echo": "Go / Echo - Minimalist web framework",
+    "rust-cli": "Rust / Clap - Command-line application toolkit",
 }
 
 
@@ -187,11 +187,11 @@ FEATURE_DETAILS: list[dict[str, str]] = [
     {
         "key": "memory",
         "widget_id": "feat-memory",
-        "label": "Memory — Claude remembers across sessions",
+        "label": "Memory - Claude remembers across sessions",
         "description": (
-            "Claude saves decisions, conventions, and project context at the\n"
-            "end of each session. Next time, it picks up where you left off —\n"
-            "no re-explaining your codebase or past choices. Use /remember to\n"
+            "Claude saves decisions, conventions and project context at the\n"
+            "end of each session. Next time, it picks up where you left off.\n"
+            "No re-explaining your codebase or past choices. Use /remember to\n"
             "save specific notes."
         ),
         "adds": "/remember command and auto-save at session end",
@@ -199,7 +199,7 @@ FEATURE_DETAILS: list[dict[str, str]] = [
     {
         "key": "spec_workflow",
         "widget_id": "feat-spec",
-        "label": "Spec workflow — plan before code",
+        "label": "Spec workflow - plan before code",
         "description": (
             "Two-phase development: Claude writes a spec first, you review it,\n"
             "then Claude implements exactly what the spec says. Prevents scope\n"
@@ -210,21 +210,21 @@ FEATURE_DETAILS: list[dict[str, str]] = [
     {
         "key": "gtd",
         "widget_id": "feat-gtd",
-        "label": "GTD — capture ideas, process later, daily plans",
+        "label": "GTD - capture ideas, process later, daily plans",
         "description": (
             "Quick-capture ideas and bugs mid-flow without losing focus. Process\n"
             "them into prioritized tasks later. Start each day with a focused\n"
             "plan so Claude knows what to work on first."
         ),
-        "adds": "/gtd-capture, /gtd-process, and /daily-plan commands",
+        "adds": "/gtd-capture, /gtd-process and /daily-plan commands",
     },
     {
         "key": "worktrees",
         "widget_id": "feat-worktrees",
-        "label": "Worktrees — parallel branches",
+        "label": "Worktrees - parallel branches",
         "description": (
             "Work on multiple branches simultaneously. Claude spins up isolated\n"
-            "checkouts for independent tasks — no stashing or branch-switching.\n"
+            "checkouts for independent tasks. No stashing or branch-switching.\n"
             "Each worktree has its own working directory."
         ),
         "adds": "Parallel worker agent + /worktree command",

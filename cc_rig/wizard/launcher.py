@@ -11,11 +11,11 @@ def run_launcher(io: IO) -> str:
     Returns one of: "fresh", "quick", "config", "file", "migrate".
     """
     options = [
-        ("fresh", "Fresh project — full guided setup"),
-        ("quick", "Template picker — pick template + workflow"),
-        ("config", "Load saved config — reuse a previous setup"),
-        ("file", "Load config file — from a .json path"),
-        ("migrate", "Apply to existing repo — scan and propose"),
+        ("fresh", "Fresh project - full guided setup"),
+        ("quick", "Template picker - pick template + workflow"),
+        ("config", "Load saved config - reuse a previous setup"),
+        ("file", "Load config file - from a .json path"),
+        ("migrate", "Apply to existing repo - scan and propose"),
     ]
 
     return ask_choice(

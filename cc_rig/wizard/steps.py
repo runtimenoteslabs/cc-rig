@@ -104,7 +104,7 @@ class WorkflowStep:
         for w in BUILTIN_WORKFLOWS:
             data = load_workflow(w)
             descriptions[w] = data.get("description", w)
-        options = [(w, f"{w} — {descriptions[w]}") for w in BUILTIN_WORKFLOWS]
+        options = [(w, f"{w} - {descriptions[w]}") for w in BUILTIN_WORKFLOWS]
         workflow = ask_choice("Select workflow:", options, "standard", io=io, allow_back=True)
         if _is_back(workflow):
             return StepResult(action=StepAction.BACK)
@@ -183,7 +183,7 @@ class SkillPacksStep:
         template = state.get("template", "")
         options = []
         for pack_name, pack in SKILL_PACKS.items():
-            label = f"{pack.label} — {pack.description}"
+            label = f"{pack.label} - {pack.description}"
             recommended = pack.suggested_templates is None or (
                 template in (pack.suggested_templates or [])
             )

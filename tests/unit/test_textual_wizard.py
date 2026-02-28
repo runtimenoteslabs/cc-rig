@@ -437,10 +437,10 @@ class TestExpertScreenTabs:
             assert isinstance(app.screen, ExpertScreen)
             # Check that agent labels contain descriptions (not just bare names)
             sel_agents = app.screen.query_one("#sel-agents", SelectionList)
-            # Get the first option's label — should contain " — "
+            # Get the first option's label - should contain " - "
             option = sel_agents.get_option_at_index(0)
             label_text = str(option.prompt)
-            assert " — " in label_text
+            assert " - " in label_text
             await pilot.click("#btn-cancel")
 
 

@@ -173,6 +173,12 @@ class TestAskHarness:
         assert isinstance(result, HarnessConfig)
         assert result.level == "autonomy"
 
+    def test_autonomy_accepted_lowercase(self):
+        io = _make_io(["4", "i understand"])
+        result = ask_harness(io)
+        assert isinstance(result, HarnessConfig)
+        assert result.level == "autonomy"
+
     def test_autonomy_cancelled_on_wrong_confirmation(self):
         io = _make_io(["4", "nope"])
         result = ask_harness(io)

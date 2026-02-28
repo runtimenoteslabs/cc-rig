@@ -33,7 +33,7 @@ def run_quick(io: IO) -> tuple[str, str]:
         desc = data.get("description", w)
         agents = len(data.get("agents", []))
         commands = len(data.get("commands", []))
-        label = f"{w} — {desc} ({agents} agents, {commands} cmds)"
+        label = f"{w} - {desc} ({agents} agents, {commands} cmds)"
         if w == "standard":
             label += " (recommended)"
         workflow_options.append((w, label))

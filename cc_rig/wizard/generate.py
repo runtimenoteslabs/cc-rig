@@ -109,8 +109,15 @@ def run_generation(
     io.say("")
     io.say("  Next steps:")
     io.say(f"    cd {output_dir}")
+    git_files = [".claude/"]
+    if not skip_claude_md:
+        git_files.append("CLAUDE.md")
+    if config.default_mcps:
+        git_files.append(".mcp.json")
+    git_files.append(".cc-rig.json")
+    file_list = " ".join(git_files)
     io.say(
-        "    git add .claude/ CLAUDE.md .mcp.json .cc-rig.json "
+        f"    git add {file_list} "
         "&& git commit -m 'Add Claude Code config'"
     )
     io.say("    claude          # start Claude Code")

@@ -99,8 +99,9 @@ class StepRunner:
             step = self._steps[idx]
             total = len(self._steps)
 
-            # Show step indicator
-            self._io.say(f"\n[{idx + 1}/{total}] {step.title}")
+            # Show step indicator with separator
+            self._io.say(f"\n{'─' * 40}")
+            self._io.say(f"[{idx + 1}/{total}] {step.title}")
 
             # Save state snapshot before this step
             if idx >= len(snapshots):

@@ -319,11 +319,11 @@ class WelcomeScreen(ModalScreen[Optional[dict]]):
             yield Static(TAGLINE, id="tagline")
             yield Label("How would you like to start?", classes="screen-title")
             yield RadioSet(
-                RadioButton("Fresh project — full guided setup", value=True),
-                RadioButton("Template picker — pick template + workflow"),
-                RadioButton("Load saved config — reuse a previous setup"),
-                RadioButton("Load config file — from a .json path"),
-                RadioButton("Apply to existing repo — scan and propose"),
+                RadioButton("Fresh project - full guided setup", value=True),
+                RadioButton("Template picker - pick template + workflow"),
+                RadioButton("Load saved config - reuse a previous setup"),
+                RadioButton("Load config file - from a .json path"),
+                RadioButton("Apply to existing repo - scan and propose"),
                 id="launcher-radio",
             )
         yield NavBar(show_back=False, next_label="Start")
@@ -424,9 +424,7 @@ class TemplateScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Label("Select your stack", classes="screen-title")
             yield Label(
-                "Pick the framework closest to your project. "
-                "This controls which language-specific agents, linters, "
-                "and test commands are configured.",
+                "Pick the framework closest to your project.",
                 classes="description",
             )
             if detected:
@@ -440,7 +438,8 @@ class TemplateScreen(ModalScreen[Optional[dict]]):
                 label = desc
                 if t == detected:
                     label = f"{desc} (detected)"
-                buttons.append(RadioButton(label, value=(t == (detected or "fastapi"))))
+                selected = self._state.get("template", detected or "fastapi")
+                buttons.append(RadioButton(label, value=(t == selected)))
             yield RadioSet(*buttons, id="template-radio")
         yield NavBar()
         yield KeyHintsBar()
@@ -482,7 +481,6 @@ class WorkflowScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Label("Select your workflow", classes="screen-title")
             yield Label(
-                "Choose how you want to work with Claude Code. "
                 "Select a workflow to see details below.",
                 classes="description",
             )
@@ -492,11 +490,14 @@ class WorkflowScreen(ModalScreen[Optional[dict]]):
                 desc = data.get("description", w)
                 agents = len(data.get("agents", []))
                 commands = len(data.get("commands", []))
-                label = f"{w} — {desc} ({agents} agents, {commands} cmds)"
-                buttons.append(RadioButton(label, value=(w == "standard")))
+                label = f"{w} - {desc} ({agents} agents, {commands} cmds)"
+                selected = self._state.get("workflow", "standard")
+                buttons.append(RadioButton(label, value=(w == selected)))
             yield RadioSet(*buttons, id="workflow-radio")
-            # Default to standard details
-            default_detail = WORKFLOW_DETAILS.get("standard", "")
+            # Show details for the selected workflow
+            default_detail = WORKFLOW_DETAILS.get(
+                self._state.get("workflow", "standard"), ""
+            )
             yield Static(default_detail, id="workflow-details")
         yield NavBar()
         yield KeyHintsBar()
@@ -528,6 +529,40 @@ class WorkflowScreen(ModalScreen[Optional[dict]]):
         self.dismiss(None)
 
 
+# ── Config summary helper ────────────────────────────────────────────
+
+
+def _format_config_summary(config: Any, output_dir: str = ".") -> str:
+    """Format config for display in ReviewScreen and ConfirmScreen."""
+    flags = []
+    for name, attr in [
+        ("Memory", "memory"),
+        ("Spec workflow", "spec_workflow"),
+        ("GTD", "gtd"),
+        ("Worktrees", "worktrees"),
+    ]:
+        if getattr(config.features, attr, False):
+            flags.append(name)
+    features_str = ", ".join(flags) or "none"
+
+    lines = [
+        f"  Project:    {config.project_name}",
+        f"  Stack:      {config.language} / {config.framework}",
+        f"  Type:       {config.project_type}",
+        f"  Workflow:   {config.workflow}",
+        "",
+        f"  Agents:     {len(config.agents)}",
+        f"  Commands:   {len(config.commands)}",
+        f"  Hooks:      {len(config.hooks)}",
+        f"  Features:   {features_str}",
+        f"  Skills:     {len(config.recommended_skills)} recommended",
+        f"  MCPs:       {len(config.default_mcps)}",
+        f"  Harness:    {config.harness.level}",
+        f"  Output:     {output_dir}",
+    ]
+    return "\n".join(lines)
+
+
 # ── Screen 5: Review ─────────────────────────────────────────────────
 
 
@@ -546,22 +581,21 @@ class ReviewScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Label("Configuration preview", classes="screen-title")
             yield Label(
-                "Your workflow pre-selected agents, commands, and hooks.\n"
-                "Review the summary below, then decide whether to customize.",
+                "Review your selections, then decide whether to customize.",
                 classes="description",
             )
             if config:
-                yield Static(self._format_config(config), id="summary-box")
+                yield Static(_format_config_summary(config), id="summary-box")
             yield Label("")
             yield Label("Expert mode", classes="screen-title")
             yield Checkbox(
-                "Customize agents, commands, hooks, and features",
+                "Customize agents, commands, hooks and features",
                 id="chk-customize",
             )
             yield Label(
-                "  • Add or remove individual agents, commands, and hooks\n"
-                "  • Toggle features: memory, spec workflow, GTD, worktrees\n"
-                "  • The defaults above work well for most projects",
+                "  Add or remove individual agents, commands and hooks\n"
+                "  Toggle features: memory, spec workflow, GTD, worktrees\n"
+                "  The defaults above work well for most projects",
                 classes="description",
             )
         yield NavBar()
@@ -569,34 +603,6 @@ class ReviewScreen(ModalScreen[Optional[dict]]):
 
     def on_mount(self) -> None:
         self.query_one("#chk-customize", Checkbox).focus()
-
-    def _format_config(self, config: Any) -> str:
-        lines = [
-            f"  Project:    {config.project_name}",
-            f"  Stack:      {config.language} / {config.framework}",
-            f"  Type:       {config.project_type}",
-            f"  Workflow:   {config.workflow}",
-            "",
-            f"  Agents:     {len(config.agents)}",
-            f"  Commands:   {len(config.commands)}",
-            f"  Hooks:      {len(config.hooks)}",
-            f"  Features:   {self._format_features(config.features)}",
-            f"  Skills:     {len(config.recommended_skills)} recommended",
-            f"  MCPs:       {len(config.default_mcps)}",
-        ]
-        return "\n".join(lines)
-
-    def _format_features(self, features: Any) -> str:
-        flags = []
-        if features.memory:
-            flags.append("Memory")
-        if features.spec_workflow:
-            flags.append("Spec workflow")
-        if features.gtd:
-            flags.append("GTD")
-        if features.worktrees:
-            flags.append("Worktrees")
-        return ", ".join(flags) or "none"
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-next":
@@ -653,7 +659,7 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Label("Expert customization", classes="screen-title")
             yield Label(
-                "Select agents, commands, and hooks for your project.",
+                "Select agents, commands and hooks for your project.",
                 classes="description",
             )
 
@@ -662,7 +668,7 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
                     yield SelectionList[str](
                         *[
                             (
-                                f"{a} — {agent_descs.get(a, '')}",
+                                f"{a} - {agent_descs.get(a, '')}",
                                 a,
                                 a in current_agents,
                             )
@@ -674,7 +680,7 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
                     yield SelectionList[str](
                         *[
                             (
-                                f"{c} — {command_descs.get(c, '')}",
+                                f"{c} - {command_descs.get(c, '')}",
                                 c,
                                 c in current_commands,
                             )
@@ -686,7 +692,7 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
                     yield SelectionList[str](
                         *[
                             (
-                                f"{h} — {hook_descs.get(h, '')}",
+                                f"{h} - {hook_descs.get(h, '')}",
                                 h,
                                 h in current_hooks,
                             )
@@ -746,7 +752,7 @@ class FeaturesScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Label("Features", classes="screen-title")
             yield Label(
-                "Toggle features on or off. Select one to see details below.",
+                "Select a feature to see details below.",
                 classes="description",
             )
 
@@ -850,15 +856,16 @@ class SkillPacksScreen(ModalScreen[Optional[dict]]):
 
             for pack_name, pack in SKILL_PACKS.items():
                 n_skills = len(pack.skill_names)
-                label = f"{pack.label} ({n_skills} skills) — {pack.description}"
+                label = f"{pack.label} ({n_skills} skills) - {pack.description}"
                 recommended = pack.suggested_templates is None or (
                     template in (pack.suggested_templates or [])
                 )
                 if recommended and template:
                     label += "  ★ recommended for your stack"
+                prev_packs = self._state.get("skill_packs", [])
                 yield Checkbox(
                     label,
-                    value=False,
+                    value=(pack_name in prev_packs),
                     id=f"pack-{pack_name}",
                 )
         yield NavBar()
@@ -912,23 +919,31 @@ class HarnessScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Label("Runtime harness", classes="screen-title")
             yield Label(
-                "Your workflow chose what tools Claude has (agents, commands, hooks). "
-                "The harness controls how strictly Claude is supervised — budgets, "
-                "quality gates, and autonomous looping. Each level builds on the "
-                "previous one.",
+                "Controls supervision level: budgets, quality gates "
+                "and autonomous looping.",
                 classes="description",
             )
+            prev_level = self._state.get("harness_level", "none")
             yield RadioSet(
                 RadioButton(
-                    "None (B0) — Scaffold only, you drive",
-                    value=True,
+                    "None (B0) - Scaffold only, you drive",
+                    value=(prev_level == "none"),
                 ),
-                RadioButton("Lite (B1) — Task tracking + budget awareness"),
-                RadioButton("Standard (B2) — Verification gates (tests + lint must pass)"),
-                RadioButton("Autonomy (B3) — Autonomous iteration with safety rails"),
+                RadioButton(
+                    "Lite (B1) - Task tracking + budget awareness",
+                    value=(prev_level == "lite"),
+                ),
+                RadioButton(
+                    "Standard (B2) - Verification gates (tests + lint must pass)",
+                    value=(prev_level == "standard"),
+                ),
+                RadioButton(
+                    "Autonomy (B3) - Autonomous iteration with safety rails",
+                    value=(prev_level == "autonomy"),
+                ),
                 id="harness-radio",
             )
-            default_detail = HARNESS_DETAILS.get("none", "")
+            default_detail = HARNESS_DETAILS.get(prev_level, "")
             yield Static(default_detail, id="harness-details")
         yield NavBar()
         yield KeyHintsBar()
@@ -978,13 +993,9 @@ class ConfirmScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Label("Ready to generate", classes="screen-title")
             if config:
-                out = self._state.get("output_dir", ".")
+                out = str(self._state.get("output_dir", "."))
                 yield Static(
-                    f"  Project:  {config.project_name}\n"
-                    f"  Stack:    {config.language} / {config.framework}\n"
-                    f"  Workflow: {config.workflow}\n"
-                    f"  Harness:  {config.harness.level}\n"
-                    f"  Output:   {out}",
+                    _format_config_summary(config, out),
                     id="summary-box",
                 )
             yield Label("")
@@ -1125,7 +1136,7 @@ class WizardApp(App[Optional[dict]]):
                 i for i, s in enumerate(visible) if s[0] is screen_cls
             )
             state["step_label"] = (
-                f"  Step {visible_idx + 1} of {len(visible)} — {title}"
+                f"  Step {visible_idx + 1} of {len(visible)} - {title}"
             )
 
             # Compute config before review/confirm screens need it

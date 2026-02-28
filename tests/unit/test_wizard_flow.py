@@ -123,12 +123,8 @@ class TestExpertFlow:
                 "",  # description
                 "2",  # template: fastapi
                 "2",  # workflow: standard
+                "none",  # expert: customize nothing
                 "n",  # add optional skill packs? no
-                "n",  # customize agents? no
-                "n",  # customize commands? no
-                "n",  # customize hooks? no
-                "n",  # customize features? no
-                "n",  # customize permission? no
                 "n",  # add runtime harness? no
                 "y",  # generate? yes
             ]

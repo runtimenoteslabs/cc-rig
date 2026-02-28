@@ -20,15 +20,15 @@ def ask_harness(io: IO) -> HarnessConfig:
     Returns a HarnessConfig with the selected level.
     """
     options = [
-        ("none", "None — scaffold only, you drive (B0)"),
-        ("lite", "Lite — task tracking + budget awareness (B1)"),
+        ("none", "None - scaffold only, you drive (B0)"),
+        ("lite", "Lite - task tracking + budget awareness (B1)"),
         (
             "standard",
-            "Standard — + verification gates + review notes (B2)",
+            "Standard - verification gates + review notes (B2)",
         ),
         (
             "autonomy",
-            "Autonomy — autonomous iteration with safety rails (B3)",
+            "Autonomy - autonomous iteration with safety rails (B3)",
         ),
     ]
 
@@ -49,7 +49,7 @@ def ask_harness(io: IO) -> HarnessConfig:
         except (EOFError, KeyboardInterrupt):
             io.say("\nCancelled.")
             return HarnessConfig(level="none")
-        if response != "I understand":
+        if response.lower() != "i understand":
             io.say("  Cancelled. Autonomy mode not enabled.")
             return HarnessConfig(level="none")
 
