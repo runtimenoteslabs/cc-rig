@@ -57,6 +57,7 @@ _AGENT_DEFS: dict[str, AgentDef] = {
             "needs-discussion."
         ),
         agent_memory="project",
+        disallowed_tools="Write, Edit, Bash",
     ),
     "test-writer": AgentDef(
         description="Generate tests with coverage awareness",
@@ -112,6 +113,7 @@ _AGENT_DEFS: dict[str, AgentDef] = {
         ),
         permission_mode="plan",
         max_turns=15,
+        disallowed_tools="Write, Edit, Bash",
     ),
     "architect": AgentDef(
         description="System design and architectural decision records",
@@ -270,6 +272,7 @@ _AGENT_DEFS: dict[str, AgentDef] = {
             "and recommended fix. End with a risk summary."
         ),
         agent_memory="project",
+        disallowed_tools="Write, Edit, Bash",
     ),
     "doc-writer": AgentDef(
         description="Documentation generation for modules and APIs",
@@ -300,6 +303,7 @@ _AGENT_DEFS: dict[str, AgentDef] = {
         description="Identify and prioritize technical debt",
         model="sonnet",
         tools="Read, Glob, Grep",
+        disallowed_tools="Write, Edit, Bash",
         body=(
             "You are a tech debt analyst. Find and prioritize "
             "technical debt.\n"

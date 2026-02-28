@@ -470,6 +470,45 @@ class TestOptionalFrontmatterFields:
         fields, _ = _parse_frontmatter(content)
         assert fields["memory"] == "project"
 
+    def test_code_reviewer_has_disallowed_tools(self, tmp_path):
+        config = compute_defaults("fastapi", "standard", project_name="test", claude_plan="max")
+        generate_agents(config, tmp_path)
+        content = (tmp_path / ".claude" / "agents" / "code-reviewer.md").read_text()
+        fields, _ = _parse_frontmatter(content)
+        assert fields["disallowedTools"] == "Write, Edit, Bash"
+
+    def test_explorer_has_disallowed_tools(self, tmp_path):
+        config = compute_defaults("fastapi", "standard", project_name="test", claude_plan="max")
+        generate_agents(config, tmp_path)
+        content = (tmp_path / ".claude" / "agents" / "explorer.md").read_text()
+        fields, _ = _parse_frontmatter(content)
+        assert fields["disallowedTools"] == "Write, Edit, Bash"
+
+    def test_security_auditor_has_disallowed_tools(self, tmp_path):
+        config = compute_defaults(
+            "fastapi", "verify-heavy", project_name="test", claude_plan="max"
+        )
+        generate_agents(config, tmp_path)
+        content = (tmp_path / ".claude" / "agents" / "security-auditor.md").read_text()
+        fields, _ = _parse_frontmatter(content)
+        assert fields["disallowedTools"] == "Write, Edit, Bash"
+
+    def test_techdebt_hunter_has_disallowed_tools(self, tmp_path):
+        config = compute_defaults("fastapi", "verify-heavy", project_name="test", claude_plan="max")
+        generate_agents(config, tmp_path)
+        content = (tmp_path / ".claude" / "agents" / "techdebt-hunter.md").read_text()
+        fields, _ = _parse_frontmatter(content)
+        assert fields["disallowedTools"] == "Write, Edit, Bash"
+
+    def test_write_agents_have_no_disallowed_tools(self, tmp_path):
+        """Agents with write access should NOT have disallowedTools."""
+        config = compute_defaults("fastapi", "verify-heavy", project_name="test", claude_plan="max")
+        generate_agents(config, tmp_path)
+        for agent in ("test-writer", "refactorer", "implementer", "architect"):
+            content = (tmp_path / ".claude" / "agents" / f"{agent}.md").read_text()
+            fields, _ = _parse_frontmatter(content)
+            assert "disallowedTools" not in fields, f"{agent} should not have disallowedTools"
+
     def test_agents_without_optional_fields_omit_them(self, tmp_path):
         """Agents like test-writer should NOT have optional fields in frontmatter."""
         config = compute_defaults(
@@ -478,7 +517,10 @@ class TestOptionalFrontmatterFields:
         generate_agents(config, tmp_path)
         content = (tmp_path / ".claude" / "agents" / "test-writer.md").read_text()
         fields, _ = _parse_frontmatter(content)
-        for optional_field in ("permissionMode", "maxTurns", "background", "isolation", "memory"):
+        for optional_field in (
+            "permissionMode", "maxTurns", "background", "isolation", "memory",
+            "disallowedTools",
+        ):
             assert optional_field not in fields, (
                 f"test-writer.md should not have {optional_field}"
             )
