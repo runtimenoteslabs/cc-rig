@@ -11,7 +11,7 @@ def get_agent_descriptions() -> dict[str, str]:
     """Extract {name: description} from agent definitions."""
     from cc_rig.generators.agents import _AGENT_DEFS
 
-    return {name: tup[0] for name, tup in _AGENT_DEFS.items()}
+    return {name: defn.description for name, defn in _AGENT_DEFS.items()}
 
 
 def get_command_descriptions() -> dict[str, str]:

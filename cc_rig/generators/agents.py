@@ -3,30 +3,39 @@
 from __future__ import annotations
 
 import warnings
+from dataclasses import dataclass
 from pathlib import Path
-from typing import NamedTuple
+from typing import Optional
 
 from cc_rig.config.project import ProjectConfig
 from cc_rig.generators.fileops import FileTracker
 
 
-class AgentDef(NamedTuple):
-    """Agent definition: (description, model, tools, prompt_body)."""
+@dataclass
+class AgentDef:
+    """Agent definition with required and optional CC frontmatter fields."""
 
     description: str
     model: str
     tools: str
     body: str
+    # Optional CC frontmatter (omitted from YAML when None)
+    permission_mode: Optional[str] = None  # "plan", "dontAsk", etc.
+    max_turns: Optional[int] = None  # e.g. 15
+    background: Optional[bool] = None  # True for parallel workers
+    isolation: Optional[str] = None  # "worktree"
+    agent_memory: Optional[str] = None  # "user", "project", "local"
+    disallowed_tools: Optional[str] = None  # comma-separated
 
 
 # ── Agent definitions ──────────────────────────────────────────────
 
-_AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
-    "code-reviewer": (
-        "Multi-dimensional code review",
-        "sonnet",
-        "Read, Glob, Grep",
-        (
+_AGENT_DEFS: dict[str, AgentDef] = {
+    "code-reviewer": AgentDef(
+        description="Multi-dimensional code review",
+        model="sonnet",
+        tools="Read, Glob, Grep",
+        body=(
             "You are a code reviewer. Analyze code changes across "
             "six dimensions:\n"
             "\n"
@@ -47,12 +56,13 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
             "End with a summary: approve, request-changes, or "
             "needs-discussion."
         ),
+        agent_memory="project",
     ),
-    "test-writer": (
-        "Generate tests with coverage awareness",
-        "sonnet",
-        "Read, Write, Edit, Bash, Glob, Grep",
-        (
+    "test-writer": AgentDef(
+        description="Generate tests with coverage awareness",
+        model="sonnet",
+        tools="Read, Write, Edit, Bash, Glob, Grep",
+        body=(
             "You are a test writer. Generate comprehensive tests "
             "for the target code.\n"
             "\n"
@@ -75,11 +85,11 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
             "- Aim for tests that fail for the right reasons."
         ),
     ),
-    "explorer": (
-        "Fast codebase scan and knowledge gathering",
-        "haiku",
-        "Read, Glob, Grep",
-        (
+    "explorer": AgentDef(
+        description="Fast codebase scan and knowledge gathering",
+        model="haiku",
+        tools="Read, Glob, Grep",
+        body=(
             "You are a codebase explorer. Your job is to quickly "
             "scan and summarize code structure.\n"
             "\n"
@@ -100,12 +110,14 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
             "Be fast and concise. Read only what is needed to "
             "understand structure — do not read every file."
         ),
+        permission_mode="plan",
+        max_turns=15,
     ),
-    "architect": (
-        "System design and architectural decision records",
-        "opus",
-        "Read, Write, Edit, Glob, Grep",
-        (
+    "architect": AgentDef(
+        description="System design and architectural decision records",
+        model="opus",
+        tools="Read, Write, Edit, Glob, Grep",
+        body=(
             "You are a software architect. Provide design guidance "
             "and document architectural decisions.\n"
             "\n"
@@ -127,12 +139,13 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
             "Prefer simple, proven patterns over novel approaches. "
             "The best architecture is the one the team can maintain."
         ),
+        agent_memory="project",
     ),
-    "refactorer": (
-        "Safe, incremental refactoring",
-        "sonnet",
-        "Read, Write, Edit, Bash, Glob, Grep",
-        (
+    "refactorer": AgentDef(
+        description="Safe, incremental refactoring",
+        model="sonnet",
+        tools="Read, Write, Edit, Bash, Glob, Grep",
+        body=(
             "You are a refactoring specialist. Make code cleaner "
             "without changing behavior.\n"
             "\n"
@@ -156,11 +169,11 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
             "clearer names, or less coupling."
         ),
     ),
-    "pr-reviewer": (
-        "Pull request review with approval/reject decision",
-        "opus",
-        "Read, Glob, Grep, Bash",
-        (
+    "pr-reviewer": AgentDef(
+        description="Pull request review with approval/reject decision",
+        model="opus",
+        tools="Read, Glob, Grep, Bash",
+        body=(
             "You are a pull request reviewer. Evaluate PRs for "
             "merge readiness.\n"
             "\n"
@@ -182,11 +195,11 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
             "suggestions."
         ),
     ),
-    "implementer": (
-        "Feature implementation from spec or task",
-        "sonnet",
-        "Read, Write, Edit, Bash, Glob, Grep",
-        (
+    "implementer": AgentDef(
+        description="Feature implementation from spec or task",
+        model="sonnet",
+        tools="Read, Write, Edit, Bash, Glob, Grep",
+        body=(
             "You are a feature implementer. Turn specs and tasks "
             "into working code.\n"
             "\n"
@@ -205,11 +218,11 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
             "- Leave a clean git history with descriptive commits."
         ),
     ),
-    "pm-spec": (
-        "Specification writing through user interviews",
-        "opus",
-        "Read, Write, Edit, Glob, Grep",
-        (
+    "pm-spec": AgentDef(
+        description="Specification writing through user interviews",
+        model="opus",
+        tools="Read, Write, Edit, Glob, Grep",
+        body=(
             "You are a product spec writer. Interview the user "
             "and produce a clear specification.\n"
             "\n"
@@ -232,11 +245,11 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
             "scope boundaries."
         ),
     ),
-    "security-auditor": (
-        "Security review focused on OWASP top 10",
-        "opus",
-        "Read, Glob, Grep",
-        (
+    "security-auditor": AgentDef(
+        description="Security review focused on OWASP top 10",
+        model="opus",
+        tools="Read, Glob, Grep",
+        body=(
             "You are a security auditor. Review code for "
             "vulnerabilities.\n"
             "\n"
@@ -256,12 +269,13 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
             "(critical/high/medium/low), location, description, "
             "and recommended fix. End with a risk summary."
         ),
+        agent_memory="project",
     ),
-    "doc-writer": (
-        "Documentation generation for modules and APIs",
-        "sonnet",
-        "Read, Write, Edit, Glob, Grep",
-        (
+    "doc-writer": AgentDef(
+        description="Documentation generation for modules and APIs",
+        model="sonnet",
+        tools="Read, Write, Edit, Glob, Grep",
+        body=(
             "You are a documentation writer. Generate clear, "
             "accurate documentation.\n"
             "\n"
@@ -282,11 +296,11 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
             "copies."
         ),
     ),
-    "techdebt-hunter": (
-        "Identify and prioritize technical debt",
-        "sonnet",
-        "Read, Glob, Grep",
-        (
+    "techdebt-hunter": AgentDef(
+        description="Identify and prioritize technical debt",
+        model="sonnet",
+        tools="Read, Glob, Grep",
+        body=(
             "You are a tech debt analyst. Find and prioritize "
             "technical debt.\n"
             "\n"
@@ -309,11 +323,11 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
             "- Suggested fix with effort estimate"
         ),
     ),
-    "db-reader": (
-        "Read-only database queries for investigation",
-        "sonnet",
-        "Read, Glob, Grep, Bash",
-        (
+    "db-reader": AgentDef(
+        description="Read-only database queries for investigation",
+        model="sonnet",
+        tools="Read, Glob, Grep, Bash",
+        body=(
             "You are a database reader. Run read-only queries to "
             "investigate data.\n"
             "\n"
@@ -337,11 +351,11 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
             "do it manually."
         ),
     ),
-    "parallel-worker": (
-        "Isolated parallel task execution in git worktrees",
-        "sonnet",
-        "Read, Write, Edit, Bash, Glob, Grep",
-        (
+    "parallel-worker": AgentDef(
+        description="Isolated parallel task execution in git worktrees",
+        model="sonnet",
+        tools="Read, Write, Edit, Bash, Glob, Grep",
+        body=(
             "You are a parallel worker running in an isolated git "
             "worktree.\n"
             "\n"
@@ -360,9 +374,10 @@ _AGENT_DEFS: dict[str, tuple[str, str, str, str]] = {
             "**Rules:**\n"
             "- Stay focused on the assigned task only.\n"
             "- Do not modify files outside your task scope.\n"
-            "- If blocked, document the blocker and stop.\n"
             "- Keep commits small and self-contained."
         ),
+        background=True,
+        isolation="worktree",
     ),
 }
 
@@ -385,24 +400,36 @@ def generate_agents(
     files_written: list[str] = []
 
     for agent_name in config.agents:
-        raw = _AGENT_DEFS.get(agent_name)
-        if raw is None:
+        defn = _AGENT_DEFS.get(agent_name)
+        if defn is None:
             warnings.warn(
                 f"Unknown agent '{agent_name}' — skipped",
                 stacklevel=2,
             )
             continue
 
-        defn = AgentDef(*raw)
-        content = (
-            f"---\n"
-            f"name: {agent_name}\n"
-            f"description: {defn.description}\n"
-            f"model: {defn.model}\n"
-            f"tools: {defn.tools}\n"
-            f"---\n\n"
-            f"{defn.body}\n"
-        )
+        model = config.model_overrides.get(agent_name, defn.model)
+        lines = [
+            "---",
+            f"name: {agent_name}",
+            f"description: {defn.description}",
+            f"model: {model}",
+            f"tools: {defn.tools}",
+        ]
+        if defn.disallowed_tools is not None:
+            lines.append(f"disallowedTools: {defn.disallowed_tools}")
+        if defn.permission_mode is not None:
+            lines.append(f"permissionMode: {defn.permission_mode}")
+        if defn.max_turns is not None:
+            lines.append(f"maxTurns: {defn.max_turns}")
+        if defn.background is not None:
+            lines.append(f"background: {'true' if defn.background else 'false'}")
+        if defn.isolation is not None:
+            lines.append(f"isolation: {defn.isolation}")
+        if defn.agent_memory is not None:
+            lines.append(f"memory: {defn.agent_memory}")
+        lines.append("---")
+        content = "\n".join(lines) + f"\n\n{defn.body}\n"
 
         filename = f"{agent_name}.md"
         rel = f".claude/agents/{filename}"

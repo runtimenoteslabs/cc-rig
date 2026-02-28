@@ -29,7 +29,7 @@ _HOOK_REGISTRY: dict[str, tuple[str, str, str]] = {
     "block-main": ("PreToolUse", "Bash", "command"),
     "session-context": ("SessionStart", "", "command"),
     "stop-validator": ("Stop", "", "command"),
-    "memory-stop": ("Stop", "", "agent"),
+    "memory-stop": ("Stop", "", "prompt"),
     "memory-precompact": ("PreCompact", "", "command"),
     "push-review": ("PreToolUse", "Bash", "prompt"),
     "subagent-review": ("SubagentStop", "", "agent"),
@@ -51,11 +51,12 @@ _PROMPT_TEXTS: dict[str, str] = {
         "memory/session-log.md for recent team context."
     ),
     "memory-stop": (
-        "Before stopping, check if there are team-relevant decisions, "
-        "patterns, gotchas, or learnings from this session to save. "
-        "Update the relevant memory/ files with one-line entries. "
-        "Add a one-line session summary to memory/session-log.md. "
-        "Personal notes go in auto-memory, not here."
+        "Review the conversation for team-relevant decisions, patterns, "
+        "gotchas, or learnings worth saving to memory/ files. "
+        'If there are items worth persisting, respond with {"ok": false, '
+        '"reason": "Save to memory/ before stopping: <brief list>"} '
+        "so Claude can write them. If nothing notable, respond with "
+        '{"ok": true}. Personal notes go in auto-memory, not here.'
     ),
     "memory-precompact": (
         "Context is about to be compacted. Save any key decisions, "

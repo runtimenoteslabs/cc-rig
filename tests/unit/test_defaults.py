@@ -858,3 +858,41 @@ class TestGtdLiteSkills:
         gtd_names = {s.name for s in gtd.recommended_skills}
         spec_names = {s.name for s in spec.recommended_skills}
         assert gtd_names == spec_names
+
+
+# ---------------------------------------------------------------------------
+# Tier-aware model overrides (SMART-DEFAULTS-MATRIX §1a)
+# ---------------------------------------------------------------------------
+
+
+class TestModelOverridesByTier:
+    """Verify _compute_model_overrides produces correct overrides per plan tier."""
+
+    def test_pro_overrides_opus_and_haiku(self):
+        """Pro tier overrides 5 agents: architect, pr-reviewer, pm-spec,
+        security-auditor, explorer."""
+        config = compute_defaults("fastapi", "verify-heavy", project_name="test", claude_plan="pro")
+        assert len(config.model_overrides) == 5
+        assert config.model_overrides["architect"] == "sonnet"
+        assert config.model_overrides["pr-reviewer"] == "sonnet"
+        assert config.model_overrides["pm-spec"] == "sonnet"
+        assert config.model_overrides["security-auditor"] == "sonnet"
+        assert config.model_overrides["explorer"] == "sonnet"
+
+    def test_team_same_as_pro(self):
+        """Team tier gets same overrides as pro."""
+        pro = compute_defaults("fastapi", "standard", project_name="test", claude_plan="pro")
+        team = compute_defaults("fastapi", "standard", project_name="test", claude_plan="team")
+        assert pro.model_overrides == team.model_overrides
+
+    def test_max_no_overrides(self):
+        """Max tier keeps _AGENT_DEFS defaults — no overrides."""
+        config = compute_defaults("fastapi", "verify-heavy", project_name="test", claude_plan="max")
+        assert config.model_overrides == {}
+
+    def test_enterprise_no_overrides(self):
+        """Enterprise tier keeps _AGENT_DEFS defaults — no overrides."""
+        config = compute_defaults(
+            "fastapi", "verify-heavy", project_name="test", claude_plan="enterprise"
+        )
+        assert config.model_overrides == {}

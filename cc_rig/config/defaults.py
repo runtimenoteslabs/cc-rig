@@ -193,6 +193,27 @@ _ANTHROPIC_OFFICIAL: dict[str, SkillRecommendation] = {
 }
 
 
+_PRO_TIER_PLANS = {"pro", "team"}
+_NON_SONNET_AGENTS = {
+    "architect": "sonnet",
+    "pr-reviewer": "sonnet",
+    "pm-spec": "sonnet",
+    "security-auditor": "sonnet",
+    "explorer": "sonnet",
+}
+
+
+def _compute_model_overrides(claude_plan: str) -> dict[str, str]:
+    """Compute per-agent model overrides based on Claude plan tier.
+
+    Pro/Team: override non-sonnet agents to sonnet (cost-effective).
+    Max/Enterprise: no overrides (keep opus/haiku defaults from _AGENT_DEFS).
+    """
+    if claude_plan in _PRO_TIER_PLANS:
+        return dict(_NON_SONNET_AGENTS)
+    return {}
+
+
 def compute_defaults(
     template: str,
     workflow: str,
@@ -331,7 +352,7 @@ def compute_defaults(
         default_mcps=default_mcps,
         skill_packs=resolved_packs,
         claude_plan=claude_plan,
-        model_overrides={},
+        model_overrides=_compute_model_overrides(claude_plan),
         cc_rig_version=__version__,
         created_at=datetime.now(timezone.utc).isoformat(),
         template_preset=tmpl["name"],
