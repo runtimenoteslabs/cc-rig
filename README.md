@@ -132,25 +132,25 @@ A companion `CLAUDE.local.md` is generated for personal preferences (not git-tra
 
 ### Agents
 
-Isolated Claude instances in `.claude/agents/`, each with its own system prompt, model assignment and tool restrictions in YAML frontmatter.
+Isolated Claude instances in `.claude/agents/`, each with its own system prompt, model assignment and tool restrictions in YAML frontmatter. cc-rig emits up to 10 of Claude Code's 14 supported frontmatter fields — beyond the basics (name, description, model, tools), agents get optional fields like `background`, `isolation`, `permissionMode`, `maxTurns` and `memory` where appropriate. This means generated agents work out of the box with Claude Code's parallel execution features like `/simplify` and `/batch`.
 
-| Agent | Role | Model |
-|-------|------|-------|
-| `code-reviewer` | 6-aspect code review (readability, correctness, performance, security, patterns, edge cases) | Sonnet |
-| `architect` | System design, architectural decisions, ADRs | Opus* |
-| `test-writer` | Test generation with coverage awareness | Sonnet |
-| `explorer` | Fast codebase scanning and context gathering | Haiku |
-| `refactorer` | Safe refactoring with test verification | Sonnet |
-| `pr-reviewer` | Pull request review | Opus* |
-| `security-auditor` | OWASP-aware security review | Opus* |
-| `implementer` | Feature implementation from specs | Sonnet |
-| `doc-writer` | Documentation generation | Sonnet |
-| `pm-spec` | Specification creation from requirements | Opus* |
-| `techdebt-hunter` | Technical debt identification | Sonnet |
-| `db-reader` | Database schema and query analysis | Sonnet |
-| `parallel-worker` | Background work in isolated git worktrees | Sonnet |
+| Agent | Role | Model | Advanced fields |
+|-------|------|-------|-----------------|
+| `code-reviewer` | 6-aspect code review | Sonnet | `memory: project` |
+| `architect` | System design, ADRs | Opus* | `memory: project` |
+| `test-writer` | Test generation with coverage awareness | Sonnet | — |
+| `explorer` | Fast codebase scanning | Haiku | `permissionMode: plan`, `maxTurns: 15` |
+| `refactorer` | Safe refactoring with test verification | Sonnet | — |
+| `pr-reviewer` | Pull request review | Opus* | — |
+| `security-auditor` | OWASP-aware security review | Opus* | `memory: project` |
+| `implementer` | Feature implementation from specs | Sonnet | — |
+| `doc-writer` | Documentation generation | Sonnet | — |
+| `pm-spec` | Specification creation from requirements | Opus* | — |
+| `techdebt-hunter` | Technical debt identification | Sonnet | — |
+| `db-reader` | Database schema and query analysis | Sonnet | — |
+| `parallel-worker` | Background work in isolated git worktrees | Sonnet | `background: true`, `isolation: worktree` |
 
-*\*Opus on Max/Enterprise plans, Sonnet on Pro/Team. Model switching happens via agents (never mid-conversation) to preserve prompt cache.*
+*\*Opus on Max/Enterprise plans, Sonnet on Pro/Team. cc-rig auto-resolves model assignments based on your Claude plan tier — no manual config needed.*
 
 Your workflow preset determines which agents are included, from 3 for quick prototyping to 13 for full production rigor.
 
@@ -191,7 +191,7 @@ Shell scripts on Claude Code lifecycle events, configured in `settings.json`.
 | **PostToolUse** (Write) | Auto-format (prettier/ruff/gofmt) | Instant cleanup, <1s |
 | **PreToolUse** (Bash) | Lint + typecheck on git commit | Quality gate before commits |
 | **PreToolUse** (Write/Bash) | Block `rm -rf /`, pushes to main, `.env` writes | Safety guards |
-| **Stop** | Save learnings to memory, run tests | Preserve context before session ends |
+| **Stop** | Save learnings to memory, remind about tests | Preserve context without blocking on full test suite |
 | **PreCompact** | Save context before compaction | Survive context loss |
 | **SessionStart** | Load project context and active tasks | Continuity |
 
