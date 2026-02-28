@@ -16,6 +16,7 @@ from pathlib import Path
 
 from cc_rig.config.project import ProjectConfig
 from cc_rig.generators.fileops import FileTracker
+from cc_rig.generators.settings import _safe_cmd
 
 # Harness levels in order of capability.
 _LEVELS = ("none", "lite", "standard", "autonomy")
@@ -42,6 +43,7 @@ def generate_harness(
 
     # B2+ (standard and above)
     if _at_least(level, "standard"):
+        files.extend(_generate_init_sh(config, output_dir, tracker))
         files.extend(_generate_b2(config, output_dir, tracker))
 
     # B3 (autonomy)
@@ -70,7 +72,7 @@ def _generate_b1(
     """Generate B1 files: task tracking + budget awareness."""
     files: list[str] = []
 
-    # tasks/todo.md
+    # tasks/todo.md — machine-parseable task list
     tasks_dir = output_dir / "tasks"
     tasks_dir.mkdir(parents=True, exist_ok=True)
     _write(
@@ -94,7 +96,7 @@ def _generate_b1(
     )
     files.append("tasks/todo.md")
 
-    # agent_docs/budget-guide.md
+    # agent_docs/harness.md — consolidated harness documentation
     agent_docs = output_dir / "agent_docs"
     agent_docs.mkdir(parents=True, exist_ok=True)
 
@@ -107,31 +109,33 @@ def _generate_b1(
     warn_pct = config.harness.budget_warn_at_percent
 
     _write(
-        agent_docs / "budget-guide.md",
-        "# Budget Awareness Guide\n"
+        agent_docs / "harness.md",
+        "# Harness — Budget & Task Tracking\n"
         "\n"
-        "This project uses budget-aware operation. Be mindful of\n"
-        "token usage and prioritize high-impact work.\n"
-        "\n"
-        "## Budget Settings\n"
+        "## Budget\n"
         "\n"
         f"{budget_line}"
         f"- **Warning threshold**: {warn_pct}% of budget\n"
         "\n"
-        "## Guidelines\n"
+        "## Rules\n"
         "\n"
-        "1. **Plan before acting.** Read task list and prioritize.\n"
-        "2. **Use subagents** for parallel work to stay within budget.\n"
-        "3. **Checkpoint often.** Commit working code before moving on.\n"
-        "4. **Stop cleanly.** When approaching budget, save state and stop.\n"
-        "5. **Log progress.** Update tasks/todo.md and session-log.\n"
-        "6. **Fix failures immediately.** If tests or lint fail, diagnose "
-        "and fix before moving on. Up to 2 attempts, then log in "
-        "tasks/todo.md.\n",
+        "1. Plan before acting. Read tasks/todo.md and prioritize.\n"
+        "2. Use subagents for parallel work to stay within budget.\n"
+        "3. Checkpoint often. Commit working code before moving on.\n"
+        "4. Stop cleanly. When approaching budget, save state and stop.\n"
+        "5. Log progress. Update tasks/todo.md.\n"
+        "6. Fix failures immediately. Up to 2 attempts, then log in tasks/todo.md.\n"
+        "\n"
+        "## Task Format\n"
+        "\n"
+        "```\n"
+        "- [ ] Task description (priority: high/medium/low)\n"
+        "- [x] Completed task\n"
+        "```\n",
         tracker=tracker,
-        rel_path="agent_docs/budget-guide.md",
+        rel_path="agent_docs/harness.md",
     )
-    files.append("agent_docs/budget-guide.md")
+    files.append("agent_docs/harness.md")
 
     return files
 
@@ -144,67 +148,130 @@ def _generate_b2(
     output_dir: Path,
     tracker: FileTracker | None = None,
 ) -> list[str]:
-    """Generate B2 files: verification gates + review notes."""
-    files: list[str] = []
+    """Generate B2 additions: enhance harness.md with gate documentation."""
+    # B2 enhances the harness.md already written by B1 — append gate section.
     agent_docs = output_dir / "agent_docs"
-    agent_docs.mkdir(parents=True, exist_ok=True)
+    harness_path = agent_docs / "harness.md"
+    rel = "agent_docs/harness.md"
 
     tests_gate = "REQUIRED" if config.harness.require_tests_pass else "optional"
     lint_gate = "REQUIRED" if config.harness.require_lint_pass else "optional"
     test_cmd = config.test_cmd or "echo 'No test command configured'"
     lint_cmd = config.lint_cmd or "echo 'No linter configured'"
 
-    # agent_docs/verification-gates.md
-    _write(
-        agent_docs / "verification-gates.md",
-        "# Verification Gates\n"
+    gate_section = (
         "\n"
-        "These gates must pass before advancing to the next task.\n"
+        "## Verification Gates\n"
         "\n"
-        "## Gates\n"
-        "\n"
-        f"| Gate | Status | Command |\n"
-        f"|------|--------|---------|\n"
+        "| Gate | Status | Command |\n"
+        "|------|--------|---------|\n"
         f"| Tests | {tests_gate} | `{test_cmd}` |\n"
         f"| Lint | {lint_gate} | `{lint_cmd}` |\n"
         "\n"
-        "## When to Verify\n"
+        "Lint is enforced by the commit-gate hook (blocks on failure).\n"
+        "Tests are prompted — run `./init-sh.sh verify` before committing.\n"
         "\n"
-        "- Before committing changes\n"
-        "- Before marking a task as complete\n"
-        "- After refactoring or significant edits\n"
-        "- Before stopping a session\n"
+        "## init-sh.sh Reference\n"
         "\n"
-        "## On Failure\n"
-        "\n"
-        "1. Diagnose the root cause. Read error output carefully.\n"
-        "2. Fix the issue (up to 2 attempts).\n"
-        "3. If still failing after 2 attempts, log the issue in "
-        "tasks/todo.md with error details.\n"
-        "4. Never skip a REQUIRED gate.\n",
-        tracker=tracker,
-        rel_path="agent_docs/verification-gates.md",
+        "```\n"
+        "./init-sh.sh verify  — run tests + lint\n"
+        "./init-sh.sh tidy    — format + verify\n"
+        "./init-sh.sh test    — run tests only\n"
+        "./init-sh.sh lint    — run lint only\n"
+        "./init-sh.sh setup   — install/build\n"
+        "```\n"
     )
-    files.append("agent_docs/verification-gates.md")
 
-    # agent_docs/review-notes.md
+    # Append to existing harness.md
+    existing = ""
+    if tracker is not None:
+        # When using tracker, read via the tracker's output_dir
+        if harness_path.exists():
+            existing = harness_path.read_text()
+    else:
+        if harness_path.exists():
+            existing = harness_path.read_text()
+
     _write(
-        agent_docs / "review-notes.md",
-        "# Review Notes\n"
-        "\n"
-        "Capture learnings from code review and verification.\n"
-        "\n"
-        "## Format\n"
-        "\n"
-        "`[YYYY-MM-DD] Review: <what was reviewed> — Learning: <insight>`\n"
-        "\n"
-        "<!-- Entries below -->\n",
+        harness_path,
+        existing + gate_section,
         tracker=tracker,
-        rel_path="agent_docs/review-notes.md",
+        rel_path=rel,
     )
-    files.append("agent_docs/review-notes.md")
 
-    return files
+    # harness.md already in file list from B1, don't double-add
+    return []
+
+
+# ── init-sh.sh (B2+) ─────────────────────────────────────────────
+
+
+def _generate_init_sh(
+    config: ProjectConfig,
+    output_dir: Path,
+    tracker: FileTracker | None = None,
+) -> list[str]:
+    """Generate .claude/hooks/init-sh.sh utility script at B2+."""
+    test_cmd = _safe_cmd(config.test_cmd or "", "echo 'No test command configured'")
+    lint_cmd = _safe_cmd(config.lint_cmd or "", "echo 'No linter configured'")
+    format_cmd = _safe_cmd(config.format_cmd or "", "echo 'No formatter configured'")
+    build_cmd = _safe_cmd(config.build_cmd or "", "echo 'No build command configured'")
+
+    content = (
+        "#!/usr/bin/env bash\n"
+        "# cc-rig utility: init-sh — project verification and maintenance\n"
+        "# Generated by cc-rig. Commands are substituted from project config.\n"
+        "#\n"
+        "# Usage:\n"
+        "#   ./init-sh.sh verify  — run tests + lint\n"
+        "#   ./init-sh.sh tidy    — format + verify\n"
+        "#   ./init-sh.sh setup   — install dependencies\n"
+        "#   ./init-sh.sh test    — run tests only\n"
+        "#   ./init-sh.sh lint    — run lint only\n"
+        "\n"
+        "set -euo pipefail\n"
+        "\n"
+        'CMD="${1:-verify}"\n'
+        "\n"
+        'case "$CMD" in\n'
+        "  test)\n"
+        f"    {test_cmd}\n"
+        "    ;;\n"
+        "  lint)\n"
+        f"    {lint_cmd}\n"
+        "    ;;\n"
+        "  verify)\n"
+        f"    {test_cmd}\n"
+        f"    {lint_cmd}\n"
+        "    ;;\n"
+        "  tidy)\n"
+        f"    {format_cmd}\n"
+        f"    {test_cmd}\n"
+        f"    {lint_cmd}\n"
+        "    ;;\n"
+        "  setup)\n"
+        f"    {build_cmd}\n"
+        "    ;;\n"
+        "  *)\n"
+        '    echo "Usage: $0 {verify|tidy|setup|test|lint}" >&2\n'
+        "    exit 1\n"
+        "    ;;\n"
+        "esac\n"
+    )
+
+    rel = ".claude/hooks/init-sh.sh"
+    hooks_dir = output_dir / ".claude" / "hooks"
+    hooks_dir.mkdir(parents=True, exist_ok=True)
+
+    if tracker is not None:
+        tracker.write_text(rel, content)
+        tracker.chmod(rel, 0o755)
+    else:
+        path = hooks_dir / "init-sh.sh"
+        path.write_text(content)
+        path.chmod(0o755)
+
+    return [rel]
 
 
 # ── B3: Autonomy Loop ─────────────────────────────────────────────
@@ -217,129 +284,135 @@ def _generate_b3(
 ) -> list[str]:
     """Generate B3 files: autonomy loop + safety rails."""
     files: list[str] = []
-    agent_docs = output_dir / "agent_docs"
-    agent_docs.mkdir(parents=True, exist_ok=True)
-
     h = config.harness
-    blocked_action = "Stop and save state" if h.if_blocked == "stop" else "Skip to next task"
-    checkpoint_str = "Yes — commit after each task" if h.checkpoint_commits else "No"
 
-    # agent_docs/autonomy-loop.md
-    _write(
-        agent_docs / "autonomy-loop.md",
-        "# Autonomy Loop\n"
+    # ── Enhance harness.md with autonomy section ──────────────────
+    agent_docs = output_dir / "agent_docs"
+    harness_path = agent_docs / "harness.md"
+
+    blocked_action = "Stop and save state" if h.if_blocked == "stop" else "Skip to next task"
+    checkpoint_str = "Yes - commit after each task" if h.checkpoint_commits else "No"
+
+    autonomy_section = (
         "\n"
-        "================================================\n"
-        "  WARNING: AUTONOMOUS OPERATION MODE\n"
-        "  Claude will iterate through tasks without\n"
-        "  human intervention. Safety rails are active.\n"
-        "================================================\n"
+        "## Autonomy Loop\n"
         "\n"
         "Based on the Ralph Wiggum technique by Geoffrey Huntley.\n"
         "See: https://github.com/ghuntley/how-to-ralph-wiggum\n"
         "\n"
-        "## How It Works\n"
-        "\n"
-        "The autonomy loop uses an external bash script (`loop.sh`) that\n"
-        "feeds `PROMPT.md` to Claude in a loop. Each iteration:\n"
-        "\n"
-        "1. Claude starts with fresh context (no leftover state).\n"
-        "2. Reads `PROMPT.md` for instructions.\n"
-        "3. Reads `tasks/todo.md` and picks the highest-priority incomplete task.\n"
-        "4. Implements the task.\n"
-        "5. Runs verification gates (tests + lint).\n"
-        "6. If gates pass, checkpoint commit and mark task done.\n"
-        "7. If gates fail, attempt fix (up to 3 retries).\n"
-        "8. If blocked, " + blocked_action.lower() + ".\n"
-        "9. Claude exits. The loop restarts with fresh context.\n"
-        "\n"
-        "The `tasks/todo.md` file persists between iterations — it is the\n"
-        "sole mechanism for continuation. No state is carried between loops.\n"
-        "\n"
-        "## Running the Loop\n"
-        "\n"
-        "```bash\n"
-        f"./loop.sh              # Run with default max ({h.max_iterations} iterations)\n"
-        "./loop.sh 50           # Override max iterations\n"
-        "```\n"
-        "\n"
-        "## Safety Rails\n"
-        "\n"
-        f"| Setting | Value |\n"
-        f"|---------|-------|\n"
+        "| Setting | Value |\n"
+        "|---------|-------|\n"
         f"| Max iterations | {h.max_iterations} |\n"
         f"| Checkpoint commits | {checkpoint_str} |\n"
         f"| If blocked | {blocked_action} |\n"
-        f"| Tests required | {'Yes' if h.require_tests_pass else 'No'} |\n"
-        f"| Lint required | {'Yes' if h.require_lint_pass else 'No'} |\n"
         "\n"
-        "## Emergency Stop\n"
+        "Run: `./loop.sh` (default) or `./loop.sh 50` (override max).\n"
+        "Press Ctrl+C to stop. See PROMPT.md for iteration instructions.\n"
         "\n"
-        "Press Ctrl+C at any time. The current Claude session will finish\n"
-        "its current operation and the loop will stop.\n",
-        tracker=tracker,
-        rel_path="agent_docs/autonomy-loop.md",
+        "**WARNING**: loop.sh uses `--dangerously-skip-permissions`.\n"
+        "Run inside a Docker container or sandboxed environment.\n"
+        "See: https://docs.anthropic.com/en/docs/claude-code/security\n"
     )
-    files.append("agent_docs/autonomy-loop.md")
 
-    # PROMPT.md — the prompt file fed to Claude each iteration
-    test_cmd = config.test_cmd or "echo 'No test command configured'"
-    lint_cmd = config.lint_cmd or "echo 'No lint command configured'"
+    existing = ""
+    if harness_path.exists():
+        existing = harness_path.read_text()
+    _write(
+        harness_path,
+        existing + autonomy_section,
+        tracker=tracker,
+        rel_path="agent_docs/harness.md",
+    )
 
-    verify_steps = ""
-    if h.require_tests_pass:
-        verify_steps += f"   - Run tests: `{test_cmd}`\n"
-    if h.require_lint_pass:
-        verify_steps += f"   - Run lint: `{lint_cmd}`\n"
-    if not verify_steps:
-        verify_steps = "   - No verification gates configured.\n"
-
+    # ── PROMPT.md — 5-step work loop ──────────────────────────────
     blocked_instruction = (
         "log the blocker in tasks/todo.md and EXIT"
         if h.if_blocked == "stop"
         else "log the blocker, skip to the next incomplete task"
     )
 
+    prompt_lines = [
+        "# Autonomy Loop - Iteration Prompt",
+        "",
+        "You are operating in autonomous mode. Complete exactly ONE task",
+        "per iteration, then exit so the loop restarts with fresh context.",
+        "",
+        "## Workflow (5 steps)",
+        "",
+        "1. **Assess**: Read `claude-progress.txt` for prior iteration state.",
+        "   Read `tasks/todo.md` and pick the highest-priority `[ ]` task.",
+    ]
+    if config.features.memory:
+        prompt_lines.append(
+            "   Read `memory/session-log.md` for context."
+        )
+    if config.features.spec_workflow:
+        prompt_lines.append(
+            "   If the task is a spec, use `/spec-create`."
+            " If implementing, verify against spec criteria."
+        )
+    if config.features.gtd:
+        prompt_lines.append(
+            "   If `tasks/inbox.md` has unprocessed items, triage them first."
+        )
+
+    prompt_lines += [
+        "2. **Advance**: Implement the task.",
+        "3. **Tidy**: Run `./init-sh.sh tidy` to format and verify.",
+        "4. **Verify**: Run `./init-sh.sh verify` to confirm tests + lint pass.",
+        "   If verification fails, fix the issue (up to 3 attempts).",
+        "   If you can't fix it, log the failure in `tasks/todo.md`.",
+        "5. **Record**: Update `claude-progress.txt` with iteration result.",
+        "   Mark the task `[x]` in `tasks/todo.md`.",
+        "   Commit with a clear message describing what you did and why.",
+    ]
+    if config.features.memory:
+        prompt_lines.append(
+            "   Update `memory/` files before exiting."
+        )
+    if config.features.worktrees:
+        prompt_lines.append(
+            "   Work on a worktree branch per iteration. Do not merge to main."
+        )
+
+    prompt_lines += [
+        "",
+        "## If blocked",
+        "",
+        f"- {blocked_instruction}.",
+        "",
+        "## Rules",
+        "",
+        "- Complete exactly ONE task per iteration.",
+        "- Always commit working code before exiting.",
+        "- Always update `tasks/todo.md` to reflect current state.",
+        "- If all tasks are done, exit with message: ALL TASKS COMPLETE.",
+        "- Do NOT carry assumptions from previous iterations - read fresh.",
+    ]
+
     _write(
         output_dir / "PROMPT.md",
-        "# Autonomy Loop — Iteration Prompt\n"
-        "\n"
-        "You are operating in autonomous mode. Complete exactly ONE task\n"
-        "per iteration, then exit so the loop restarts with fresh context.\n"
-        "\n"
-        "## Your workflow:\n"
-        "\n"
-        "1. Read `tasks/todo.md` — pick the highest-priority incomplete task.\n"
-        "2. Read relevant code and context for that task.\n"
-        "3. Implement the task.\n"
-        "4. Verify your work:\n"
-        f"{verify_steps}"
-        "5. If verification passes:\n"
-        "   - Commit with a clear message describing what you did and why.\n"
-        "   - Mark the task `[x]` in `tasks/todo.md`.\n"
-        "6. If verification fails:\n"
-        "   - Fix the issue (up to 3 attempts).\n"
-        "   - If you can't fix it, log the failure in `tasks/todo.md`.\n"
-        "7. If blocked:\n"
-        f"   - {blocked_instruction}.\n"
-        "8. EXIT when done with this one task.\n"
-        "\n"
-        "## Rules\n"
-        "\n"
-        "- Complete exactly ONE task per iteration.\n"
-        "- Always commit working code before exiting.\n"
-        "- Always update `tasks/todo.md` to reflect current state.\n"
-        "- If all tasks are done, exit with message: ALL TASKS COMPLETE.\n"
-        "- Do NOT carry assumptions from previous iterations — read fresh.\n",
+        "\n".join(prompt_lines) + "\n",
         tracker=tracker,
         rel_path="PROMPT.md",
     )
     files.append("PROMPT.md")
 
-    # loop.sh — the external bash loop that drives autonomous iteration
+    # ── claude-progress.txt — resumption ledger ──────────────────
+    _write(
+        output_dir / "claude-progress.txt",
+        "# Autonomy Progress Ledger\n"
+        "# Format: iteration | status | task | timestamp\n"
+        "# Written by Claude at the end of each iteration.\n",
+        tracker=tracker,
+        rel_path="claude-progress.txt",
+    )
+    files.append("claude-progress.txt")
+
+    # ── loop.sh — enhanced with config reading + progress ────────
     loop_content = (
         "#!/usr/bin/env bash\n"
-        "# Autonomy loop — based on the Ralph Wiggum technique by Geoffrey Huntley.\n"
+        "# Autonomy loop - based on the Ralph Wiggum technique by Geoffrey Huntley.\n"
         "# https://github.com/ghuntley/how-to-ralph-wiggum\n"
         "#\n"
         "# Usage: ./loop.sh [max_iterations]\n"
@@ -350,12 +423,26 @@ def _generate_b3(
         "\n"
         "set -euo pipefail\n"
         "\n"
-        f'MAX_ITERATIONS="${{1:-{h.max_iterations}}}"\n'
+        "# Read config from harness-config.json if available\n"
+        "CONFIG_FILE=.claude/harness-config.json\n"
+        "if [ -f \"$CONFIG_FILE\" ]; then\n"
+        "    DEFAULT_MAX=$(grep -o '\"max_iterations\": *[0-9]*' \"$CONFIG_FILE\" "
+        "| grep -o '[0-9]*' || echo " + str(h.max_iterations) + ")\n"
+        "    CHECKPOINT=$(grep -o '\"checkpoint_commits\": *[a-z]*' \"$CONFIG_FILE\" "
+        "| grep -oE 'true|false' || echo true)\n"
+        "else\n"
+        f"    DEFAULT_MAX={h.max_iterations}\n"
+        "    CHECKPOINT=true\n"
+        "fi\n"
+        "\n"
+        'MAX_ITERATIONS="${1:-$DEFAULT_MAX}"\n'
         "ITERATION=0\n"
+        "PREV_TASK=\"\"\n"
+        "STUCK_COUNT=0\n"
         "\n"
         'echo ""\n'
         'echo "================================================"\n'
-        'echo "  AUTONOMY LOOP — STARTING"\n'
+        'echo "  AUTONOMY LOOP - STARTING"\n'
         'echo "  Max iterations: ${MAX_ITERATIONS}"\n'
         'echo "  Press Ctrl+C to stop at any time."\n'
         'echo "================================================"\n'
@@ -367,9 +454,41 @@ def _generate_b3(
         '    echo "--- Iteration ${ITERATION}/${MAX_ITERATIONS} ---"\n'
         '    echo ""\n'
         "\n"
+        "    # Run tidy between iterations (entropy management)\n"
+        "    if [ $ITERATION -gt 1 ] && [ -f .claude/hooks/init-sh.sh ]; then\n"
+        "        bash .claude/hooks/init-sh.sh tidy 2>/dev/null"
+        ' || echo "Tidy failed, continuing..."\n'
+        "    fi\n"
+        "\n"
         "    # Feed the prompt to Claude.\n"
         "    # --dangerously-skip-permissions is required for unattended operation.\n"
         "    cat PROMPT.md | claude --dangerously-skip-permissions || true\n"
+        "\n"
+        "    # Detect stuck state (same first open task 2+ consecutive iterations)\n"
+        "    if [ -f tasks/todo.md ]; then\n"
+        '        CURRENT_TASK=$(grep -m1 "^- \\[ \\]" tasks/todo.md 2>/dev/null || echo "")\n'
+        '        if [ -n "$CURRENT_TASK" ] && [ "$CURRENT_TASK" = "$PREV_TASK" ]; then\n'
+        "            STUCK_COUNT=$((STUCK_COUNT + 1))\n"
+        "            if [ $STUCK_COUNT -ge 2 ]; then\n"
+        '                echo ""\n'
+        '                echo "WARNING: Same task failing'
+        ' ${STUCK_COUNT} consecutive iterations."\n'
+        '                echo "Task: ${CURRENT_TASK}"\n'
+        '                echo "Consider manual intervention."\n'
+        "            fi\n"
+        "        else\n"
+        "            STUCK_COUNT=0\n"
+        "        fi\n"
+        '        PREV_TASK="$CURRENT_TASK"\n'
+        "    fi\n"
+        "\n"
+        "    # Check for uncommitted changes if checkpoint_commits enabled\n"
+        '    if [ "$CHECKPOINT" = "true" ]; then\n'
+        "        if ! git diff --quiet 2>/dev/null ||"
+        " ! git diff --cached --quiet 2>/dev/null; then\n"
+        '            echo "WARNING: Uncommitted changes after iteration ${ITERATION}." >&2\n'
+        "        fi\n"
+        "    fi\n"
         "\n"
         "    # Check if all tasks are done.\n"
         "    if [ -f tasks/todo.md ]; then\n"
@@ -403,7 +522,7 @@ def _generate_b3(
         (output_dir / "loop.sh").chmod(0o755)
     files.append("loop.sh")
 
-    # .claude/harness-config.json — machine-readable safety config
+    # ── .claude/harness-config.json — machine-readable safety config ──
     claude_dir = output_dir / ".claude"
     claude_dir.mkdir(parents=True, exist_ok=True)
 

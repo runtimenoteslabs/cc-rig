@@ -10,6 +10,8 @@ AUTONOMY_WARNING_LINES = [
     "  WARNING: AUTONOMOUS OPERATION MODE (B3)",
     "  Claude will iterate through tasks without",
     "  human intervention. Safety rails will be active.",
+    "  loop.sh uses --dangerously-skip-permissions.",
+    "  Run inside a Docker container or sandbox.",
     "  ================================================",
 ]
 
@@ -24,7 +26,7 @@ def ask_harness(io: IO) -> HarnessConfig:
         ("lite", "Lite - task tracking + budget awareness (B1)"),
         (
             "standard",
-            "Standard - verification gates + review notes (B2)",
+            "Standard - enforcement gates + init-sh.sh (B2)",
         ),
         (
             "autonomy",

@@ -34,34 +34,40 @@ class TestB1Lite:
         assert "tasks/todo.md" in files
         assert (tmp_path / "tasks" / "todo.md").exists()
 
-    def test_generates_budget_guide(self, tmp_path):
+    def test_generates_harness_doc(self, tmp_path):
         config = _make_config(level="lite")
         files = generate_harness(config, tmp_path)
-        assert "agent_docs/budget-guide.md" in files
-        assert (tmp_path / "agent_docs" / "budget-guide.md").exists()
+        assert "agent_docs/harness.md" in files
+        assert (tmp_path / "agent_docs" / "harness.md").exists()
 
-    def test_budget_guide_shows_unlimited(self, tmp_path):
+    def test_no_budget_guide(self, tmp_path):
+        """budget-guide.md replaced by consolidated harness.md."""
         config = _make_config(level="lite")
         generate_harness(config, tmp_path)
-        content = (tmp_path / "agent_docs" / "budget-guide.md").read_text()
+        assert not (tmp_path / "agent_docs" / "budget-guide.md").exists()
+
+    def test_harness_doc_shows_unlimited(self, tmp_path):
+        config = _make_config(level="lite")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
         assert "unlimited" in content.lower()
 
-    def test_budget_guide_shows_token_limit(self, tmp_path):
+    def test_harness_doc_shows_token_limit(self, tmp_path):
         config = _make_config(level="lite")
         config.harness.budget_per_run_tokens = 100_000
         generate_harness(config, tmp_path)
-        content = (tmp_path / "agent_docs" / "budget-guide.md").read_text()
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
         assert "100,000" in content
 
     def test_b1_file_count(self, tmp_path):
         config = _make_config(level="lite")
         files = generate_harness(config, tmp_path)
-        assert len(files) == 2
+        assert len(files) == 2  # tasks/todo.md + agent_docs/harness.md
 
-    def test_no_verification_gates(self, tmp_path):
+    def test_no_init_sh(self, tmp_path):
         config = _make_config(level="lite")
         generate_harness(config, tmp_path)
-        assert not (tmp_path / "agent_docs" / "verification-gates.md").exists()
+        assert not (tmp_path / ".claude" / "hooks" / "init-sh.sh").exists()
 
     def test_no_autonomy_doc(self, tmp_path):
         config = _make_config(level="lite")
@@ -74,43 +80,63 @@ class TestB2Standard:
         config = _make_config(level="standard")
         files = generate_harness(config, tmp_path)
         assert "tasks/todo.md" in files
-        assert "agent_docs/budget-guide.md" in files
+        assert "agent_docs/harness.md" in files
 
-    def test_generates_verification_gates(self, tmp_path):
-        config = _make_config(level="standard")
-        files = generate_harness(config, tmp_path)
-        assert "agent_docs/verification-gates.md" in files
-        assert (tmp_path / "agent_docs" / "verification-gates.md").exists()
-
-    def test_generates_review_notes(self, tmp_path):
-        config = _make_config(level="standard")
-        files = generate_harness(config, tmp_path)
-        assert "agent_docs/review-notes.md" in files
-        assert (tmp_path / "agent_docs" / "review-notes.md").exists()
-
-    def test_verification_shows_required(self, tmp_path):
+    def test_no_verification_gates_file(self, tmp_path):
+        """verification-gates.md replaced by gates section in harness.md."""
         config = _make_config(level="standard")
         generate_harness(config, tmp_path)
-        content = (tmp_path / "agent_docs" / "verification-gates.md").read_text()
+        assert not (tmp_path / "agent_docs" / "verification-gates.md").exists()
+
+    def test_no_review_notes_file(self, tmp_path):
+        """review-notes.md removed in v2."""
+        config = _make_config(level="standard")
+        generate_harness(config, tmp_path)
+        assert not (tmp_path / "agent_docs" / "review-notes.md").exists()
+
+    def test_harness_md_has_gates(self, tmp_path):
+        config = _make_config(level="standard")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
+        assert "Verification Gates" in content
+
+    def test_harness_md_shows_required(self, tmp_path):
+        config = _make_config(level="standard")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
         assert "REQUIRED" in content
 
-    def test_verification_shows_optional(self, tmp_path):
+    def test_harness_md_shows_optional(self, tmp_path):
         config = _make_config(level="standard")
         config.harness.require_tests_pass = False
         generate_harness(config, tmp_path)
-        content = (tmp_path / "agent_docs" / "verification-gates.md").read_text()
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
         assert "optional" in content
 
-    def test_verification_includes_test_cmd(self, tmp_path):
+    def test_harness_md_includes_test_cmd(self, tmp_path):
         config = _make_config(level="standard")
         generate_harness(config, tmp_path)
-        content = (tmp_path / "agent_docs" / "verification-gates.md").read_text()
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
         assert config.test_cmd in content
+
+    def test_harness_md_references_init_sh(self, tmp_path):
+        config = _make_config(level="standard")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
+        assert "init-sh.sh" in content
+
+    def test_generates_init_sh(self, tmp_path):
+        config = _make_config(level="standard")
+        files = generate_harness(config, tmp_path)
+        assert ".claude/hooks/init-sh.sh" in files
+        assert (tmp_path / ".claude" / "hooks" / "init-sh.sh").exists()
 
     def test_b2_file_count(self, tmp_path):
         config = _make_config(level="standard")
         files = generate_harness(config, tmp_path)
-        assert len(files) == 4  # 2 from B1 + 2 from B2
+        # 2 from B1 (todo.md + harness.md) + init-sh.sh = 3
+        # B2 enhances harness.md in-place, no new files
+        assert len(files) == 3
 
     def test_no_autonomy_doc(self, tmp_path):
         config = _make_config(level="standard")
@@ -123,51 +149,55 @@ class TestB3Autonomy:
         config = _make_config(level="autonomy")
         files = generate_harness(config, tmp_path)
         assert "tasks/todo.md" in files
-        assert "agent_docs/budget-guide.md" in files
-        assert "agent_docs/verification-gates.md" in files
-        assert "agent_docs/review-notes.md" in files
+        assert "agent_docs/harness.md" in files
+        assert ".claude/hooks/init-sh.sh" in files
 
-    def test_generates_autonomy_loop_doc(self, tmp_path):
-        config = _make_config(level="autonomy")
-        files = generate_harness(config, tmp_path)
-        assert "agent_docs/autonomy-loop.md" in files
-        assert (tmp_path / "agent_docs" / "autonomy-loop.md").exists()
-
-    def test_autonomy_doc_has_warning(self, tmp_path):
+    def test_no_autonomy_loop_doc(self, tmp_path):
+        """autonomy-loop.md replaced by section in harness.md."""
         config = _make_config(level="autonomy")
         generate_harness(config, tmp_path)
-        content = (tmp_path / "agent_docs" / "autonomy-loop.md").read_text()
-        assert "WARNING" in content
-        assert "AUTONOMOUS" in content
+        assert not (tmp_path / "agent_docs" / "autonomy-loop.md").exists()
 
-    def test_autonomy_doc_credits_ralph_wiggum(self, tmp_path):
+    def test_harness_md_has_autonomy_section(self, tmp_path):
         config = _make_config(level="autonomy")
         generate_harness(config, tmp_path)
-        content = (tmp_path / "agent_docs" / "autonomy-loop.md").read_text()
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
+        assert "Autonomy Loop" in content
+
+    def test_harness_md_credits_ralph_wiggum(self, tmp_path):
+        config = _make_config(level="autonomy")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
         assert "Ralph Wiggum" in content
         assert "Geoffrey Huntley" in content
         assert "ghuntley/how-to-ralph-wiggum" in content
 
-    def test_autonomy_doc_shows_max_iterations(self, tmp_path):
+    def test_harness_md_shows_max_iterations(self, tmp_path):
         config = _make_config(level="autonomy")
         config.harness.max_iterations = 50
         generate_harness(config, tmp_path)
-        content = (tmp_path / "agent_docs" / "autonomy-loop.md").read_text()
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
         assert "50" in content
 
-    def test_autonomy_doc_shows_if_blocked_stop(self, tmp_path):
+    def test_harness_md_shows_if_blocked_stop(self, tmp_path):
         config = _make_config(level="autonomy")
         config.harness.if_blocked = "stop"
         generate_harness(config, tmp_path)
-        content = (tmp_path / "agent_docs" / "autonomy-loop.md").read_text()
-        assert "stop" in content.lower() or "Stop" in content
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
+        assert "Stop" in content
 
-    def test_autonomy_doc_shows_if_blocked_skip(self, tmp_path):
+    def test_harness_md_shows_if_blocked_skip(self, tmp_path):
         config = _make_config(level="autonomy")
         config.harness.if_blocked = "skip"
         generate_harness(config, tmp_path)
-        content = (tmp_path / "agent_docs" / "autonomy-loop.md").read_text()
-        assert "skip" in content.lower() or "Skip" in content
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
+        assert "Skip" in content
+
+    def test_generates_progress_file(self, tmp_path):
+        config = _make_config(level="autonomy")
+        files = generate_harness(config, tmp_path)
+        assert "claude-progress.txt" in files
+        assert (tmp_path / "claude-progress.txt").exists()
 
     def test_generates_loop_sh(self, tmp_path):
         config = _make_config(level="autonomy")
@@ -181,6 +211,25 @@ class TestB3Autonomy:
         assert "Geoffrey Huntley" in content
         assert "cat PROMPT.md | claude" in content
         assert "tasks/todo.md" in content
+
+    def test_loop_sh_reads_config(self, tmp_path):
+        config = _make_config(level="autonomy")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "loop.sh").read_text()
+        assert "harness-config.json" in content
+        assert "max_iterations" in content
+
+    def test_loop_sh_detects_stuck(self, tmp_path):
+        config = _make_config(level="autonomy")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "loop.sh").read_text()
+        assert "STUCK_COUNT" in content
+
+    def test_loop_sh_runs_tidy(self, tmp_path):
+        config = _make_config(level="autonomy")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "loop.sh").read_text()
+        assert "init-sh.sh tidy" in content
 
     def test_loop_sh_is_executable(self, tmp_path):
         import os
@@ -207,14 +256,28 @@ class TestB3Autonomy:
         content = prompt_path.read_text()
         assert "tasks/todo.md" in content
         assert "ONE task" in content
-        assert "EXIT" in content
 
-    def test_prompt_md_includes_verification_commands(self, tmp_path):
+    def test_prompt_md_5_step_workflow(self, tmp_path):
         config = _make_config(level="autonomy")
         generate_harness(config, tmp_path)
         content = (tmp_path / "PROMPT.md").read_text()
-        assert config.test_cmd in content
-        assert config.lint_cmd in content
+        assert "Assess" in content
+        assert "Advance" in content
+        assert "Tidy" in content
+        assert "Verify" in content
+        assert "Record" in content
+
+    def test_prompt_md_references_init_sh(self, tmp_path):
+        config = _make_config(level="autonomy")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "PROMPT.md").read_text()
+        assert "init-sh.sh" in content
+
+    def test_prompt_md_references_progress(self, tmp_path):
+        config = _make_config(level="autonomy")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "PROMPT.md").read_text()
+        assert "claude-progress.txt" in content
 
     def test_prompt_md_if_blocked_stop(self, tmp_path):
         config = _make_config(level="autonomy")
@@ -257,8 +320,8 @@ class TestB3Autonomy:
     def test_b3_file_count(self, tmp_path):
         config = _make_config(level="autonomy")
         files = generate_harness(config, tmp_path)
-        # 2 B1 + 2 B2 + 4 B3 (autonomy-loop.md, PROMPT.md, loop.sh, config.json)
-        assert len(files) == 8
+        # 2 B1 + init-sh.sh + 4 B3 (PROMPT.md, progress.txt, loop.sh, config.json)
+        assert len(files) == 7
 
 
 class TestHarnessConfig:
@@ -320,7 +383,9 @@ class TestHarnessCLI:
 
         rc = main(["harness", "init", "-d", str(tmp_path)])
         assert rc == 0
-        assert (tmp_path / "agent_docs" / "verification-gates.md").exists()
+        assert (tmp_path / "agent_docs" / "harness.md").exists()
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
+        assert "Verification Gates" in content
 
     def test_harness_init_autonomy(self, capsys, tmp_path, monkeypatch):
         config = compute_defaults("fastapi", "standard", project_name="test")
@@ -332,7 +397,7 @@ class TestHarnessCLI:
         assert rc == 0
         captured = capsys.readouterr()
         assert "WARNING" in captured.out
-        assert (tmp_path / "agent_docs" / "autonomy-loop.md").exists()
+        assert (tmp_path / "PROMPT.md").exists()
 
     def test_harness_init_autonomy_cancelled(self, capsys, tmp_path, monkeypatch):
         config = compute_defaults("fastapi", "standard", project_name="test")
@@ -353,7 +418,7 @@ class TestHarnessCLI:
         monkeypatch.setattr("builtins.input", lambda _: "I understand")
         rc = main(["harness", "init", "--ralph", "-d", str(tmp_path)])
         assert rc == 0
-        assert (tmp_path / "agent_docs" / "autonomy-loop.md").exists()
+        assert (tmp_path / "PROMPT.md").exists()
 
     def test_harness_no_project(self, capsys, tmp_path):
         from cc_rig.cli import main
@@ -386,3 +451,72 @@ class TestHarnessCLI:
         assert rc == 0
         captured = capsys.readouterr()
         assert "harness" in captured.out.lower()
+
+
+class TestFeatureIntegration:
+    """Feature flags affect harness output (PROMPT.md, hooks)."""
+
+    def test_prompt_md_memory_integration(self, tmp_path):
+        config = _make_config(level="autonomy")
+        config.features.memory = True
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "PROMPT.md").read_text()
+        assert "memory/session-log.md" in content
+        assert "memory/" in content
+
+    def test_prompt_md_no_memory_without_feature(self, tmp_path):
+        config = _make_config(level="autonomy")
+        config.features.memory = False
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "PROMPT.md").read_text()
+        assert "memory/session-log.md" not in content
+
+    def test_prompt_md_spec_workflow_integration(self, tmp_path):
+        config = _make_config(level="autonomy")
+        config.features.spec_workflow = True
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "PROMPT.md").read_text()
+        assert "spec-create" in content
+
+    def test_prompt_md_gtd_integration(self, tmp_path):
+        config = _make_config(level="autonomy")
+        config.features.gtd = True
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "PROMPT.md").read_text()
+        assert "inbox.md" in content
+
+    def test_prompt_md_worktrees_integration(self, tmp_path):
+        config = _make_config(level="autonomy")
+        config.features.worktrees = True
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "PROMPT.md").read_text()
+        assert "worktree" in content.lower()
+
+    def test_session_tasks_hook_gtd(self, tmp_path):
+        """session-tasks hook includes inbox count when GTD enabled."""
+        from cc_rig.generators.settings import _script_session_tasks
+
+        config = _make_config(level="lite")
+        config.features.gtd = True
+        script = _script_session_tasks(config)
+        assert "inbox.md" in script
+
+    def test_session_tasks_hook_memory(self, tmp_path):
+        """session-tasks hook includes memory line count when memory enabled."""
+        from cc_rig.generators.settings import _script_session_tasks
+
+        config = _make_config(level="lite")
+        config.features.memory = True
+        script = _script_session_tasks(config)
+        assert "memory" in script
+
+    def test_session_tasks_hook_no_extras_without_features(self, tmp_path):
+        """session-tasks hook is minimal without features."""
+        from cc_rig.generators.settings import _script_session_tasks
+
+        config = _make_config(level="lite")
+        config.features.memory = False
+        config.features.gtd = False
+        script = _script_session_tasks(config)
+        assert "inbox.md" not in script
+        assert "memory" not in script.lower()

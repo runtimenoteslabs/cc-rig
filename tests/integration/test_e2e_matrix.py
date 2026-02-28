@@ -344,30 +344,37 @@ class TestS02FastapiVerifyHeavyB3:
 
     def test_harness_b1_files(self):
         assert (self.root / "tasks" / "todo.md").exists()
-        assert (self.root / "agent_docs" / "budget-guide.md").exists()
+        assert (self.root / "agent_docs" / "harness.md").exists()
 
     def test_harness_b2_files(self):
-        assert (self.root / "agent_docs" / "verification-gates.md").exists()
-        assert (self.root / "agent_docs" / "review-notes.md").exists()
+        content = (self.root / "agent_docs" / "harness.md").read_text()
+        assert "Verification Gates" in content
+        assert (self.root / ".claude" / "hooks" / "init-sh.sh").exists()
 
     def test_harness_b3_files(self):
-        assert (self.root / "agent_docs" / "autonomy-loop.md").exists()
         assert (self.root / "PROMPT.md").exists()
+        assert (self.root / "claude-progress.txt").exists()
         assert (self.root / "loop.sh").exists()
         assert (self.root / ".claude" / "harness-config.json").exists()
+        content = (self.root / "agent_docs" / "harness.md").read_text()
+        assert "Autonomy Loop" in content
 
     def test_loop_sh_executable(self):
         mode = (self.root / "loop.sh").stat().st_mode
         assert mode & stat.S_IXUSR
 
     def test_harness_config_json(self):
-        data = json.loads((self.root / ".claude" / "harness-config.json").read_text())
+        data = json.loads(
+            (self.root / ".claude" / "harness-config.json").read_text()
+        )
         assert data["harness_level"] == "autonomy"
         assert data["max_iterations"] == 20
 
-    def test_budget_reminder_hook(self):
+    def test_harness_hooks(self):
         hooks = _list_dir(self.root, ".claude/hooks")
         assert "budget-reminder.sh" in hooks
+        assert "session-tasks.sh" in hooks
+        assert "commit-gate.sh" in hooks
 
     def test_hooks_executable(self):
         _assert_hooks_executable(self.root)
@@ -553,22 +560,25 @@ class TestS05NextjsStandardB2:
         content = _read_claude_md(self.root)
         assert "nextjs" in content.lower() or "next" in content.lower()
 
-    def test_harness_b2_files(self):
-        assert (self.root / "agent_docs" / "verification-gates.md").exists()
-        assert (self.root / "agent_docs" / "review-notes.md").exists()
-
     def test_harness_b1_files(self):
         assert (self.root / "tasks" / "todo.md").exists()
-        assert (self.root / "agent_docs" / "budget-guide.md").exists()
+        assert (self.root / "agent_docs" / "harness.md").exists()
+
+    def test_harness_b2_files(self):
+        content = (self.root / "agent_docs" / "harness.md").read_text()
+        assert "Verification Gates" in content
+        assert (self.root / ".claude" / "hooks" / "init-sh.sh").exists()
 
     def test_no_b3_files(self):
         assert not (self.root / "loop.sh").exists()
         assert not (self.root / "PROMPT.md").exists()
         assert not (self.root / ".claude" / "harness-config.json").exists()
 
-    def test_budget_reminder_hook(self):
+    def test_harness_hooks(self):
         hooks = _list_dir(self.root, ".claude/hooks")
         assert "budget-reminder.sh" in hooks
+        assert "session-tasks.sh" in hooks
+        assert "commit-gate.sh" in hooks
 
     def test_memory_present(self):
         assert (self.root / "memory" / "decisions.md").exists()
@@ -681,8 +691,12 @@ class TestS07RustCliStandardB3:
     def test_prompt_md_present(self):
         assert (self.root / "PROMPT.md").exists()
 
-    def test_autonomy_loop_doc(self):
-        assert (self.root / "agent_docs" / "autonomy-loop.md").exists()
+    def test_progress_file_present(self):
+        assert (self.root / "claude-progress.txt").exists()
+
+    def test_harness_md_has_autonomy(self):
+        content = (self.root / "agent_docs" / "harness.md").read_text()
+        assert "Autonomy Loop" in content
 
     def test_harness_config(self):
         path = self.root / ".claude" / "harness-config.json"
@@ -1047,17 +1061,22 @@ def test_every_harness_level(tmp_path, level):
         assert not (tmp_path / "loop.sh").exists()
     elif level == "lite":
         assert (tmp_path / "tasks" / "todo.md").exists()
-        assert (tmp_path / "agent_docs" / "budget-guide.md").exists()
-        assert not (tmp_path / "agent_docs" / "verification-gates.md").exists()
+        assert (tmp_path / "agent_docs" / "harness.md").exists()
+        assert not (tmp_path / ".claude" / "hooks" / "init-sh.sh").exists()
     elif level == "standard":
         assert (tmp_path / "tasks" / "todo.md").exists()
-        assert (tmp_path / "agent_docs" / "verification-gates.md").exists()
+        assert (tmp_path / "agent_docs" / "harness.md").exists()
+        harness_content = (tmp_path / "agent_docs" / "harness.md").read_text()
+        assert "Verification Gates" in harness_content
+        assert (tmp_path / ".claude" / "hooks" / "init-sh.sh").exists()
         assert not (tmp_path / "loop.sh").exists()
     elif level == "autonomy":
         assert (tmp_path / "tasks" / "todo.md").exists()
-        assert (tmp_path / "agent_docs" / "verification-gates.md").exists()
+        assert (tmp_path / "agent_docs" / "harness.md").exists()
+        assert (tmp_path / ".claude" / "hooks" / "init-sh.sh").exists()
         assert (tmp_path / "loop.sh").exists()
         assert (tmp_path / "PROMPT.md").exists()
+        assert (tmp_path / "claude-progress.txt").exists()
         assert (tmp_path / ".claude" / "harness-config.json").exists()
 
     _assert_manifest_consistent(tmp_path)

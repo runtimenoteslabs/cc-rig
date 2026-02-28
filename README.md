@@ -194,8 +194,10 @@ Shell scripts on Claude Code lifecycle events, configured in `settings.json`.
 | **Stop** | Save learnings to memory, remind about tests | Preserve context without blocking on full test suite |
 | **PreCompact** | Save context before compaction | Survive context loss |
 | **SessionStart** | Load project context and active tasks | Continuity |
+| **SessionStart** | Print open/done task counts (harness B1+) | Quick orientation |
+| **PreToolUse** (Bash) | Lint gate on `git commit` (harness B2+) | Structural enforcement |
 
-Up to 14 hooks depending on your workflow preset.
+Up to 14 hooks from your workflow preset, plus up to 3 more from the harness level.
 
 ### Skills
 
@@ -400,19 +402,21 @@ cc-rig init --expert
 Claude works through a task list while you're away. Add a harness to any cc-rig project:
 
 ```bash
-cc-rig harness init --lite        # Task tracking + budget awareness
-cc-rig harness init               # + verification gates (tests/lint must pass between tasks)
-cc-rig harness init --autonomy    # + loop script, prompt file, safety rails
+cc-rig harness init --lite        # Task tracking + session-start summary
+cc-rig harness init               # + enforcement gates (lint blocks commits) + init-sh.sh
+cc-rig harness init --autonomy    # + loop script, 5-step PROMPT.md, progress ledger
 ```
 
-Each level builds on the previous. The autonomy level generates `loop.sh` and `PROMPT.md`, an external bash loop that feeds tasks to Claude one at a time, each with fresh context. Based on the [Ralph Wiggum technique](https://github.com/ghuntley/how-to-ralph-wiggum) by Geoffrey Huntley.
+Each level builds on the previous. The standard level generates `init-sh.sh` (wraps your test/lint/format commands) and a commit-gate hook that structurally blocks commits when lint fails. The autonomy level generates `loop.sh` and `PROMPT.md` (5-step workflow: assess, advance, tidy, verify, record), an external bash loop that feeds tasks to Claude one at a time, each with fresh context. Based on the [Ralph Wiggum technique](https://github.com/ghuntley/how-to-ralph-wiggum) by Geoffrey Huntley.
 
 ```bash
 ./loop.sh           # Run the autonomy loop (default: 20 iterations max)
 ./loop.sh 50        # Override max iterations
 ```
 
-Safety rails included: iteration limits, checkpoint commits after each task, verification gates and Ctrl+C emergency stop.
+**Warning**: `loop.sh` uses `--dangerously-skip-permissions`. Run inside a Docker container or sandboxed environment. See [Claude Code security docs](https://docs.anthropic.com/en/docs/claude-code/security).
+
+Safety rails included: iteration limits, checkpoint commits after each task, stuck detection, entropy management (tidy between iterations) and Ctrl+C emergency stop.
 
 ### Health check and cleanup
 
@@ -476,9 +480,9 @@ cc-rig's defaults encode seven workflow principles distilled from how the Claude
 | **Plan before coding** | `/plan` and `/assumptions` commands, `/research` for codebase exploration, CLAUDE.md workflow guidance |
 | **Use subagents for research** | `/research` command, `explorer` agent (Haiku), `parallel-worker` for worktree isolation |
 | **Self-improvement loop** | Auto-memory (personal), team memory (`/remember`, `memory-stop` hook, `memory-precompact` hook), persistent `memory/` files |
-| **Verify before done** | Hooks (format, lint, typecheck), B2+ verification gates, guardrails in CLAUDE.md |
+| **Verify before done** | Hooks (format, lint, typecheck), B2+ enforcement gates (lint blocks commits), guardrails in CLAUDE.md |
 | **Demand elegance** | `/refactor` command, `refactorer` agent, workflow principles in CLAUDE.md |
-| **Fix failures immediately** | B1+ budget guide, B2+ retry logic in verification gates, B3 autonomy loop (3 retries) |
+| **Fix failures immediately** | B1+ session-start task summary, B2+ commit-gate hook, B3 autonomy loop (stuck detection) |
 | **Track work with tasks** | `tasks/todo.md` (B1+), GTD system (inbox/todo/someday), `/daily-plan` |
 
 Each workflow preset dials these principles up or down:
@@ -520,7 +524,7 @@ cc-rig and community skills are complementary. cc-rig generates your project sca
 <details>
 <summary><strong>What's the autonomous mode?</strong></summary>
 
-A harness that lets Claude work through a task list unattended. It adds verification gates (tests and lint must pass between tasks), iteration limits, checkpoint commits and an emergency stop. Set it up, walk away, review the results.
+A harness that lets Claude work through a task list unattended. It uses structural enforcement: hooks that block commits when lint fails, a utility script (`init-sh.sh`) wrapping your test/lint/format commands, iteration limits, checkpoint commits, stuck detection and an emergency stop. Set it up, walk away, review the results.
 </details>
 
 <details>

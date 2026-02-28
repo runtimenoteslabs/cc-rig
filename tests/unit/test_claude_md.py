@@ -193,3 +193,41 @@ class TestSkipParameter:
         result = generate_claude_md(config, tmp_path, skip=True)
         assert result == []
         assert (tmp_path / "CLAUDE.md").read_text() == "# My hand-crafted CLAUDE.md\n"
+
+
+class TestHarnessGuardrails:
+    """Harness level adds guardrail lines to CLAUDE.md."""
+
+    def _make_with_harness(self, tmp_path, level):
+        from cc_rig.config.project import HarnessConfig
+        from cc_rig.generators.claude_md import generate_claude_md
+
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        config.harness = HarnessConfig(level=level)
+        generate_claude_md(config, tmp_path)
+        return (tmp_path / "CLAUDE.md").read_text()
+
+    def test_b0_no_harness_guardrails(self, tmp_path):
+        content = self._make_with_harness(tmp_path, "none")
+        assert "Budget-aware" not in content
+        assert "gate-checked" not in content
+        assert "Autonomy mode" not in content
+
+    def test_b1_budget_guardrail(self, tmp_path):
+        content = self._make_with_harness(tmp_path, "lite")
+        assert "Budget-aware" in content
+        assert "gate-checked" not in content
+
+    def test_b2_gate_guardrail(self, tmp_path):
+        content = self._make_with_harness(tmp_path, "standard")
+        assert "Budget-aware" in content
+        assert "gate-checked" in content
+        assert "init-sh.sh" in content
+        assert "Autonomy mode" not in content
+
+    def test_b3_autonomy_guardrail(self, tmp_path):
+        content = self._make_with_harness(tmp_path, "autonomy")
+        assert "Budget-aware" in content
+        assert "gate-checked" in content
+        assert "Autonomy mode" in content
+        assert "PROMPT.md" in content

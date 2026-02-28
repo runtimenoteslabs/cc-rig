@@ -36,6 +36,8 @@ _HOOK_REGISTRY: dict[str, tuple[str, str, str]] = {
     "commit-message": ("PreToolUse", "Bash", "prompt"),
     "doc-review": ("Stop", "", "agent"),
     "budget-reminder": ("Stop", "", "command"),
+    "session-tasks": ("SessionStart", "", "command"),
+    "commit-gate": ("PreToolUse", "Bash", "command"),
 }
 
 
@@ -139,10 +141,19 @@ def generate_settings(
     # Hooks
     hooks_by_event: dict[str, list[dict[str, Any]]] = {}
 
-    # Auto-add budget-reminder hook when harness is B1+
+    # Auto-add harness hooks based on level
     active_hooks = list(config.hooks)
-    if config.harness.level != "none" and "budget-reminder" not in active_hooks:
-        active_hooks.append("budget-reminder")
+    harness_level = config.harness.level
+    if harness_level != "none":
+        # B1+: budget-reminder + session-tasks
+        if "budget-reminder" not in active_hooks:
+            active_hooks.append("budget-reminder")
+        if "session-tasks" not in active_hooks:
+            active_hooks.append("session-tasks")
+    if harness_level in ("standard", "autonomy"):
+        # B2+: commit-gate
+        if "commit-gate" not in active_hooks:
+            active_hooks.append("commit-gate")
 
     for hook_name in active_hooks:
         meta = _HOOK_REGISTRY.get(hook_name)
@@ -236,6 +247,8 @@ def _generate_hook_script(
         "stop-validator": _script_stop_validator,
         "memory-precompact": _script_memory_precompact,
         "budget-reminder": _script_budget_reminder,
+        "session-tasks": _script_session_tasks,
+        "commit-gate": _script_commit_gate,
     }
     generator = generators.get(hook_name)
     if generator is None:
@@ -544,6 +557,77 @@ def _script_budget_reminder(config: ProjectConfig) -> str:
         "\n"
         "exit 0\n"
     )
+
+
+def _script_session_tasks(config: ProjectConfig) -> str:
+    """Generate session-tasks hook: print task summary at session start."""
+    lines = [
+        "#!/usr/bin/env bash",
+        "# cc-rig hook: session-tasks — print task summary at session start",
+        "# Event: SessionStart",
+        "set -euo pipefail",
+        "",
+        "# Count open and done tasks from tasks/todo.md",
+        'if [ -f "tasks/todo.md" ]; then',
+        '  OPEN=$(grep -c "^- \\[ \\]" tasks/todo.md 2>/dev/null || echo 0)',
+        '  DONE=$(grep -c "^- \\[x\\]" tasks/todo.md 2>/dev/null || echo 0)',
+        '  echo "Tasks: ${OPEN} open, ${DONE} done" >&2',
+    ]
+    if config.features.gtd:
+        lines += [
+            '  if [ -f "tasks/inbox.md" ]; then',
+            '    INBOX=$(grep -c "^- " tasks/inbox.md 2>/dev/null || echo 0)',
+            '    echo "Inbox: ${INBOX} unprocessed" >&2',
+            "  fi",
+        ]
+    if config.features.memory:
+        lines += [
+            '  if [ -d "memory" ]; then',
+            '    MLINES=$(cat memory/*.md 2>/dev/null | wc -l || echo 0)',
+            '    echo "Memory: ${MLINES} lines" >&2',
+            "  fi",
+        ]
+    lines += [
+        "else",
+        '  echo "No tasks/todo.md found." >&2',
+        "fi",
+        "",
+        "exit 0",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def _script_commit_gate(config: ProjectConfig) -> str:
+    """Generate commit-gate hook: lint enforcement + test reminder on git commit."""
+    lint_cmd = _safe_cmd(config.lint_cmd, "echo 'No linter configured'")
+    lines = [
+        "#!/usr/bin/env bash",
+        "# cc-rig hook: commit-gate — lint gate + test reminder before commit",
+        "# Event: PreToolUse (Bash)",
+        "# Exit 2 = block the tool use",
+        "set -euo pipefail",
+        "",
+        "# Read the tool input from stdin",
+        'INPUT=$(cat 2>/dev/null || echo "")',
+        "",
+        "# Only fire on git commit commands",
+        'if ! echo "$INPUT" | grep -q "git commit"; then',
+        "  exit 0",
+        "fi",
+        "",
+        "# Always run lint — block (exit 2) on failure",
+        f"if ! {lint_cmd}; then",
+        '  echo "Commit gate: lint failed. Fix lint errors before committing." >&2',
+        "  exit 2",
+        "fi",
+        "",
+        "# Lint passed — prompt about tests",
+        'echo "Commit gate: lint passed. Did you run tests? '
+        'If not, run ./init-sh.sh verify first." >&2',
+        "",
+        "exit 0",
+    ]
+    return "\n".join(lines) + "\n"
 
 
 def _script_noop(hook_name: str) -> str:

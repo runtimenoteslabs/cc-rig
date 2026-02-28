@@ -102,6 +102,8 @@ VALID_HOOKS = {
     "commit-message",
     "doc-review",
     "autonomy-loop",
+    "session-tasks",
+    "commit-gate",
 }
 
 # Valid CC hook events (Appendix A of IMPLEMENTATION-PLAN.md)

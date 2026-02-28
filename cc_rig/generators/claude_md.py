@@ -117,16 +117,38 @@ def _section_commands(config: ProjectConfig) -> str:
 
 
 def _section_guardrails(config: ProjectConfig) -> str:
-    return (
-        "## Guardrails\n"
-        "\n"
-        "- Run tests before committing. Run lint before pushing.\n"
-        "- Never commit .env, credentials, or secrets.\n"
-        "- Never push directly to main/master.\n"
-        "- Never run destructive commands (rm -rf /, DROP TABLE).\n"
-        "- Prefer editing existing files over creating new ones.\n"
-        "- Keep commits small and focused. One concern per commit.\n"
-    )
+    lines = [
+        "## Guardrails\n",
+        "- Run tests before committing. Run lint before pushing.",
+        "- Never commit .env, credentials, or secrets.",
+        "- Never push directly to main/master.",
+        "- Never run destructive commands (rm -rf /, DROP TABLE).",
+        "- Prefer editing existing files over creating new ones.",
+        "- Keep commits small and focused. One concern per commit.",
+    ]
+
+    # Harness-aware guardrails
+    from cc_rig.generators.harness import _at_least
+
+    level = config.harness.level
+    if _at_least(level, "lite"):
+        lines.append(
+            "- Budget-aware: plan before acting, checkpoint often,"
+            " stop cleanly at budget warning."
+        )
+    if _at_least(level, "standard"):
+        lines.append(
+            "- Commits are gate-checked: lint must pass."
+            " Run ./init-sh.sh verify before committing."
+        )
+    if level == "autonomy":
+        lines.append(
+            "- Autonomy mode active."
+            " Follow PROMPT.md for iteration instructions."
+        )
+
+    lines.append("")
+    return "\n".join(lines)
 
 
 def _section_workflow_principles() -> str:

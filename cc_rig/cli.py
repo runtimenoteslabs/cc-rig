@@ -545,6 +545,7 @@ def _harness_init(args: argparse.Namespace) -> int:
 
     from cc_rig.config.project import HarnessConfig, ProjectConfig
     from cc_rig.generators.harness import generate_harness
+    from cc_rig.generators.settings import generate_settings
 
     project_dir = Path(args.dir).resolve()
     cc_rig_json = project_dir / ".cc-rig.json"
@@ -584,6 +585,10 @@ def _harness_init(args: argparse.Namespace) -> int:
 
     # Generate harness files
     files = generate_harness(config, project_dir)
+
+    # Regenerate settings.json (picks up new harness hooks)
+    settings_files = generate_settings(config, project_dir)
+    files.extend(f for f in settings_files if f not in files)
 
     # Update .cc-rig.json with harness config
     cc_rig_json.write_text(config.to_json() + "\n")
