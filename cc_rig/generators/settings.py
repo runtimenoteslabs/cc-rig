@@ -55,10 +55,12 @@ _PROMPT_TEXTS: dict[str, str] = {
     "memory-stop": (
         "Review the conversation for team-relevant decisions, patterns, "
         "gotchas, or learnings worth saving to memory/ files. "
-        'If there are items worth persisting, respond with {"ok": false, '
-        '"reason": "Save to memory/ before stopping: <brief list>"} '
-        "so Claude can write them. If nothing notable, respond with "
-        '{"ok": true}. Personal notes go in auto-memory, not here.'
+        "If Claude has ALREADY written these learnings to memory/ files "
+        "(auto-memory MEMORY.md or team memory files) during this "
+        "conversation, respond with {\"ok\": true}. Only respond with "
+        "{\"ok\": false, \"reason\": \"Save to memory/ before stopping: "
+        "<brief list>\"} if there are notable items that have NOT yet "
+        "been saved. Personal notes go in auto-memory, not here."
     ),
     "memory-precompact": (
         "Context is about to be compacted. Save any key decisions, "
