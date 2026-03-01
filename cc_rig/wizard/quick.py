@@ -7,6 +7,7 @@ from cc_rig.presets.manager import (
     BUILTIN_WORKFLOWS,
     load_workflow,
 )
+from cc_rig.ui.descriptions import TEMPLATE_DESCRIPTIONS
 from cc_rig.ui.prompts import IO, ask_choice
 
 
@@ -17,8 +18,8 @@ def run_quick(io: IO) -> tuple[str, str]:
     """
     io.say("\n--- Quick Setup ---")
 
-    # Template selection
-    template_options = [(t, t) for t in BUILTIN_TEMPLATES]
+    # Template selection with descriptions
+    template_options = [(t, TEMPLATE_DESCRIPTIONS.get(t, t)) for t in BUILTIN_TEMPLATES]
     template = ask_choice(
         "Select template:",
         template_options,

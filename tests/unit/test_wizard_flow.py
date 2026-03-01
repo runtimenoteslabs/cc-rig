@@ -58,7 +58,7 @@ class TestGuidedFlow:
                 "1",  # launcher: fresh project
                 "my-project",  # project name
                 "A test project",  # description
-                "2",  # template: fastapi (index 2)
+                "3",  # template: fastapi (index 3, after generic)
                 "2",  # workflow: standard (index 2)
                 "n",  # add optional skill packs? no
                 "n",  # customize? no
@@ -101,7 +101,7 @@ class TestQuickFlow:
         # Inputs: template pick, workflow pick, name
         io = _make_io(
             [
-                "2",  # template: fastapi
+                "3",  # template: fastapi (after generic)
                 "2",  # workflow: standard
                 "quick-proj",  # name
             ]
@@ -121,7 +121,7 @@ class TestExpertFlow:
                 "1",  # launcher: fresh project
                 "expert-proj",  # name
                 "",  # description
-                "2",  # template: fastapi
+                "3",  # template: fastapi (after generic)
                 "2",  # workflow: standard
                 "none",  # expert: customize nothing
                 "n",  # add optional skill packs? no

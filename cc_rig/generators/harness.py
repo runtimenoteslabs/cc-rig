@@ -27,27 +27,30 @@ def generate_harness(
     output_dir: Path,
     tracker: FileTracker | None = None,
 ) -> list[str]:
-    """Generate harness files based on config.harness.level.
+    """Generate harness files based on config.harness feature flags.
 
     Returns list of relative file paths written.
     """
-    level = config.harness.level
-    if level == "none":
+    h = config.harness
+    if not any([h.task_tracking, h.budget_awareness, h.verification_gates, h.autonomy_loop]):
         return []
 
     files: list[str] = []
 
-    # B1+ (lite and above)
-    if _at_least(level, "lite"):
+    # Task tracking and/or budget awareness: generate todo.md + harness.md
+    if h.task_tracking or h.budget_awareness:
         files.extend(_generate_b1(config, output_dir, tracker))
 
-    # B2+ (standard and above)
-    if _at_least(level, "standard"):
+    # Verification gates or autonomy loop: generate init-sh.sh
+    if h.verification_gates or h.autonomy_loop:
         files.extend(_generate_init_sh(config, output_dir, tracker))
+
+    # Verification gates: append gates section to harness.md
+    if h.verification_gates:
         files.extend(_generate_b2(config, output_dir, tracker))
 
-    # B3 (autonomy)
-    if level == "autonomy":
+    # Autonomy loop: generate PROMPT.md, loop.sh, progress, config
+    if h.autonomy_loop:
         files.extend(_generate_b3(config, output_dir, tracker))
 
     return files
@@ -149,8 +152,9 @@ def _generate_b2(
     tracker: FileTracker | None = None,
 ) -> list[str]:
     """Generate B2 additions: enhance harness.md with gate documentation."""
-    # B2 enhances the harness.md already written by B1 — append gate section.
+    # Append gate section to harness.md (may or may not exist from B1).
     agent_docs = output_dir / "agent_docs"
+    agent_docs.mkdir(parents=True, exist_ok=True)
     harness_path = agent_docs / "harness.md"
     rel = "agent_docs/harness.md"
 
@@ -199,7 +203,9 @@ def _generate_b2(
         rel_path=rel,
     )
 
-    # harness.md already in file list from B1, don't double-add
+    # Only add to file list if B1 didn't already add harness.md
+    if not existing:
+        return [rel]
     return []
 
 
@@ -288,6 +294,7 @@ def _generate_b3(
 
     # ── Enhance harness.md with autonomy section ──────────────────
     agent_docs = output_dir / "agent_docs"
+    agent_docs.mkdir(parents=True, exist_ok=True)
     harness_path = agent_docs / "harness.md"
 
     blocked_action = "Stop and save state" if h.if_blocked == "stop" else "Skip to next task"
@@ -343,18 +350,14 @@ def _generate_b3(
         "   Read `tasks/todo.md` and pick the highest-priority `[ ]` task.",
     ]
     if config.features.memory:
-        prompt_lines.append(
-            "   Read `memory/session-log.md` for context."
-        )
+        prompt_lines.append("   Read `memory/session-log.md` for context.")
     if config.features.spec_workflow:
         prompt_lines.append(
             "   If the task is a spec, use `/spec-create`."
             " If implementing, verify against spec criteria."
         )
     if config.features.gtd:
-        prompt_lines.append(
-            "   If `tasks/inbox.md` has unprocessed items, triage them first."
-        )
+        prompt_lines.append("   If `tasks/inbox.md` has unprocessed items, triage them first.")
 
     prompt_lines += [
         "2. **Advance**: Implement the task.",
@@ -367,13 +370,9 @@ def _generate_b3(
         "   Commit with a clear message describing what you did and why.",
     ]
     if config.features.memory:
-        prompt_lines.append(
-            "   Update `memory/` files before exiting."
-        )
+        prompt_lines.append("   Update `memory/` files before exiting.")
     if config.features.worktrees:
-        prompt_lines.append(
-            "   Work on a worktree branch per iteration. Do not merge to main."
-        )
+        prompt_lines.append("   Work on a worktree branch per iteration. Do not merge to main.")
 
     prompt_lines += [
         "",
@@ -425,10 +424,10 @@ def _generate_b3(
         "\n"
         "# Read config from harness-config.json if available\n"
         "CONFIG_FILE=.claude/harness-config.json\n"
-        "if [ -f \"$CONFIG_FILE\" ]; then\n"
-        "    DEFAULT_MAX=$(grep -o '\"max_iterations\": *[0-9]*' \"$CONFIG_FILE\" "
+        'if [ -f "$CONFIG_FILE" ]; then\n'
+        '    DEFAULT_MAX=$(grep -o \'"max_iterations": *[0-9]*\' "$CONFIG_FILE" '
         "| grep -o '[0-9]*' || echo " + str(h.max_iterations) + ")\n"
-        "    CHECKPOINT=$(grep -o '\"checkpoint_commits\": *[a-z]*' \"$CONFIG_FILE\" "
+        '    CHECKPOINT=$(grep -o \'"checkpoint_commits": *[a-z]*\' "$CONFIG_FILE" '
         "| grep -oE 'true|false' || echo true)\n"
         "else\n"
         f"    DEFAULT_MAX={h.max_iterations}\n"
@@ -437,7 +436,7 @@ def _generate_b3(
         "\n"
         'MAX_ITERATIONS="${1:-$DEFAULT_MAX}"\n'
         "ITERATION=0\n"
-        "PREV_TASK=\"\"\n"
+        'PREV_TASK=""\n'
         "STUCK_COUNT=0\n"
         "\n"
         'echo ""\n'

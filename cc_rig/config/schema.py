@@ -14,7 +14,18 @@ if TYPE_CHECKING:
 # Valid value catalogs (from SMART-DEFAULTS-MATRIX.md §1)
 # ---------------------------------------------------------------------------
 
-VALID_LANGUAGES = {"python", "typescript", "go", "rust", "ruby", "java", "csharp", "php", "elixir"}
+VALID_LANGUAGES = {
+    "python",
+    "typescript",
+    "go",
+    "rust",
+    "ruby",
+    "java",
+    "csharp",
+    "php",
+    "elixir",
+    "generic",
+}
 
 VALID_FRAMEWORKS_BY_LANGUAGE: dict[str, set[str]] = {
     "python": {"fastapi", "django", "flask"},
@@ -26,13 +37,14 @@ VALID_FRAMEWORKS_BY_LANGUAGE: dict[str, set[str]] = {
     "csharp": {"aspnet"},
     "php": {"laravel"},
     "elixir": {"phoenix"},
+    "generic": {"generic"},
 }
 
 VALID_FRAMEWORKS = {fw for fws in VALID_FRAMEWORKS_BY_LANGUAGE.values() for fw in fws}
 
 VALID_WORKFLOWS = {"speedrun", "standard", "spec-driven", "gtd-lite", "verify-heavy"}
 
-VALID_PROJECT_TYPES = {"api", "web_fullstack", "cli"}
+VALID_PROJECT_TYPES = {"api", "web_fullstack", "cli", "generic"}
 
 VALID_PERMISSION_MODES = {"default", "permissive"}
 

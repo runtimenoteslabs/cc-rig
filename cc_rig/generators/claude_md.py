@@ -127,25 +127,18 @@ def _section_guardrails(config: ProjectConfig) -> str:
         "- Keep commits small and focused. One concern per commit.",
     ]
 
-    # Harness-aware guardrails
-    from cc_rig.generators.harness import _at_least
-
-    level = config.harness.level
-    if _at_least(level, "lite"):
+    # Harness-aware guardrails (flag-based)
+    h = config.harness
+    if h.budget_awareness:
         lines.append(
-            "- Budget-aware: plan before acting, checkpoint often,"
-            " stop cleanly at budget warning."
+            "- Budget-aware: plan before acting, checkpoint often, stop cleanly at budget warning."
         )
-    if _at_least(level, "standard"):
+    if h.verification_gates:
         lines.append(
-            "- Commits are gate-checked: lint must pass."
-            " Run ./init-sh.sh verify before committing."
+            "- Commits are gate-checked: lint must pass. Run ./init-sh.sh verify before committing."
         )
-    if level == "autonomy":
-        lines.append(
-            "- Autonomy mode active."
-            " Follow PROMPT.md for iteration instructions."
-        )
+    if h.autonomy_loop:
+        lines.append("- Autonomy mode active. Follow PROMPT.md for iteration instructions.")
 
     lines.append("")
     return "\n".join(lines)

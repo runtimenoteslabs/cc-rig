@@ -228,10 +228,12 @@ class TestFrameworkDetection:
     def test_nextjs_wins_over_express(self, tmp_path):
         """When both next and express are in deps, Next.js takes priority."""
         (tmp_path / "package.json").write_text(
-            json.dumps({
-                "name": "test",
-                "dependencies": {"next": "14.0", "express": "^4.18"},
-            })
+            json.dumps(
+                {
+                    "name": "test",
+                    "dependencies": {"next": "14.0", "express": "^4.18"},
+                }
+            )
         )
         result = detect_project(tmp_path)
         assert result.framework == "nextjs"
@@ -239,11 +241,11 @@ class TestFrameworkDetection:
     def test_phoenix_from_mix_exs(self, tmp_path):
         """Detect Phoenix from mix.exs dependencies."""
         (tmp_path / "mix.exs").write_text(
-            'defmodule MyApp.MixProject do\n'
-            '  defp deps do\n'
+            "defmodule MyApp.MixProject do\n"
+            "  defp deps do\n"
             '    [{:phoenix, "~> 1.7"}]\n'
-            '  end\n'
-            'end\n'
+            "  end\n"
+            "end\n"
         )
         result = detect_project(tmp_path)
         assert result.framework == "phoenix"
@@ -252,7 +254,7 @@ class TestFrameworkDetection:
 
     def test_elixir_detected_from_mix_exs(self, tmp_path):
         """mix.exs should detect language as elixir."""
-        (tmp_path / "mix.exs").write_text('defmodule MyApp.MixProject do\nend\n')
+        (tmp_path / "mix.exs").write_text("defmodule MyApp.MixProject do\nend\n")
         result = detect_project(tmp_path)
         assert result.language == "elixir"
 
@@ -269,6 +271,19 @@ class TestFrameworkDetection:
         assert result.language == "go"
         assert result.framework == ""
         assert result.confidence == "low"
+
+    def test_generic_not_auto_detected(self, tmp_path):
+        """generic template should never be auto-detected — user-selected only."""
+        result = detect_project(tmp_path)
+        assert result.framework != "generic"
+        assert result.language != "generic"
+
+    def test_generic_not_detected_with_random_files(self, tmp_path):
+        """An arbitrary directory never resolves to 'generic'."""
+        (tmp_path / "Makefile").write_text("all:\n\techo hi")
+        (tmp_path / "README.md").write_text("# My Project")
+        result = detect_project(tmp_path)
+        assert result.framework != "generic"
 
 
 class TestFrameworkDefaults:

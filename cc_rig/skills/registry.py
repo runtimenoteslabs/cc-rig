@@ -378,6 +378,7 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
 # ── Template → framework-specific skill names ─────────────────────────
 
 TEMPLATE_SKILLS: dict[str, list[str]] = {
+    "generic": [],
     "fastapi": [
         "modern-python",
         "property-based-testing",

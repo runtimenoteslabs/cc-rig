@@ -59,9 +59,9 @@ _PROMPT_TEXTS: dict[str, str] = {
         "If they were ALREADY saved to memory/ during this conversation, "
         "or if there is nothing worth saving, output ONLY the following "
         "raw JSON with no other text and no markdown formatting:\\n"
-        "{\"ok\": true}\\n"
+        '{"ok": true}\\n'
         "If there are unsaved items, output ONLY this raw JSON:\\n"
-        "{\"ok\": false, \"reason\": \"brief list of what to save\"}"
+        '{"ok": false, "reason": "brief list of what to save"}'
     ),
     "memory-precompact": (
         "Context is about to be compacted. Save any key decisions, "
@@ -73,9 +73,9 @@ _PROMPT_TEXTS: dict[str, str] = {
         "Summarize what is included and confirm all tests pass "
         "and no sensitive files are included. Output ONLY raw JSON "
         "with no other text and no markdown formatting:\\n"
-        "{\"ok\": true}\\n"
+        '{"ok": true}\\n'
         "If there are issues, output ONLY:\\n"
-        "{\"ok\": false, \"reason\": \"brief description of issues\"}"
+        '{"ok": false, "reason": "brief description of issues"}'
     ),
     "subagent-review": (
         "Review the subagent's output for quality. Check that "
@@ -86,9 +86,9 @@ _PROMPT_TEXTS: dict[str, str] = {
         "Ensure the commit message is descriptive and explains "
         "WHY the change was made, not just WHAT changed. Output "
         "ONLY raw JSON with no other text and no markdown formatting:\\n"
-        "{\"ok\": true}\\n"
+        '{"ok": true}\\n'
         "If the message needs improvement, output ONLY:\\n"
-        "{\"ok\": false, \"reason\": \"brief suggestion\"}"
+        '{"ok": false, "reason": "brief suggestion"}'
     ),
     "doc-review": (
         "Before stopping, check if documentation needs updating. "
@@ -151,19 +151,15 @@ def generate_settings(
     # Hooks
     hooks_by_event: dict[str, list[dict[str, Any]]] = {}
 
-    # Auto-add harness hooks based on level
+    # Auto-add harness hooks based on feature flags
     active_hooks = list(config.hooks)
-    harness_level = config.harness.level
-    if harness_level != "none":
-        # B1+: budget-reminder + session-tasks
-        if "budget-reminder" not in active_hooks:
-            active_hooks.append("budget-reminder")
-        if "session-tasks" not in active_hooks:
-            active_hooks.append("session-tasks")
-    if harness_level in ("standard", "autonomy"):
-        # B2+: commit-gate
-        if "commit-gate" not in active_hooks:
-            active_hooks.append("commit-gate")
+    h = config.harness
+    if h.budget_awareness and "budget-reminder" not in active_hooks:
+        active_hooks.append("budget-reminder")
+    if h.task_tracking and "session-tasks" not in active_hooks:
+        active_hooks.append("session-tasks")
+    if h.verification_gates and "commit-gate" not in active_hooks:
+        active_hooks.append("commit-gate")
 
     for hook_name in active_hooks:
         meta = _HOOK_REGISTRY.get(hook_name)
@@ -593,7 +589,7 @@ def _script_session_tasks(config: ProjectConfig) -> str:
     if config.features.memory:
         lines += [
             '  if [ -d "memory" ]; then',
-            '    MLINES=$(cat memory/*.md 2>/dev/null | wc -l || echo 0)',
+            "    MLINES=$(cat memory/*.md 2>/dev/null | wc -l || echo 0)",
             '    echo "Memory: ${MLINES} lines" >&2',
             "  fi",
         ]

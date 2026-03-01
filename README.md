@@ -305,6 +305,7 @@ Templates set your language, framework, tool commands, linting and framework-spe
 
 | Template | Stack | Highlights |
 |----------|-------|-----------|
+| `generic` | Language-agnostic | DevOps, monorepos, docs, infra — no framework assumptions |
 | `fastapi` | Python + FastAPI | Async patterns, Pydantic, pytest, ruff |
 | `django` | Python + Django | Fat models, ORM patterns, manage.py test |
 | `flask` | Python + Flask | Blueprints, extensions, pytest, ruff |
@@ -415,7 +416,9 @@ cc-rig harness init               # + enforcement gates (lint blocks commits) + 
 cc-rig harness init --autonomy    # + loop script, 5-step PROMPT.md, progress ledger
 ```
 
-Each level builds on the previous. The standard level generates `init-sh.sh` (wraps your test/lint/format commands) and a commit-gate hook that structurally blocks commits when lint fails. The autonomy level generates `loop.sh` and `PROMPT.md` (5-step workflow: assess, advance, tidy, verify, record), an external bash loop that feeds tasks to Claude one at a time, each with fresh context. Based on the [Ralph Wiggum technique](https://github.com/ghuntley/how-to-ralph-wiggum) by Geoffrey Huntley.
+Each level builds on the previous. Or pick individual features à la carte — the wizard's "Custom" option lets you enable any combination of task tracking, budget awareness, verification gates and autonomy loop independently.
+
+The standard level generates `init-sh.sh` (wraps your test/lint/format commands) and a commit-gate hook that structurally blocks commits when lint fails. The autonomy level generates `loop.sh` and `PROMPT.md` (5-step workflow: assess, advance, tidy, verify, record), an external bash loop that feeds tasks to Claude one at a time, each with fresh context. Based on the [Ralph Wiggum technique](https://github.com/ghuntley/how-to-ralph-wiggum) by Geoffrey Huntley.
 
 ```bash
 ./loop.sh           # Run the autonomy loop (default: 20 iterations max)
@@ -582,7 +585,7 @@ cc-rig's defaults draw from community research on what makes Claude Code work we
 
 ## Contributing
 
-PRs welcome, especially new templates (Ruby/Rails, Spring Boot, .NET, Rust/Axum), new workflow presets, community skill integrations and bug fixes. Please open an issue first for large changes.
+PRs welcome, especially new templates, new workflow presets, community skill integrations and bug fixes. Please open an issue first for large changes.
 
 ```bash
 git clone https://github.com/runtimenoteslabs/cc-rig.git

@@ -19,8 +19,9 @@ from cc_rig.skills.registry import (
     resolve_skills,
 )
 
-# All 15 templates and 5 workflows defined in the registry
+# All 16 templates and 5 workflows defined in the registry
 ALL_TEMPLATES = [
+    "generic",
     "fastapi",
     "django",
     "flask",
@@ -159,18 +160,21 @@ class TestSkillCatalogCompleteness:
 
 
 class TestTemplateSkillsCompleteness:
-    """TEMPLATE_SKILLS must have entries for all 11 templates."""
+    """TEMPLATE_SKILLS must have entries for all 16 templates."""
 
-    def test_has_all_15_templates(self):
-        assert len(TEMPLATE_SKILLS) == 15
+    def test_has_all_16_templates(self):
+        assert len(TEMPLATE_SKILLS) == 16
 
     @pytest.mark.parametrize("template", ALL_TEMPLATES)
     def test_template_is_present(self, template):
         assert template in TEMPLATE_SKILLS, f"Template {template!r} missing from TEMPLATE_SKILLS"
 
-    @pytest.mark.parametrize("template", ALL_TEMPLATES)
+    @pytest.mark.parametrize("template", [t for t in ALL_TEMPLATES if t != "generic"])
     def test_template_skills_are_nonempty(self, template):
         assert len(TEMPLATE_SKILLS[template]) > 0, f"Template {template!r} has no skills"
+
+    def test_generic_template_has_empty_skills(self):
+        assert TEMPLATE_SKILLS["generic"] == []
 
     @pytest.mark.parametrize("template", ALL_TEMPLATES)
     def test_template_skills_reference_known_catalog_entries(self, template):

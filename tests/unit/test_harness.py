@@ -520,3 +520,196 @@ class TestFeatureIntegration:
         script = _script_session_tasks(config)
         assert "inbox.md" not in script
         assert "memory" not in script.lower()
+
+
+class TestHarnessConfigFlags:
+    """Test à la carte harness: level→flags derivation, round-trip, backward compat."""
+
+    def test_none_sets_all_false(self):
+        h = HarnessConfig(level="none")
+        assert h.task_tracking is False
+        assert h.budget_awareness is False
+        assert h.verification_gates is False
+        assert h.autonomy_loop is False
+
+    def test_lite_sets_task_and_budget(self):
+        h = HarnessConfig(level="lite")
+        assert h.task_tracking is True
+        assert h.budget_awareness is True
+        assert h.verification_gates is False
+        assert h.autonomy_loop is False
+
+    def test_standard_sets_task_budget_gates(self):
+        h = HarnessConfig(level="standard")
+        assert h.task_tracking is True
+        assert h.budget_awareness is True
+        assert h.verification_gates is True
+        assert h.autonomy_loop is False
+
+    def test_autonomy_sets_all_true(self):
+        h = HarnessConfig(level="autonomy")
+        assert h.task_tracking is True
+        assert h.budget_awareness is True
+        assert h.verification_gates is True
+        assert h.autonomy_loop is True
+
+    def test_custom_preserves_individual_flags(self):
+        h = HarnessConfig(
+            level="custom",
+            task_tracking=False,
+            budget_awareness=True,
+            verification_gates=False,
+            autonomy_loop=False,
+        )
+        assert h.task_tracking is False
+        assert h.budget_awareness is True
+        assert h.verification_gates is False
+        assert h.autonomy_loop is False
+
+    def test_custom_autonomy_auto_enables_task_tracking(self):
+        """autonomy_loop=True should auto-enable task_tracking."""
+        h = HarnessConfig(
+            level="custom",
+            task_tracking=False,
+            autonomy_loop=True,
+        )
+        assert h.task_tracking is True
+        assert h.autonomy_loop is True
+
+    def test_round_trip_with_flags(self):
+        h = HarnessConfig(
+            level="custom",
+            task_tracking=True,
+            budget_awareness=False,
+            verification_gates=False,
+            autonomy_loop=True,
+        )
+        d = h.to_dict()
+        assert d["level"] == "custom"
+        assert d["task_tracking"] is True
+        assert d["budget_awareness"] is False
+        assert d["autonomy_loop"] is True
+        h2 = HarnessConfig.from_dict(d)
+        assert h2.level == "custom"
+        assert h2.task_tracking is True
+        assert h2.budget_awareness is False
+        assert h2.autonomy_loop is True
+
+    def test_round_trip_standard_level(self):
+        h = HarnessConfig(level="standard")
+        d = h.to_dict()
+        h2 = HarnessConfig.from_dict(d)
+        assert h2.level == "standard"
+        assert h2.task_tracking is True
+        assert h2.verification_gates is True
+
+    def test_old_config_without_flags_derives_from_level(self):
+        """Old .cc-rig.json files without flag keys still work."""
+        data = {"level": "standard", "max_iterations": 20}
+        h = HarnessConfig.from_dict(data)
+        assert h.level == "standard"
+        assert h.task_tracking is True
+        assert h.budget_awareness is True
+        assert h.verification_gates is True
+        assert h.autonomy_loop is False
+
+    def test_old_config_lite_derives_correctly(self):
+        data = {"level": "lite"}
+        h = HarnessConfig.from_dict(data)
+        assert h.task_tracking is True
+        assert h.budget_awareness is True
+        assert h.verification_gates is False
+
+    def test_old_config_none_derives_all_false(self):
+        data = {"level": "none"}
+        h = HarnessConfig.from_dict(data)
+        assert h.task_tracking is False
+        assert h.budget_awareness is False
+
+
+class TestCustomHarness:
+    """Test à la carte harness generation: individual feature combos."""
+
+    def _make_custom_config(self, **flags):
+        config = compute_defaults("fastapi", "standard", project_name="test-proj")
+        config.harness = HarnessConfig(level="custom", **flags)
+        return config
+
+    def test_autonomy_only(self, tmp_path):
+        """autonomy_loop=True only → PROMPT.md + loop.sh + init-sh.sh + todo.md, no commit-gate."""
+        config = self._make_custom_config(autonomy_loop=True)
+        files = generate_harness(config, tmp_path)
+
+        # Autonomy auto-enables task_tracking
+        assert "tasks/todo.md" in files
+        assert "agent_docs/harness.md" in files
+        assert ".claude/hooks/init-sh.sh" in files
+        assert "PROMPT.md" in files
+        assert "loop.sh" in files
+        assert "claude-progress.txt" in files
+        assert ".claude/harness-config.json" in files
+
+    def test_autonomy_only_no_commit_gate_hook(self, tmp_path):
+        """Custom autonomy-only should NOT generate commit-gate hook."""
+        from cc_rig.generators.settings import generate_settings
+
+        config = self._make_custom_config(autonomy_loop=True)
+        generate_settings(config, tmp_path)
+        assert not (tmp_path / ".claude" / "hooks" / "commit-gate.sh").exists()
+
+    def test_autonomy_only_has_session_tasks_hook(self, tmp_path):
+        """Custom autonomy-only should have session-tasks (task_tracking auto-enabled)."""
+        from cc_rig.generators.settings import generate_settings
+
+        config = self._make_custom_config(autonomy_loop=True)
+        generate_settings(config, tmp_path)
+        assert (tmp_path / ".claude" / "hooks" / "session-tasks.sh").exists()
+
+    def test_task_tracking_only(self, tmp_path):
+        """task_tracking=True only → todo.md + harness.md, no init-sh.sh, no loop.sh."""
+        config = self._make_custom_config(task_tracking=True)
+        files = generate_harness(config, tmp_path)
+
+        assert "tasks/todo.md" in files
+        assert "agent_docs/harness.md" in files
+        assert ".claude/hooks/init-sh.sh" not in files
+        assert "PROMPT.md" not in files
+        assert "loop.sh" not in files
+
+    def test_gates_only(self, tmp_path):
+        """verification_gates=True only → init-sh.sh + gate section, no task files."""
+        config = self._make_custom_config(verification_gates=True)
+        files = generate_harness(config, tmp_path)
+
+        # Gates alone doesn't generate todo/harness base (no task_tracking/budget)
+        assert "tasks/todo.md" not in files
+        assert ".claude/hooks/init-sh.sh" in files
+
+    def test_budget_only(self, tmp_path):
+        """budget_awareness=True only → todo.md + harness.md with budget section."""
+        config = self._make_custom_config(budget_awareness=True)
+        files = generate_harness(config, tmp_path)
+
+        assert "tasks/todo.md" in files
+        assert "agent_docs/harness.md" in files
+        assert "PROMPT.md" not in files
+
+    def test_all_flags_false_no_files(self, tmp_path):
+        """No flags → no harness files."""
+        config = self._make_custom_config()
+        files = generate_harness(config, tmp_path)
+        assert files == []
+
+    def test_gates_plus_task_tracking(self, tmp_path):
+        """gates + task_tracking → full B2 equivalent."""
+        config = self._make_custom_config(
+            task_tracking=True,
+            verification_gates=True,
+        )
+        files = generate_harness(config, tmp_path)
+
+        assert "tasks/todo.md" in files
+        assert "agent_docs/harness.md" in files
+        assert ".claude/hooks/init-sh.sh" in files
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
+        assert "Verification Gates" in content

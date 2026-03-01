@@ -10,6 +10,7 @@ from typing import Any
 
 from cc_rig.config.detection import detect_project
 from cc_rig.presets.manager import BUILTIN_TEMPLATES, BUILTIN_WORKFLOWS, load_workflow
+from cc_rig.ui.descriptions import TEMPLATE_DESCRIPTIONS
 from cc_rig.ui.prompts import IO, ask_choice, ask_input, confirm
 from cc_rig.wizard.stepper import BACK, StepAction, StepResult
 
@@ -84,7 +85,7 @@ class TemplateStep:
                 template = detected.framework
 
         if not template:
-            options = [(t, t) for t in BUILTIN_TEMPLATES]
+            options = [(t, TEMPLATE_DESCRIPTIONS.get(t, t)) for t in BUILTIN_TEMPLATES]
             template = ask_choice("Select template:", options, "fastapi", io=io, allow_back=True)
             if _is_back(template):
                 return StepResult(action=StepAction.BACK)

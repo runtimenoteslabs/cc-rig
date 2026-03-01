@@ -1,4 +1,4 @@
-"""E2E Test Matrix for cc-rig init — 18 scenarios covering all dimensions.
+"""E2E Test Matrix for cc-rig init — 19 scenarios covering all dimensions.
 
 Tests every template, workflow, harness level, feature flag, and flow type
 at least once. Uses the Python API (compute_defaults + generate_all) for
@@ -25,6 +25,7 @@ Scenario Matrix:
   S19: Express + Standard + B0 (TypeScript/Express template)
   S20: Phoenix + Standard + B0 (Elixir/Phoenix template)
   S21: go-std + Standard + B0 (Go stdlib template)
+  S22: Generic + Standard + B0 (language-agnostic template)
 """
 
 from __future__ import annotations
@@ -1018,6 +1019,7 @@ class TestS12Clean:
 
 
 TEMPLATES = [
+    "generic",
     "fastapi",
     "django",
     "flask",
@@ -1546,6 +1548,85 @@ class TestS21GoStdStandardB0:
     def test_project_type_is_api(self):
         data = json.loads((self.root / ".cc-rig.json").read_text())
         assert data["project_type"] == "api"
+
+    def test_hooks_executable(self):
+        _assert_hooks_executable(self.root)
+
+    def test_manifest_consistent(self):
+        _assert_manifest_consistent(self.root)
+
+    def test_no_duplicates(self):
+        _assert_no_duplicates(self.root, ".claude/commands")
+        _assert_no_duplicates(self.root, ".claude/agents")
+
+
+# ── S22: Generic + Standard + B0 ─────────────────────────────────────
+
+
+class TestS22GenericStandardB0:
+    """Generic template — language-agnostic project."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.root = tmp_path
+        self.config, self.manifest = _generate(tmp_path, "generic", "standard")
+
+    def test_claude_md_has_project_rules(self):
+        content = _read_claude_md(self.root)
+        assert "Project Rules" in content
+
+    def test_claude_md_no_empty_commands(self):
+        """No empty command entries like '- **Test**: ``'."""
+        content = _read_claude_md(self.root)
+        assert "**: ``" not in content
+
+    def test_commands_section_is_empty(self):
+        """Generic has no tool commands — Commands section has no entries."""
+        content = _read_claude_md(self.root)
+        # Commands section exists but has no bullet points
+        lines = content.split("\n")
+        in_commands = False
+        cmd_lines = []
+        for line in lines:
+            if line.strip() == "## Commands":
+                in_commands = True
+                continue
+            if in_commands:
+                if line.startswith("## "):
+                    break
+                if line.startswith("- **"):
+                    cmd_lines.append(line)
+        assert len(cmd_lines) == 0, f"Expected no commands, got: {cmd_lines}"
+
+    def test_no_format_hook(self):
+        assert not (self.root / ".claude" / "hooks" / "format.sh").exists()
+
+    def test_no_lint_hook(self):
+        assert not (self.root / ".claude" / "hooks" / "lint.sh").exists()
+
+    def test_no_typecheck_hook(self):
+        assert not (self.root / ".claude" / "hooks" / "typecheck.sh").exists()
+
+    def test_mcp_json_has_github_only(self):
+        data = json.loads((self.root / ".mcp.json").read_text())
+        servers = list(data.get("mcpServers", {}).keys())
+        assert "github" in servers
+        assert "postgres" not in servers
+
+    def test_project_type_is_generic(self):
+        data = json.loads((self.root / ".cc-rig.json").read_text())
+        assert data["project_type"] == "generic"
+
+    def test_language_is_generic(self):
+        data = json.loads((self.root / ".cc-rig.json").read_text())
+        assert data["language"] == "generic"
+
+    def test_agent_docs_present(self):
+        docs = sorted((self.root / "agent_docs").iterdir())
+        doc_names = [d.name for d in docs]
+        assert "architecture.md" in doc_names
+        assert "conventions.md" in doc_names
+        assert "testing.md" in doc_names
 
     def test_hooks_executable(self):
         _assert_hooks_executable(self.root)

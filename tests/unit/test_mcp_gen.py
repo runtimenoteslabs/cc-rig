@@ -11,6 +11,7 @@ from cc_rig.presets.manager import BUILTIN_TEMPLATES, BUILTIN_WORKFLOWS
 # ── Expected MCP assignments per template ────────────────────────────
 
 TEMPLATE_MCPS = {
+    "generic": ["github"],
     "nextjs": ["github", "playwright"],
     "fastapi": ["github", "postgres"],
     "django": ["github", "postgres"],

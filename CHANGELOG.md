@@ -2,6 +2,38 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [1.3.0] - 2026-03-02
+
+### Added
+
+**Generic Template**
+- `generic` — Language-agnostic template for DevOps, monorepos, docs, infra projects
+- First-class option on template picker (first in list), no framework or tool commands
+- Uses excellent language-agnostic content from existing `generic.py` template module
+- Default MCPs: GitHub only (no database assumption)
+- Never auto-detected — user-selected only
+
+**À La Carte Harness**
+- Custom harness level: pick individual features without B0→B1→B2→B3 tier progression
+- 4 boolean feature flags: `task_tracking`, `budget_awareness`, `verification_gates`, `autonomy_loop`
+- Auto-dependency: `autonomy_loop=True` auto-enables `task_tracking` (PROMPT.md references todo.md)
+- Backward compatible: old configs without flags derive them from level via `__post_init__`
+- Wizard "Custom" option with individual confirm prompts for each feature
+- Generator/hook/guardrail logic refactored from level-based to flag-based
+
+**Total**: 16 templates × 5 workflows = 80 valid combinations.
+
+**Tests**
+- `TestHarnessConfigFlags`: level→flags derivation, round-trip, old-config backward compat
+- `TestCustomHarness`: autonomy-only, task-only, gates-only, budget-only, combined flags
+- `TestCustomHarnessHooks`: hook generation per individual flag
+- `TestGenericTemplateHooks`: no format/lint/typecheck hooks for generic
+- `TestS22GenericStandardB0`: full E2E scenario for generic template
+- Generic added to cross-product (16×5), skill registry, MCP, detection tests
+- All guard counts updated (16 templates)
+
+---
+
 ## [1.2.0] - 2026-03-02
 
 ### Added
@@ -65,9 +97,9 @@ All notable changes to cc-rig will be documented in this file.
 
 **Core**
 - Two-axis architecture: Config Experience (A0-A3) x Runtime Discipline (B0-B3)
-- 11 framework templates: FastAPI, Django, Flask, Next.js, Gin, Echo, Rust CLI, Rust/Axum, Ruby/Rails, Spring Boot, ASP.NET Core (15 as of v1.2.0)
+- 11 framework templates: FastAPI, Django, Flask, Next.js, Gin, Echo, Rust CLI, Rust/Axum, Ruby/Rails, Spring Boot, ASP.NET Core (16 as of v1.3.0)
 - 5 workflow presets: speedrun, standard, spec-driven, gtd-lite, verify-heavy
-- Smart defaults engine: template + workflow compose independently (55 valid combos, 75 as of v1.2.0)
+- Smart defaults engine: template + workflow compose independently (55 valid combos, 80 as of v1.3.0)
 - ProjectConfig dataclass with full serialization round-trip
 
 **Generators**

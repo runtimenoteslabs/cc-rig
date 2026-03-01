@@ -38,14 +38,23 @@ class TestTemplatePresets:
         for key in ("test", "lint", "format", "typecheck", "build"):
             assert key in cmds, f"Missing tool_commands.{key} in {name}"
 
-    @pytest.mark.parametrize("name", BUILTIN_TEMPLATES)
+    @pytest.mark.parametrize("name", [t for t in BUILTIN_TEMPLATES if t != "generic"])
     def test_template_has_test_and_lint(self, name):
-        """Every template must have at least test and lint commands."""
+        """Every non-generic template must have at least test and lint commands."""
         data = load_template(name)
         cmds = data["tool_commands"]
         assert cmds["test"], f"{name} has no test command"
         assert cmds["lint"], f"{name} has no lint command"
         assert cmds["format"], f"{name} has no format command"
+
+    def test_generic_has_no_tool_commands(self):
+        """Generic template has empty tool commands."""
+        data = load_template("generic")
+        cmds = data["tool_commands"]
+        assert cmds["test"] == ""
+        assert cmds["lint"] == ""
+        assert cmds["format"] == ""
+        assert cmds["typecheck"] == ""
 
     @pytest.mark.parametrize("name", BUILTIN_TEMPLATES)
     def test_template_name_matches(self, name):

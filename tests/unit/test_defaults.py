@@ -355,10 +355,18 @@ class TestHookFiltering:
         assert "typecheck" in config.hooks
 
     def test_all_templates_have_format_hook(self):
-        """Every template has a format command, so format hook always present."""
+        """Every template with a format command has the format hook."""
         for template in TEMPLATES:
             config = compute_defaults(template, "standard", project_name="test")
-            assert "format" in config.hooks, f"{template} missing format hook"
+            if config.format_cmd:
+                assert "format" in config.hooks, f"{template} missing format hook"
+
+    def test_generic_has_no_tool_hooks(self):
+        """Generic template has no tool commands, so no format/lint/typecheck hooks."""
+        config = compute_defaults("generic", "standard", project_name="test")
+        assert "format" not in config.hooks
+        assert "lint" not in config.hooks
+        assert "typecheck" not in config.hooks
 
 
 # ---------------------------------------------------------------------------

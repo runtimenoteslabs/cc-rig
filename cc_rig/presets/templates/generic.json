@@ -1,0 +1,16 @@
+{
+  "name": "generic",
+  "language": "generic",
+  "framework": "generic",
+  "project_type": "generic",
+  "tool_commands": {
+    "test": "",
+    "lint": "",
+    "format": "",
+    "typecheck": "",
+    "build": ""
+  },
+  "source_dir": ".",
+  "test_dir": "tests",
+  "default_mcps": ["github"]
+}

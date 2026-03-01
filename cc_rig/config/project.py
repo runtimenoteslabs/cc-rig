@@ -66,12 +66,19 @@ class SkillRecommendation:
 
 @dataclass
 class HarnessConfig:
-    """Runtime harness configuration (Axis B: B0-B3).
+    """Runtime harness configuration (Axis B: B0-B3 + custom).
 
     B0 = scaffold only (no harness), B1 = lite, B2 = standard, B3 = autonomy.
+    "custom" = à la carte feature selection via individual flags.
     """
 
-    level: str = "none"  # "none", "lite", "standard", "autonomy"
+    level: str = "none"  # "none", "lite", "standard", "autonomy", "custom"
+
+    # À la carte feature flags (derived from level in __post_init__)
+    task_tracking: bool = False  # B1: todo.md + session-tasks hook
+    budget_awareness: bool = False  # B1: budget-reminder hook + budget section
+    verification_gates: bool = False  # B2: commit-gate hook + gates section
+    autonomy_loop: bool = False  # B3: PROMPT.md + loop.sh + progress + config
 
     # Budget (B1+)
     budget_per_run_tokens: int | None = None
@@ -86,9 +93,34 @@ class HarnessConfig:
     checkpoint_commits: bool = True
     if_blocked: str = "stop"  # "stop" or "skip"
 
+    def __post_init__(self) -> None:
+        """Derive feature flags from level unless individually set (custom)."""
+        if self.level == "custom":
+            # Auto-dependency: autonomy_loop needs task_tracking
+            if self.autonomy_loop:
+                self.task_tracking = True
+            return
+
+        # Derive flags from level
+        _LEVEL_FLAGS: dict[str, tuple[bool, bool, bool, bool]] = {
+            "none": (False, False, False, False),
+            "lite": (True, True, False, False),
+            "standard": (True, True, True, False),
+            "autonomy": (True, True, True, True),
+        }
+        flags = _LEVEL_FLAGS.get(self.level, (False, False, False, False))
+        self.task_tracking = flags[0]
+        self.budget_awareness = flags[1]
+        self.verification_gates = flags[2]
+        self.autonomy_loop = flags[3]
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "level": self.level,
+            "task_tracking": self.task_tracking,
+            "budget_awareness": self.budget_awareness,
+            "verification_gates": self.verification_gates,
+            "autonomy_loop": self.autonomy_loop,
             "budget_per_run_tokens": self.budget_per_run_tokens,
             "budget_warn_at_percent": self.budget_warn_at_percent,
             "require_tests_pass": self.require_tests_pass,
@@ -100,16 +132,24 @@ class HarnessConfig:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> HarnessConfig:
-        return cls(
-            level=data.get("level", "none"),
-            budget_per_run_tokens=data.get("budget_per_run_tokens"),
-            budget_warn_at_percent=data.get("budget_warn_at_percent", 80),
-            require_tests_pass=data.get("require_tests_pass", True),
-            require_lint_pass=data.get("require_lint_pass", True),
-            max_iterations=data.get("max_iterations", 20),
-            checkpoint_commits=data.get("checkpoint_commits", True),
-            if_blocked=data.get("if_blocked", "stop"),
-        )
+        kwargs: dict[str, Any] = {
+            "level": data.get("level", "none"),
+            "budget_per_run_tokens": data.get("budget_per_run_tokens"),
+            "budget_warn_at_percent": data.get("budget_warn_at_percent", 80),
+            "require_tests_pass": data.get("require_tests_pass", True),
+            "require_lint_pass": data.get("require_lint_pass", True),
+            "max_iterations": data.get("max_iterations", 20),
+            "checkpoint_commits": data.get("checkpoint_commits", True),
+            "if_blocked": data.get("if_blocked", "stop"),
+        }
+        # Only pass flag kwargs if present in data (backward compat:
+        # old configs without flags derive them from level via __post_init__)
+        if "task_tracking" in data:
+            kwargs["task_tracking"] = data["task_tracking"]
+            kwargs["budget_awareness"] = data.get("budget_awareness", False)
+            kwargs["verification_gates"] = data.get("verification_gates", False)
+            kwargs["autonomy_loop"] = data.get("autonomy_loop", False)
+        return cls(**kwargs)
 
 
 def _parse_skills(raw: list[Any]) -> list[SkillRecommendation]:

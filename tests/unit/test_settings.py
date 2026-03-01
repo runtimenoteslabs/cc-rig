@@ -343,6 +343,66 @@ class TestHookScriptContent:
         assert "go vet" in script
 
 
+class TestGenericTemplateHooks:
+    """Verify generic template generates no format/lint/typecheck hooks."""
+
+    def test_no_format_hook(self, tmp_path):
+        _generate_settings("generic", "standard", tmp_path)
+        assert not (tmp_path / ".claude" / "hooks" / "format.sh").exists()
+
+    def test_no_lint_hook(self, tmp_path):
+        _generate_settings("generic", "standard", tmp_path)
+        assert not (tmp_path / ".claude" / "hooks" / "lint.sh").exists()
+
+    def test_no_typecheck_hook(self, tmp_path):
+        _generate_settings("generic", "standard", tmp_path)
+        assert not (tmp_path / ".claude" / "hooks" / "typecheck.sh").exists()
+
+    def test_safety_hooks_still_present(self, tmp_path):
+        _generate_settings("generic", "standard", tmp_path)
+        hooks_dir = tmp_path / ".claude" / "hooks"
+        assert (hooks_dir / "block-rm-rf.sh").exists()
+        assert (hooks_dir / "block-env.sh").exists()
+        assert (hooks_dir / "block-main.sh").exists()
+
+
+class TestCustomHarnessHooks:
+    """Verify custom harness hook generation."""
+
+    def test_custom_autonomy_has_session_tasks_not_commit_gate(self, tmp_path):
+        """Custom autonomy-only gets session-tasks but not commit-gate."""
+        from cc_rig.config.project import HarnessConfig
+
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        config.harness = HarnessConfig(level="custom", autonomy_loop=True)
+        generate_settings(config, tmp_path)
+        assert (tmp_path / ".claude" / "hooks" / "session-tasks.sh").exists()
+        assert not (tmp_path / ".claude" / "hooks" / "commit-gate.sh").exists()
+        assert not (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").exists()
+
+    def test_custom_budget_only(self, tmp_path):
+        """Custom budget-only gets budget-reminder but not session-tasks."""
+        from cc_rig.config.project import HarnessConfig
+
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        config.harness = HarnessConfig(level="custom", budget_awareness=True)
+        generate_settings(config, tmp_path)
+        assert (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").exists()
+        assert not (tmp_path / ".claude" / "hooks" / "session-tasks.sh").exists()
+        assert not (tmp_path / ".claude" / "hooks" / "commit-gate.sh").exists()
+
+    def test_custom_gates_only(self, tmp_path):
+        """Custom gates-only gets commit-gate but not budget or session-tasks."""
+        from cc_rig.config.project import HarnessConfig
+
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        config.harness = HarnessConfig(level="custom", verification_gates=True)
+        generate_settings(config, tmp_path)
+        assert (tmp_path / ".claude" / "hooks" / "commit-gate.sh").exists()
+        assert not (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").exists()
+        assert not (tmp_path / ".claude" / "hooks" / "session-tasks.sh").exists()
+
+
 class TestHookScriptStructure:
     """Verify hook scripts follow expected patterns."""
 

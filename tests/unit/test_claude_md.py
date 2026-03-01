@@ -92,9 +92,13 @@ class TestFrameworkSpecificContent:
         assert "cargo" in content.lower() or "rust" in content.lower()
 
     @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
-    def test_every_template_has_framework_rules(self, template, tmp_path):
+    def test_every_template_has_rules_section(self, template, tmp_path):
         content = _generate_claude_md(template, "standard", tmp_path)
-        assert "## Framework Rules" in content
+        # Generic uses "## Project Rules" instead of "## Framework Rules"
+        if template == "generic":
+            assert "## Project Rules" in content
+        else:
+            assert "## Framework Rules" in content
 
 
 class TestAgentDocsImports:

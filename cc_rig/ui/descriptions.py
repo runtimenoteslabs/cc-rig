@@ -170,12 +170,26 @@ HARNESS_DETAILS: dict[str, str] = {
         "\n"
         "Best for: Experienced users with well-tested codebases and clear tasks."
     ),
+    "custom": (
+        "Custom - À la carte feature selection\n"
+        "\n"
+        "Pick individual harness features without the B0→B1→B2→B3 tier\n"
+        "progression. Mix and match what you need:\n"
+        "\n"
+        "  Task tracking       - todo.md + session-tasks hook\n"
+        "  Budget awareness    - budget-reminder hook + budget docs\n"
+        "  Verification gates  - commit-gate hook + init-sh.sh\n"
+        "  Autonomy loop       - PROMPT.md + loop.sh + progress tracking\n"
+        "\n"
+        "Best for: Users who want specific features without the full tier."
+    ),
 }
 
 
 # ── Template descriptions ────────────────────────────────────────────
 
 TEMPLATE_DESCRIPTIONS: dict[str, str] = {
+    "generic": "Generic - Language-agnostic project (DevOps, monorepos, docs, infra)",
     "fastapi": "Python / FastAPI - Modern async API framework",
     "django": "Python / Django - Batteries-included web framework",
     "flask": "Python / Flask - Lightweight WSGI micro-framework",

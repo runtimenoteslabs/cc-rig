@@ -14,6 +14,7 @@ _USER_PRESETS_DIR = Path.home() / ".cc-rig" / "presets"
 
 # Built-in preset name lists
 BUILTIN_TEMPLATES = [
+    "generic",
     "nextjs",
     "fastapi",
     "django",
@@ -41,6 +42,7 @@ BUILTIN_WORKFLOWS = [
 
 # Map preset names to filenames (handles hyphens → underscores)
 _TEMPLATE_FILES: dict[str, str] = {
+    "generic": "generic.json",
     "nextjs": "nextjs.json",
     "fastapi": "fastapi.json",
     "django": "django.json",
