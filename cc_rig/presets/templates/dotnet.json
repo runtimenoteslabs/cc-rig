@@ -1,0 +1,16 @@
+{
+  "name": "dotnet",
+  "language": "csharp",
+  "framework": "aspnet",
+  "project_type": "api",
+  "tool_commands": {
+    "test": "dotnet test",
+    "lint": "dotnet format --verify-no-changes",
+    "format": "dotnet format",
+    "typecheck": "",
+    "build": "dotnet build"
+  },
+  "source_dir": "src",
+  "test_dir": "tests",
+  "default_mcps": ["github", "postgres"]
+}

@@ -38,6 +38,7 @@ _LANGUAGE_MARKERS: dict[str, str] = {
     "Gemfile": "ruby",
     "composer.json": "php",
     "pom.xml": "java",
+    "build.gradle": "java",
 }
 
 # Framework-specific markers (checked after language detection)
@@ -47,6 +48,8 @@ _FRAMEWORK_MARKERS: dict[str, str] = {
     "next.config.ts": "nextjs",
     "manage.py": "django",
     "config/application.rb": "rails",
+    "src/main/resources/application.properties": "spring-boot",
+    "src/main/resources/application.yml": "spring-boot",
 }
 
 # Template defaults for detected frameworks (matches SMART-DEFAULTS-MATRIX.md §3)
@@ -150,6 +153,28 @@ _FRAMEWORK_DEFAULTS: dict[str, dict[str, str]] = {
         "source_dir": "app",
         "test_dir": "test",
     },
+    "spring-boot": {
+        "language": "java",
+        "project_type": "api",
+        "test_cmd": "./mvnw test",
+        "lint_cmd": "./mvnw checkstyle:check",
+        "format_cmd": "./mvnw spotless:apply",
+        "typecheck_cmd": "",
+        "build_cmd": "./mvnw package -DskipTests",
+        "source_dir": "src/main/java",
+        "test_dir": "src/test/java",
+    },
+    "aspnet": {
+        "language": "csharp",
+        "project_type": "api",
+        "test_cmd": "dotnet test",
+        "lint_cmd": "dotnet format --verify-no-changes",
+        "format_cmd": "dotnet format",
+        "typecheck_cmd": "",
+        "build_cmd": "dotnet build",
+        "source_dir": "src",
+        "test_dir": "tests",
+    },
 }
 
 
@@ -233,6 +258,37 @@ def _detect_framework_from_deps(project_dir: Path, language: str) -> str:
             except OSError:
                 pass
 
+    elif language == "java":
+        # Check pom.xml for Spring Boot
+        pom = project_dir / "pom.xml"
+        if pom.exists():
+            try:
+                content = pom.read_text().lower()
+                if "spring-boot-starter" in content:
+                    return "spring-boot"
+            except OSError:
+                pass
+        # Check build.gradle for Spring Boot
+        gradle = project_dir / "build.gradle"
+        if gradle.exists():
+            try:
+                content = gradle.read_text().lower()
+                if "org.springframework.boot" in content:
+                    return "spring-boot"
+            except OSError:
+                pass
+
+    elif language == "csharp":
+        # Check *.csproj for ASP.NET
+        csproj_files = list(project_dir.glob("*.csproj"))
+        for csproj in csproj_files:
+            try:
+                content = csproj.read_text().lower()
+                if "microsoft.aspnetcore" in content:
+                    return "aspnet"
+            except OSError:
+                pass
+
     return ""
 
 
@@ -250,6 +306,13 @@ def detect_project(project_dir: str | Path) -> DetectionResult:
             result.markers_found.append(marker)
             if not result.language:
                 result.language = language
+
+    # Pass 1b: Glob-based language detection (*.csproj → csharp)
+    if not result.language:
+        csproj_files = list(project_dir.glob("*.csproj"))
+        if csproj_files:
+            result.language = "csharp"
+            result.markers_found.append(csproj_files[0].name)
 
     # Pass 2: Check framework-specific markers
     for marker, framework in _FRAMEWORK_MARKERS.items():

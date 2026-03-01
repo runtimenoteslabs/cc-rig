@@ -229,6 +229,30 @@ def _tdd_guidance_for(framework: str) -> str:
             "- Verify redirects, flash messages, and response "
             "codes in controller tests."
         ),
+        "spring-boot": (
+            "- Use `@WebMvcTest` for controller slice tests "
+            "with MockMvc.\n"
+            "- Use `@DataJpaTest` for repository tests with "
+            "embedded database.\n"
+            "- Use `@MockBean` to replace service dependencies "
+            "in slice tests.\n"
+            "- Use `@SpringBootTest` only for full integration "
+            "tests.\n"
+            "- Use Testcontainers for tests that need real "
+            "database behavior."
+        ),
+        "aspnet": (
+            "- Use `WebApplicationFactory<Program>` for "
+            "integration tests with in-memory server.\n"
+            "- Use `[Fact]` for single-case tests and "
+            "`[Theory]` with `[InlineData]` for parameterized.\n"
+            "- Use Moq (`Mock<T>`) for mocking service "
+            "dependencies.\n"
+            "- Use FluentAssertions for readable assertions "
+            "(`result.Should().Be(expected)`).\n"
+            "- Use EF Core InMemory provider or Testcontainers "
+            "for database tests."
+        ),
     }
     return guides.get(
         framework,
@@ -408,6 +432,30 @@ def _debug_guidance_for(framework: str) -> str:
             "`ActiveRecord::Base.logger = Logger.new(STDOUT)`.\n"
             "- Check `rails db:migrate:status` for pending "
             "migrations."
+        ),
+        "spring-boot": (
+            "- Use Spring Boot Actuator `/actuator/health` and "
+            "`/actuator/env` for runtime inspection.\n"
+            "- Set `logging.level.org.springframework=DEBUG` "
+            "for detailed framework logging.\n"
+            "- Use `./mvnw spring-boot:run` with DevTools for "
+            "automatic restart on changes.\n"
+            "- Check `@Autowired` injection failures — missing "
+            "beans or circular dependencies.\n"
+            "- Use `spring.jpa.show-sql=true` to log generated "
+            "SQL queries."
+        ),
+        "aspnet": (
+            "- Use `dotnet watch run` for automatic restart on "
+            "code changes.\n"
+            "- Set `ASPNETCORE_ENVIRONMENT=Development` for "
+            "detailed error pages.\n"
+            "- Use `ILogger<T>` for structured logging — check "
+            "log levels in appsettings.json.\n"
+            "- Check DI registration — `InvalidOperationException` "
+            "usually means missing service registration.\n"
+            "- Use `dotnet ef migrations list` to check pending "
+            "database migrations."
         ),
     }
     return guides.get(

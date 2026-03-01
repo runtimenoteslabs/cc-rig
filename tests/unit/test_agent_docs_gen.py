@@ -74,6 +74,18 @@ FRAMEWORK_MARKERS = {
         "testing": ["rails test", "minitest"],
         "deployment": ["Puma"],
     },
+    "spring": {
+        "architecture": ["Spring Boot", "Controller"],
+        "conventions": ["PascalCase", "constructor"],
+        "testing": ["JUnit", "MockMvc"],
+        "deployment": ["Docker", "Temurin"],
+    },
+    "dotnet": {
+        "architecture": ["ASP.NET", "Controller"],
+        "conventions": ["PascalCase", "async"],
+        "testing": ["xUnit", "WebApplicationFactory"],
+        "deployment": ["Docker", "Kestrel"],
+    },
 }
 
 
@@ -210,7 +222,19 @@ class TestFrameworkContentRegistry:
 
     @pytest.mark.parametrize(
         "framework",
-        ["fastapi", "django", "flask", "nextjs", "gin", "echo", "clap", "axum", "rails"],
+        [
+            "fastapi",
+            "django",
+            "flask",
+            "nextjs",
+            "gin",
+            "echo",
+            "clap",
+            "axum",
+            "rails",
+            "spring-boot",
+            "aspnet",
+        ],
     )
     def test_content_has_all_sections(self, framework):
         content = get_framework_content(framework)
@@ -220,7 +244,19 @@ class TestFrameworkContentRegistry:
 
     @pytest.mark.parametrize(
         "framework",
-        ["fastapi", "django", "flask", "nextjs", "gin", "echo", "clap", "axum", "rails"],
+        [
+            "fastapi",
+            "django",
+            "flask",
+            "nextjs",
+            "gin",
+            "echo",
+            "clap",
+            "axum",
+            "rails",
+            "spring-boot",
+            "aspnet",
+        ],
     )
     def test_content_sections_are_non_empty_strings(self, framework):
         content = get_framework_content(framework)

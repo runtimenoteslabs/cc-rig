@@ -44,9 +44,9 @@ All notable changes to cc-rig will be documented in this file.
 
 **Core**
 - Two-axis architecture: Config Experience (A0-A3) x Runtime Discipline (B0-B3)
-- 9 framework templates: FastAPI, Django, Flask, Next.js, Gin, Echo, Rust CLI, Rust/Axum, Ruby/Rails
+- 11 framework templates: FastAPI, Django, Flask, Next.js, Gin, Echo, Rust CLI, Rust/Axum, Ruby/Rails, Spring Boot, ASP.NET Core
 - 5 workflow presets: speedrun, standard, spec-driven, gtd-lite, verify-heavy
-- Smart defaults engine: template + workflow compose independently (45 valid combos)
+- Smart defaults engine: template + workflow compose independently (55 valid combos)
 - ProjectConfig dataclass with full serialization round-trip
 
 **Generators**

@@ -123,16 +123,13 @@ class TestFrameworkDetection:
     def test_axum_wins_over_clap(self, tmp_path):
         """Axum should take priority when both axum and clap are present."""
         (tmp_path / "Cargo.toml").write_text(
-            '[package]\nname = "test"\n\n[dependencies]\n'
-            'axum = "0.7"\nclap = "4.0"\ntokio = "1"\n'
+            '[package]\nname = "test"\n\n[dependencies]\naxum = "0.7"\nclap = "4.0"\ntokio = "1"\n'
         )
         result = detect_project(tmp_path)
         assert result.framework == "axum"
 
     def test_rails_from_gemfile_and_marker(self, tmp_path):
-        (tmp_path / "Gemfile").write_text(
-            "source 'https://rubygems.org'\ngem 'rails', '~> 7.1'\n"
-        )
+        (tmp_path / "Gemfile").write_text("source 'https://rubygems.org'\ngem 'rails', '~> 7.1'\n")
         config_dir = tmp_path / "config"
         config_dir.mkdir()
         (config_dir / "application.rb").write_text("module MyApp\nend\n")
@@ -142,12 +139,65 @@ class TestFrameworkDetection:
 
     def test_rails_from_gemfile_deps(self, tmp_path):
         """Detect Rails from Gemfile dependencies alone (no config/application.rb marker)."""
-        (tmp_path / "Gemfile").write_text(
-            "source 'https://rubygems.org'\ngem 'rails', '~> 7.1'\n"
-        )
+        (tmp_path / "Gemfile").write_text("source 'https://rubygems.org'\ngem 'rails', '~> 7.1'\n")
         result = detect_project(tmp_path)
         assert result.framework == "rails"
         assert result.confidence == "high"
+
+    def test_spring_boot_from_pom_xml(self, tmp_path):
+        (tmp_path / "pom.xml").write_text(
+            "<project>\n<dependencies>\n"
+            "<dependency>spring-boot-starter-web</dependency>\n"
+            "</dependencies>\n</project>\n"
+        )
+        result = detect_project(tmp_path)
+        assert result.framework == "spring-boot"
+        assert result.confidence == "high"
+        assert result.test_cmd == "./mvnw test"
+
+    def test_spring_boot_from_build_gradle(self, tmp_path):
+        (tmp_path / "build.gradle").write_text(
+            "plugins {\n  id 'org.springframework.boot' version '3.2.0'\n}\n"
+        )
+        result = detect_project(tmp_path)
+        assert result.framework == "spring-boot"
+        assert result.confidence == "high"
+
+    def test_spring_boot_from_framework_marker(self, tmp_path):
+        """Detect Spring Boot from application.properties marker."""
+        (tmp_path / "pom.xml").write_text("<project></project>\n")
+        src_dir = tmp_path / "src" / "main" / "resources"
+        src_dir.mkdir(parents=True)
+        (src_dir / "application.properties").write_text("server.port=8080\n")
+        result = detect_project(tmp_path)
+        assert result.framework == "spring-boot"
+        assert result.confidence == "high"
+
+    def test_aspnet_from_csproj(self, tmp_path):
+        (tmp_path / "MyApp.csproj").write_text(
+            '<Project Sdk="Microsoft.NET.Sdk.Web">\n'
+            "<ItemGroup>\n"
+            '<PackageReference Include="Microsoft.AspNetCore.OpenApi" />\n'
+            "</ItemGroup>\n</Project>\n"
+        )
+        result = detect_project(tmp_path)
+        assert result.framework == "aspnet"
+        assert result.confidence == "high"
+        assert result.test_cmd == "dotnet test"
+
+    def test_csharp_detected_from_csproj(self, tmp_path):
+        """*.csproj files should detect language as csharp."""
+        (tmp_path / "MyApp.csproj").write_text('<Project Sdk="Microsoft.NET.Sdk">\n</Project>\n')
+        result = detect_project(tmp_path)
+        assert result.language == "csharp"
+
+    def test_java_no_framework(self, tmp_path):
+        """Plain pom.xml without Spring Boot should be low confidence."""
+        (tmp_path / "pom.xml").write_text("<project><groupId>com.example</groupId></project>\n")
+        result = detect_project(tmp_path)
+        assert result.language == "java"
+        assert result.framework == ""
+        assert result.confidence == "low"
 
 
 class TestFrameworkDefaults:
@@ -197,6 +247,30 @@ class TestFrameworkDefaults:
         assert result.test_dir == "test"
         assert result.lint_cmd == "bundle exec rubocop"
         assert result.typecheck_cmd == ""
+
+    def test_spring_boot_defaults(self, tmp_path):
+        (tmp_path / "pom.xml").write_text(
+            "<project><dependencies>spring-boot-starter-web</dependencies></project>\n"
+        )
+        result = detect_project(tmp_path)
+        assert result.project_type == "api"
+        assert result.source_dir == "src/main/java"
+        assert result.test_dir == "src/test/java"
+        assert result.lint_cmd == "./mvnw checkstyle:check"
+        assert result.typecheck_cmd == ""
+        assert result.build_cmd == "./mvnw package -DskipTests"
+
+    def test_aspnet_defaults(self, tmp_path):
+        (tmp_path / "MyApp.csproj").write_text(
+            '<Project><PackageReference Include="Microsoft.AspNetCore" /></Project>\n'
+        )
+        result = detect_project(tmp_path)
+        assert result.project_type == "api"
+        assert result.source_dir == "src"
+        assert result.test_dir == "tests"
+        assert result.lint_cmd == "dotnet format --verify-no-changes"
+        assert result.typecheck_cmd == ""
+        assert result.build_cmd == "dotnet build"
 
 
 class TestLowConfidence:

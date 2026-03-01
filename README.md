@@ -314,6 +314,8 @@ Templates set your language, framework, tool commands, linting and framework-spe
 | `rust-cli` | Rust + Clap | CLI patterns, cargo test, clippy |
 | `rust-web` | Rust + Axum | Async extractors, tower middleware, cargo test |
 | `rails` | Ruby + Rails | MVC, ActiveRecord, minitest, rubocop |
+| `spring` | Java + Spring Boot | DI, JPA, JUnit 5, Checkstyle/Spotless |
+| `dotnet` | C# + ASP.NET Core | DI, EF Core, xUnit, dotnet format |
 
 ### How you like to work: Workflows
 

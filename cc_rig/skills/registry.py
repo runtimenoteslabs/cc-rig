@@ -451,6 +451,22 @@ TEMPLATE_SKILLS: dict[str, list[str]] = {
         "dockerfile-generator",
         "github-actions-generator",
     ],
+    "spring": [
+        "property-based-testing",
+        "static-analysis",
+        "supabase-postgres-best-practices",
+        "planetscale-postgresql",
+        "dockerfile-generator",
+        "github-actions-generator",
+    ],
+    "dotnet": [
+        "property-based-testing",
+        "static-analysis",
+        "supabase-postgres-best-practices",
+        "planetscale-postgresql",
+        "dockerfile-generator",
+        "github-actions-generator",
+    ],
 }
 
 

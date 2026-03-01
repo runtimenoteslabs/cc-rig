@@ -23,6 +23,7 @@ class FrameworkContent(TypedDict, total=False):
 _FRAMEWORK_MODULE_OVERRIDES: dict[str, str] = {
     "clap": "rust_cli",
     "axum": "rust_web",
+    "spring-boot": "spring_boot",
 }
 
 

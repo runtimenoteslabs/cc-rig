@@ -62,9 +62,7 @@ def _generate(
     skill_packs: list[str] | None = None,
 ) -> tuple[ProjectConfig, dict]:
     """Generate a project with optional harness level and skill packs."""
-    config = compute_defaults(
-        template, workflow, project_name=name, skill_packs=skill_packs
-    )
+    config = compute_defaults(template, workflow, project_name=name, skill_packs=skill_packs)
     if harness_level != "none":
         config.harness = HarnessConfig(level=harness_level)
     manifest = generate_all(config, tmp_path)
@@ -366,9 +364,7 @@ class TestS02FastapiVerifyHeavyB3:
         assert mode & stat.S_IXUSR
 
     def test_harness_config_json(self):
-        data = json.loads(
-            (self.root / ".claude" / "harness-config.json").read_text()
-        )
+        data = json.loads((self.root / ".claude" / "harness-config.json").read_text())
         assert data["harness_level"] == "autonomy"
         assert data["max_iterations"] == 20
 
@@ -1015,7 +1011,19 @@ class TestS12Clean:
 # ── Cross-cutting: All templates produce valid output ─────────────────
 
 
-TEMPLATES = ["fastapi", "django", "flask", "gin", "echo", "nextjs", "rust-cli", "rust-web", "rails"]
+TEMPLATES = [
+    "fastapi",
+    "django",
+    "flask",
+    "gin",
+    "echo",
+    "nextjs",
+    "rust-cli",
+    "rust-web",
+    "rails",
+    "spring",
+    "dotnet",
+]
 WORKFLOWS = ["speedrun", "standard", "spec-driven", "gtd-lite", "verify-heavy"]
 
 
@@ -1235,6 +1243,106 @@ class TestS15RailsStandardB0:
         _assert_no_duplicates(self.root, ".claude/agents")
 
 
+# ── S16: Spring Boot + Standard + B0 ─────────────────────────────────
+
+
+class TestS16SpringStandardB0:
+    """Java/Spring Boot template — verifies new language + no typecheck hook."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.root = tmp_path
+        self.config, self.manifest = _generate(tmp_path, "spring", "standard")
+
+    def test_claude_md_references_spring(self):
+        content = _read_claude_md(self.root)
+        assert "spring" in content.lower()
+
+    def test_claude_md_references_java(self):
+        content = _read_claude_md(self.root)
+        assert "java" in content.lower()
+
+    def test_format_hook_uses_spotless(self):
+        content = (self.root / ".claude" / "hooks" / "format.sh").read_text()
+        assert "spotless" in content
+
+    def test_lint_hook_uses_checkstyle(self):
+        content = (self.root / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "checkstyle" in content
+
+    def test_no_typecheck_hook(self):
+        """Spring Boot (compiled) has no typecheck command — hook should be absent."""
+        assert not (self.root / ".claude" / "hooks" / "typecheck.sh").exists()
+
+    def test_agent_docs_contain_spring(self):
+        content = (self.root / "agent_docs" / "architecture.md").read_text()
+        assert "spring" in content.lower() or "controller" in content.lower()
+
+    def test_project_type_is_api(self):
+        data = json.loads((self.root / ".cc-rig.json").read_text())
+        assert data["project_type"] == "api"
+
+    def test_hooks_executable(self):
+        _assert_hooks_executable(self.root)
+
+    def test_manifest_consistent(self):
+        _assert_manifest_consistent(self.root)
+
+    def test_no_duplicates(self):
+        _assert_no_duplicates(self.root, ".claude/commands")
+        _assert_no_duplicates(self.root, ".claude/agents")
+
+
+# ── S17: .NET/ASP.NET + Standard + B0 ────────────────────────────────
+
+
+class TestS17DotnetStandardB0:
+    """C#/ASP.NET Core template — verifies new language + no typecheck hook."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.root = tmp_path
+        self.config, self.manifest = _generate(tmp_path, "dotnet", "standard")
+
+    def test_claude_md_references_aspnet(self):
+        content = _read_claude_md(self.root)
+        assert "asp.net" in content.lower() or "aspnet" in content.lower()
+
+    def test_claude_md_references_csharp(self):
+        content = _read_claude_md(self.root)
+        assert "c#" in content.lower() or "csharp" in content.lower()
+
+    def test_format_hook_uses_dotnet_format(self):
+        content = (self.root / ".claude" / "hooks" / "format.sh").read_text()
+        assert "dotnet format" in content
+
+    def test_lint_hook_uses_dotnet_format(self):
+        content = (self.root / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "dotnet format" in content
+
+    def test_no_typecheck_hook(self):
+        """ASP.NET (compiled) has no typecheck command — hook should be absent."""
+        assert not (self.root / ".claude" / "hooks" / "typecheck.sh").exists()
+
+    def test_agent_docs_contain_aspnet(self):
+        content = (self.root / "agent_docs" / "architecture.md").read_text()
+        assert "asp.net" in content.lower() or "controller" in content.lower()
+
+    def test_project_type_is_api(self):
+        data = json.loads((self.root / ".cc-rig.json").read_text())
+        assert data["project_type"] == "api"
+
+    def test_hooks_executable(self):
+        _assert_hooks_executable(self.root)
+
+    def test_manifest_consistent(self):
+        _assert_manifest_consistent(self.root)
+
+    def test_no_duplicates(self):
+        _assert_no_duplicates(self.root, ".claude/commands")
+        _assert_no_duplicates(self.root, ".claude/agents")
+
+
 # ── S13: Skill Pack Resolution ────────────────────────────────────────
 
 
@@ -1248,9 +1356,7 @@ class TestS13SkillPackResolution:
 
     def test_security_pack_skills_in_claude_md(self, tmp_path):
         """Security pack skills appear in CLAUDE.md Installed Skills section."""
-        config, manifest = _generate(
-            tmp_path, "fastapi", "standard", skill_packs=["security"]
-        )
+        config, manifest = _generate(tmp_path, "fastapi", "standard", skill_packs=["security"])
         content = _read_claude_md(tmp_path)
         assert "supply-chain-risk-auditor" in content
         assert "variant-analysis" in content
@@ -1258,9 +1364,7 @@ class TestS13SkillPackResolution:
         assert "differential-review" in content
 
     def test_devops_pack_skills_in_claude_md(self, tmp_path):
-        config, manifest = _generate(
-            tmp_path, "fastapi", "standard", skill_packs=["devops"]
-        )
+        config, manifest = _generate(tmp_path, "fastapi", "standard", skill_packs=["devops"])
         content = _read_claude_md(tmp_path)
         assert "iac-terraform" in content
         assert "k8s-troubleshooter" in content
@@ -1268,25 +1372,23 @@ class TestS13SkillPackResolution:
         assert "gitops-workflows" in content
 
     def test_web_quality_pack_skills_in_claude_md(self, tmp_path):
-        config, manifest = _generate(
-            tmp_path, "nextjs", "standard", skill_packs=["web-quality"]
-        )
+        config, manifest = _generate(tmp_path, "nextjs", "standard", skill_packs=["web-quality"])
         content = _read_claude_md(tmp_path)
         assert "web-quality-audit" in content
         assert "accessibility" in content
         assert "performance" in content
 
     def test_database_pro_pack_skills_in_claude_md(self, tmp_path):
-        config, manifest = _generate(
-            tmp_path, "fastapi", "standard", skill_packs=["database-pro"]
-        )
+        config, manifest = _generate(tmp_path, "fastapi", "standard", skill_packs=["database-pro"])
         content = _read_claude_md(tmp_path)
         assert "database-migrations" in content
         assert "query-efficiency-auditor" in content
 
     def test_multi_pack_skills_in_claude_md(self, tmp_path):
         config, manifest = _generate(
-            tmp_path, "fastapi", "standard",
+            tmp_path,
+            "fastapi",
+            "standard",
             skill_packs=["security", "devops"],
         )
         content = _read_claude_md(tmp_path)
@@ -1322,17 +1424,13 @@ class TestS13SkillPackResolution:
 
     def test_security_pack_bypasses_speedrun_gating(self, tmp_path):
         """Pack skills appear even in speedrun (which has security=False)."""
-        config, manifest = _generate(
-            tmp_path, "fastapi", "speedrun", skill_packs=["security"]
-        )
+        config, manifest = _generate(tmp_path, "fastapi", "speedrun", skill_packs=["security"])
         content = _read_claude_md(tmp_path)
         assert "supply-chain-risk-auditor" in content
         assert "variant-analysis" in content
 
     def test_devops_pack_bypasses_speedrun_gating(self, tmp_path):
-        config, manifest = _generate(
-            tmp_path, "fastapi", "speedrun", skill_packs=["devops"]
-        )
+        config, manifest = _generate(tmp_path, "fastapi", "speedrun", skill_packs=["devops"])
         content = _read_claude_md(tmp_path)
         assert "iac-terraform" in content
         assert "k8s-troubleshooter" in content
@@ -1343,7 +1441,9 @@ class TestS13SkillPackResolution:
         """Adding packs does not remove base workflow/template skills."""
         config_base, _ = _generate(tmp_path / "base", "fastapi", "standard")
         config_packs, _ = _generate(
-            tmp_path / "packs", "fastapi", "standard",
+            tmp_path / "packs",
+            "fastapi",
+            "standard",
             skill_packs=["security"],
         )
         base_md = _read_claude_md(tmp_path / "base")
@@ -1360,7 +1460,9 @@ class TestS13SkillPackResolution:
 
     def test_no_duplicate_skills_with_packs(self, tmp_path):
         config, manifest = _generate(
-            tmp_path, "fastapi", "standard",
+            tmp_path,
+            "fastapi",
+            "standard",
             skill_packs=["security", "devops", "web-quality", "database-pro"],
         )
         content = _read_claude_md(tmp_path)
@@ -1376,45 +1478,34 @@ class TestS13SkillPackResolution:
                 skill_names.append(name)
         # No duplicates
         assert len(skill_names) == len(set(skill_names)), (
-            f"Duplicate skills in CLAUDE.md: "
-            f"{[n for n in skill_names if skill_names.count(n) > 1]}"
+            f"Duplicate skills in CLAUDE.md: {[n for n in skill_names if skill_names.count(n) > 1]}"
         )
 
     # -- Manifest consistency --
 
     def test_manifest_consistent_with_packs(self, tmp_path):
-        config, manifest = _generate(
-            tmp_path, "fastapi", "standard", skill_packs=["security"]
-        )
+        config, manifest = _generate(tmp_path, "fastapi", "standard", skill_packs=["security"])
         _assert_manifest_consistent(tmp_path)
 
     def test_hooks_executable_with_packs(self, tmp_path):
-        config, manifest = _generate(
-            tmp_path, "fastapi", "standard", skill_packs=["security"]
-        )
+        config, manifest = _generate(tmp_path, "fastapi", "standard", skill_packs=["security"])
         _assert_hooks_executable(tmp_path)
 
     def test_no_bak_pollution_with_packs(self, tmp_path):
-        config, manifest = _generate(
-            tmp_path, "fastapi", "standard", skill_packs=["security"]
-        )
+        config, manifest = _generate(tmp_path, "fastapi", "standard", skill_packs=["security"])
         _assert_no_bak_pollution(tmp_path)
 
     # -- config.skill_packs round-trip through pipeline --
 
     def test_config_skill_packs_matches_input(self, tmp_path):
         packs = ["security", "database-pro"]
-        config, manifest = _generate(
-            tmp_path, "fastapi", "standard", skill_packs=packs
-        )
+        config, manifest = _generate(tmp_path, "fastapi", "standard", skill_packs=packs)
         assert config.skill_packs == packs
 
     # -- All packs combined --
 
     def test_all_packs_combined(self, tmp_path):
-        config, manifest = _generate(
-            tmp_path, "fastapi", "standard", skill_packs=ALL_PACK_NAMES
-        )
+        config, manifest = _generate(tmp_path, "fastapi", "standard", skill_packs=ALL_PACK_NAMES)
         content = _read_claude_md(tmp_path)
         # At least one skill from each pack
         assert "supply-chain-risk-auditor" in content  # security
@@ -1431,9 +1522,7 @@ class TestS13SkillPackResolution:
 @pytest.mark.parametrize("template", TEMPLATES)
 def test_pack_generates_valid_output_per_template(tmp_path, pack_name, template):
     """Every pack × template combination generates without error."""
-    config, manifest = _generate(
-        tmp_path, template, "standard", skill_packs=[pack_name]
-    )
+    config, manifest = _generate(tmp_path, template, "standard", skill_packs=[pack_name])
     assert len(manifest["files"]) > 0
     _assert_manifest_consistent(tmp_path)
 
@@ -1442,9 +1531,7 @@ def test_pack_generates_valid_output_per_template(tmp_path, pack_name, template)
 @pytest.mark.parametrize("workflow", WORKFLOWS)
 def test_pack_generates_valid_output_per_workflow(tmp_path, pack_name, workflow):
     """Every pack × workflow combination generates without error."""
-    config, manifest = _generate(
-        tmp_path, "fastapi", workflow, skill_packs=[pack_name]
-    )
+    config, manifest = _generate(tmp_path, "fastapi", workflow, skill_packs=[pack_name])
     assert len(manifest["files"]) > 0
     _assert_manifest_consistent(tmp_path)
 
@@ -1452,9 +1539,7 @@ def test_pack_generates_valid_output_per_workflow(tmp_path, pack_name, workflow)
 @pytest.mark.parametrize("pack_name", ALL_PACK_NAMES)
 def test_pack_skills_in_claude_md_per_pack(tmp_path, pack_name):
     """Each pack's skills appear in CLAUDE.md when the pack is selected."""
-    config, manifest = _generate(
-        tmp_path, "fastapi", "standard", skill_packs=[pack_name]
-    )
+    config, manifest = _generate(tmp_path, "fastapi", "standard", skill_packs=[pack_name])
     content = _read_claude_md(tmp_path)
     pack = SKILL_PACKS[pack_name]
     for skill_name in pack.skill_names:

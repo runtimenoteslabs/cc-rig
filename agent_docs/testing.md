@@ -31,7 +31,7 @@ tests/
 
 ## E2E Test Matrix
 
-The E2E test matrix (`tests/integration/test_e2e_matrix.py`) provides systematic verification of `cc-rig init` output across all configuration dimensions: 9 templates × 5 workflows × 4 harness levels × 4 feature flags. 14 representative scenarios plus full cross-product validation.
+The E2E test matrix (`tests/integration/test_e2e_matrix.py`) provides systematic verification of `cc-rig init` output across all configuration dimensions: 11 templates × 5 workflows × 4 harness levels × 4 feature flags. 16 representative scenarios plus full cross-product validation.
 
 - **Run**: `pytest tests/integration/test_e2e_matrix.py -v`
 - **Spec**: `specs/e2e-test-matrix.md` — full scenario descriptions, expected outputs, coverage matrix

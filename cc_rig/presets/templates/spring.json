@@ -1,0 +1,16 @@
+{
+  "name": "spring",
+  "language": "java",
+  "framework": "spring-boot",
+  "project_type": "api",
+  "tool_commands": {
+    "test": "./mvnw test",
+    "lint": "./mvnw checkstyle:check",
+    "format": "./mvnw spotless:apply",
+    "typecheck": "",
+    "build": "./mvnw package -DskipTests"
+  },
+  "source_dir": "src/main/java",
+  "test_dir": "src/test/java",
+  "default_mcps": ["github", "postgres"]
+}

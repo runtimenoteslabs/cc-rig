@@ -185,6 +185,8 @@ TEMPLATE_DESCRIPTIONS: dict[str, str] = {
     "rust-cli": "Rust / Clap - Command-line application toolkit",
     "rust-web": "Rust / Axum - Async web framework with tower middleware",
     "rails": "Ruby / Rails - Full-stack MVC web framework",
+    "spring": "Java / Spring Boot - Enterprise web framework with dependency injection",
+    "dotnet": "C# / ASP.NET Core - Cross-platform web framework with async support",
 }
 
 

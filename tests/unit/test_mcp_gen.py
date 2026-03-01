@@ -20,6 +20,8 @@ TEMPLATE_MCPS = {
     "rust-web": ["github", "postgres"],
     "flask": ["github", "postgres"],
     "rails": ["github", "postgres"],
+    "spring": ["github", "postgres"],
+    "dotnet": ["github", "postgres"],
 }
 
 # Required fields per MCP server entry

@@ -93,9 +93,9 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 
 | Test | Count | Coverage |
 |------|-------|----------|
-| Every template with standard | 9 | All 9 templates generate successfully |
+| Every template with standard | 11 | All 11 templates generate successfully |
 | Every workflow with fastapi | 5 | All 5 workflows generate successfully |
-| Full cross-product (9×5) | 45 | All 45 combinations produce consistent manifests |
+| Full cross-product (11×5) | 55 | All 55 combinations produce consistent manifests |
 | Every harness level | 4 | none/lite/standard/autonomy produce correct files |
 | Feature isolation | 5 | memory, spec_workflow, gtd, worktrees toggle correctly |
 

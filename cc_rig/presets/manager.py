@@ -23,6 +23,8 @@ BUILTIN_TEMPLATES = [
     "rust-web",
     "flask",
     "rails",
+    "spring",
+    "dotnet",
 ]
 
 BUILTIN_WORKFLOWS = [
@@ -44,6 +46,8 @@ _TEMPLATE_FILES: dict[str, str] = {
     "rust-web": "rust_web.json",
     "flask": "flask.json",
     "rails": "rails.json",
+    "spring": "spring.json",
+    "dotnet": "dotnet.json",
 }
 
 _WORKFLOW_FILES: dict[str, str] = {

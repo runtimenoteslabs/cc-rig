@@ -253,6 +253,38 @@ class TestHookScriptContent:
         typecheck = tmp_path / ".claude" / "hooks" / "typecheck.sh"
         assert not typecheck.exists()
 
+    def test_lint_hook_spring_uses_checkstyle(self, tmp_path):
+        _generate_settings("spring", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "checkstyle" in script
+
+    def test_format_hook_spring_uses_spotless(self, tmp_path):
+        _generate_settings("spring", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "format.sh").read_text()
+        assert "spotless" in script
+
+    def test_no_typecheck_hook_for_spring(self, tmp_path):
+        """Spring Boot (compiled) has no typecheck command — hook should not be generated."""
+        _generate_settings("spring", "standard", tmp_path)
+        typecheck = tmp_path / ".claude" / "hooks" / "typecheck.sh"
+        assert not typecheck.exists()
+
+    def test_lint_hook_dotnet_uses_dotnet_format(self, tmp_path):
+        _generate_settings("dotnet", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "dotnet format" in script
+
+    def test_format_hook_dotnet_uses_dotnet_format(self, tmp_path):
+        _generate_settings("dotnet", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "format.sh").read_text()
+        assert "dotnet format" in script
+
+    def test_no_typecheck_hook_for_dotnet(self, tmp_path):
+        """ASP.NET (compiled) has no typecheck command — hook should not be generated."""
+        _generate_settings("dotnet", "standard", tmp_path)
+        typecheck = tmp_path / ".claude" / "hooks" / "typecheck.sh"
+        assert not typecheck.exists()
+
 
 class TestHookScriptStructure:
     """Verify hook scripts follow expected patterns."""

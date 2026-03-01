@@ -19,10 +19,19 @@ from cc_rig.skills.registry import (
     resolve_skills,
 )
 
-# All 9 templates and 5 workflows defined in the registry
+# All 11 templates and 5 workflows defined in the registry
 ALL_TEMPLATES = [
-    "fastapi", "django", "flask", "nextjs", "gin", "echo",
-    "rust-cli", "rust-web", "rails",
+    "fastapi",
+    "django",
+    "flask",
+    "nextjs",
+    "gin",
+    "echo",
+    "rust-cli",
+    "rust-web",
+    "rails",
+    "spring",
+    "dotnet",
 ]
 ALL_WORKFLOWS = ["speedrun", "standard", "spec-driven", "gtd-lite", "verify-heavy"]
 
@@ -141,15 +150,15 @@ class TestSkillCatalogCompleteness:
 
 
 # ---------------------------------------------------------------------------
-# TEMPLATE_SKILLS completeness — 9 templates
+# TEMPLATE_SKILLS completeness — 11 templates
 # ---------------------------------------------------------------------------
 
 
 class TestTemplateSkillsCompleteness:
-    """TEMPLATE_SKILLS must have entries for all 9 templates."""
+    """TEMPLATE_SKILLS must have entries for all 11 templates."""
 
-    def test_has_all_9_templates(self):
-        assert len(TEMPLATE_SKILLS) == 9
+    def test_has_all_11_templates(self):
+        assert len(TEMPLATE_SKILLS) == 11
 
     @pytest.mark.parametrize("template", ALL_TEMPLATES)
     def test_template_is_present(self, template):

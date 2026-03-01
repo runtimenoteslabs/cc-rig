@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 # Valid value catalogs (from SMART-DEFAULTS-MATRIX.md §1)
 # ---------------------------------------------------------------------------
 
-VALID_LANGUAGES = {"python", "typescript", "go", "rust", "ruby"}
+VALID_LANGUAGES = {"python", "typescript", "go", "rust", "ruby", "java", "csharp"}
 
 VALID_FRAMEWORKS_BY_LANGUAGE: dict[str, set[str]] = {
     "python": {"fastapi", "django", "flask"},
@@ -22,6 +22,8 @@ VALID_FRAMEWORKS_BY_LANGUAGE: dict[str, set[str]] = {
     "go": {"gin", "echo"},
     "rust": {"clap", "axum"},
     "ruby": {"rails"},
+    "java": {"spring-boot"},
+    "csharp": {"aspnet"},
 }
 
 VALID_FRAMEWORKS = {fw for fws in VALID_FRAMEWORKS_BY_LANGUAGE.values() for fw in fws}
