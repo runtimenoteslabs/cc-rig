@@ -1,0 +1,16 @@
+{
+  "name": "rust-web",
+  "language": "rust",
+  "framework": "axum",
+  "project_type": "api",
+  "tool_commands": {
+    "test": "cargo test",
+    "lint": "cargo clippy",
+    "format": "cargo fmt",
+    "typecheck": "cargo check",
+    "build": "cargo build"
+  },
+  "source_dir": "src",
+  "test_dir": "tests",
+  "default_mcps": ["github", "postgres"]
+}

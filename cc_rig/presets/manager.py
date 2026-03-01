@@ -20,7 +20,9 @@ BUILTIN_TEMPLATES = [
     "gin",
     "echo",
     "rust-cli",
+    "rust-web",
     "flask",
+    "rails",
 ]
 
 BUILTIN_WORKFLOWS = [
@@ -39,7 +41,9 @@ _TEMPLATE_FILES: dict[str, str] = {
     "gin": "gin.json",
     "echo": "echo.json",
     "rust-cli": "rust_cli.json",
+    "rust-web": "rust_web.json",
     "flask": "flask.json",
+    "rails": "rails.json",
 }
 
 _WORKFLOW_FILES: dict[str, str] = {

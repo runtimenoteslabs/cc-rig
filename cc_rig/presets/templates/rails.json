@@ -1,0 +1,16 @@
+{
+  "name": "rails",
+  "language": "ruby",
+  "framework": "rails",
+  "project_type": "web_fullstack",
+  "tool_commands": {
+    "test": "bundle exec rails test",
+    "lint": "bundle exec rubocop",
+    "format": "bundle exec rubocop -a",
+    "typecheck": "",
+    "build": ""
+  },
+  "source_dir": "app",
+  "test_dir": "test",
+  "default_mcps": ["github", "postgres"]
+}

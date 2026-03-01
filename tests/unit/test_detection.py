@@ -111,6 +111,44 @@ class TestFrameworkDetection:
         assert result.confidence == "high"
         assert result.test_cmd == "cargo test"
 
+    def test_axum_from_cargo(self, tmp_path):
+        (tmp_path / "Cargo.toml").write_text(
+            '[package]\nname = "test"\n\n[dependencies]\naxum = "0.7"\ntokio = "1"\n'
+        )
+        result = detect_project(tmp_path)
+        assert result.framework == "axum"
+        assert result.confidence == "high"
+        assert result.test_cmd == "cargo test"
+
+    def test_axum_wins_over_clap(self, tmp_path):
+        """Axum should take priority when both axum and clap are present."""
+        (tmp_path / "Cargo.toml").write_text(
+            '[package]\nname = "test"\n\n[dependencies]\n'
+            'axum = "0.7"\nclap = "4.0"\ntokio = "1"\n'
+        )
+        result = detect_project(tmp_path)
+        assert result.framework == "axum"
+
+    def test_rails_from_gemfile_and_marker(self, tmp_path):
+        (tmp_path / "Gemfile").write_text(
+            "source 'https://rubygems.org'\ngem 'rails', '~> 7.1'\n"
+        )
+        config_dir = tmp_path / "config"
+        config_dir.mkdir()
+        (config_dir / "application.rb").write_text("module MyApp\nend\n")
+        result = detect_project(tmp_path)
+        assert result.framework == "rails"
+        assert result.confidence == "high"
+
+    def test_rails_from_gemfile_deps(self, tmp_path):
+        """Detect Rails from Gemfile dependencies alone (no config/application.rb marker)."""
+        (tmp_path / "Gemfile").write_text(
+            "source 'https://rubygems.org'\ngem 'rails', '~> 7.1'\n"
+        )
+        result = detect_project(tmp_path)
+        assert result.framework == "rails"
+        assert result.confidence == "high"
+
 
 class TestFrameworkDefaults:
     def test_nextjs_defaults(self, tmp_path):
@@ -142,6 +180,24 @@ class TestFrameworkDefaults:
         assert result.source_dir == "src"
         assert result.build_cmd == "cargo build"
 
+    def test_axum_defaults(self, tmp_path):
+        (tmp_path / "Cargo.toml").write_text(
+            '[package]\nname = "test"\n\n[dependencies]\naxum = "0.7"\n'
+        )
+        result = detect_project(tmp_path)
+        assert result.project_type == "api"
+        assert result.source_dir == "src"
+        assert result.lint_cmd == "cargo clippy"
+
+    def test_rails_defaults(self, tmp_path):
+        (tmp_path / "Gemfile").write_text("gem 'rails', '~> 7.1'\n")
+        result = detect_project(tmp_path)
+        assert result.project_type == "web_fullstack"
+        assert result.source_dir == "app"
+        assert result.test_dir == "test"
+        assert result.lint_cmd == "bundle exec rubocop"
+        assert result.typecheck_cmd == ""
+
 
 class TestLowConfidence:
     def test_python_no_framework(self, tmp_path):
@@ -155,6 +211,13 @@ class TestLowConfidence:
         (tmp_path / "go.mod").write_text("module example.com/test\n\ngo 1.21\n")
         result = detect_project(tmp_path)
         assert result.language == "go"
+        assert result.framework == ""
+        assert result.confidence == "low"
+
+    def test_ruby_no_framework(self, tmp_path):
+        (tmp_path / "Gemfile").write_text("source 'https://rubygems.org'\ngem 'sinatra'\n")
+        result = detect_project(tmp_path)
+        assert result.language == "ruby"
         assert result.framework == ""
         assert result.confidence == "low"
 

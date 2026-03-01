@@ -227,6 +227,32 @@ class TestHookScriptContent:
         script = (tmp_path / ".claude" / "hooks" / "stop-validator.sh").read_text()
         assert "go test" in script
 
+    def test_lint_hook_axum_uses_clippy(self, tmp_path):
+        _generate_settings("rust-web", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "clippy" in script
+
+    def test_format_hook_axum_uses_cargo_fmt(self, tmp_path):
+        _generate_settings("rust-web", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "format.sh").read_text()
+        assert "cargo fmt" in script
+
+    def test_lint_hook_rails_uses_rubocop(self, tmp_path):
+        _generate_settings("rails", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "rubocop" in script
+
+    def test_format_hook_rails_uses_rubocop(self, tmp_path):
+        _generate_settings("rails", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "format.sh").read_text()
+        assert "rubocop" in script
+
+    def test_no_typecheck_hook_for_rails(self, tmp_path):
+        """Rails has no typecheck command — hook should not be generated."""
+        _generate_settings("rails", "standard", tmp_path)
+        typecheck = tmp_path / ".claude" / "hooks" / "typecheck.sh"
+        assert not typecheck.exists()
+
 
 class TestHookScriptStructure:
     """Verify hook scripts follow expected patterns."""

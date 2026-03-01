@@ -183,6 +183,8 @@ TEMPLATE_DESCRIPTIONS: dict[str, str] = {
     "gin": "Go / Gin - High-performance HTTP web framework",
     "echo": "Go / Echo - Minimalist web framework",
     "rust-cli": "Rust / Clap - Command-line application toolkit",
+    "rust-web": "Rust / Axum - Async web framework with tower middleware",
+    "rails": "Ruby / Rails - Full-stack MVC web framework",
 }
 
 

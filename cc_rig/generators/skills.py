@@ -207,6 +207,28 @@ def _tdd_guidance_for(framework: str) -> str:
             "- Isolate database tests with transactions or "
             "test databases."
         ),
+        "axum": (
+            "- Use `#[tokio::test]` for async test functions.\n"
+            "- Use `tower::ServiceExt::oneshot` to test handlers "
+            "without spawning a server.\n"
+            "- Use `#[sqlx::test]` for transactional database "
+            "test isolation.\n"
+            "- Build test requests with `axum::http::Request::builder()`.\n"
+            "- Assert on response status codes and "
+            "`serde_json`-deserialized bodies."
+        ),
+        "rails": (
+            "- Use `ActiveSupport::TestCase` for model unit "
+            "tests.\n"
+            "- Use `ActionDispatch::IntegrationTest` for full "
+            "request cycle tests.\n"
+            "- Use fixtures (YAML) or `factory_bot` for test "
+            "data.\n"
+            "- Test validations, scopes, and associations in "
+            "model tests.\n"
+            "- Verify redirects, flash messages, and response "
+            "codes in controller tests."
+        ),
     }
     return guides.get(
         framework,
@@ -365,6 +387,27 @@ def _debug_guidance_for(framework: str) -> str:
             "- SQLAlchemy: check session state and "
             "`db.session.rollback()` on errors.\n"
             "- Check `app.url_map` for route conflicts."
+        ),
+        "axum": (
+            "- Use `RUST_BACKTRACE=1` for full stack traces.\n"
+            "- Use `tracing` with `RUST_LOG=debug` for detailed "
+            "request logging.\n"
+            "- Check extractor failures — Axum returns 400/422 "
+            "when extractors fail to parse.\n"
+            "- Use `dbg!()` macro for quick value inspection.\n"
+            "- Check `tower` layer ordering — middleware runs "
+            "in the order layers are added."
+        ),
+        "rails": (
+            "- Use `rails console` for interactive debugging "
+            "and data inspection.\n"
+            "- Use `debug` gem (Ruby 3.1+) or `byebug` for "
+            "breakpoint debugging.\n"
+            "- Run `rails routes` to verify URL routing.\n"
+            "- Enable ActiveRecord query logging with "
+            "`ActiveRecord::Base.logger = Logger.new(STDOUT)`.\n"
+            "- Check `rails db:migrate:status` for pending "
+            "migrations."
         ),
     }
     return guides.get(

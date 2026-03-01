@@ -6,20 +6,20 @@
 
 ## Summary
 
-Systematic end-to-end verification that `cc-rig init` produces correct output across all configuration dimensions. 12 representative scenarios cover every template, workflow, harness level, feature flag, and flow type at least once. A full 7×5 cross-product test ensures every template×workflow combination generates without error.
+Systematic end-to-end verification that `cc-rig init` produces correct output across all configuration dimensions. 14 representative scenarios cover every template, workflow, harness level, feature flag, and flow type at least once. A full 9×5 cross-product test ensures every template×workflow combination generates without error.
 
 ## Implementation
 
 **Test file**: `tests/integration/test_e2e_matrix.py`
 **Runner**: `pytest tests/integration/test_e2e_matrix.py`
-**Total tests**: 192 (all passing)
+**Total tests**: 2583 overall (all passing)
 **Runtime**: ~1.2 seconds
 
 ## Test Dimensions
 
 | Dimension | Options |
 |-----------|---------|
-| **Template** | fastapi, django, flask, gin, echo, nextjs, rust-cli |
+| **Template** | fastapi, django, flask, gin, echo, nextjs, rust-cli, rust-web, rails |
 | **Workflow** | speedrun, standard, spec-driven, gtd-lite, verify-heavy |
 | **Harness** | none (B0), lite (B1), standard (B2), autonomy (B3) |
 | **Features** | memory, spec_workflow, gtd, worktrees |
@@ -93,9 +93,9 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 
 | Test | Count | Coverage |
 |------|-------|----------|
-| Every template with standard | 7 | All 7 templates generate successfully |
+| Every template with standard | 9 | All 9 templates generate successfully |
 | Every workflow with fastapi | 5 | All 5 workflows generate successfully |
-| Full cross-product (7×5) | 35 | All 35 combinations produce consistent manifests |
+| Full cross-product (9×5) | 45 | All 45 combinations produce consistent manifests |
 | Every harness level | 4 | none/lite/standard/autonomy produce correct files |
 | Feature isolation | 5 | memory, spec_workflow, gtd, worktrees toggle correctly |
 

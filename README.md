@@ -312,6 +312,8 @@ Templates set your language, framework, tool commands, linting and framework-spe
 | `gin` | Go + Gin | Handler→Service→Repository, golangci-lint |
 | `echo` | Go + Echo | Echo conventions, go test |
 | `rust-cli` | Rust + Clap | CLI patterns, cargo test, clippy |
+| `rust-web` | Rust + Axum | Async extractors, tower middleware, cargo test |
+| `rails` | Ruby + Rails | MVC, ActiveRecord, minitest, rubocop |
 
 ### How you like to work: Workflows
 

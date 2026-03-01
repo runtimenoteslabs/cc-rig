@@ -62,6 +62,18 @@ FRAMEWORK_MARKERS = {
         "testing": ["cargo test"],
         "deployment": ["cargo"],
     },
+    "rust-web": {
+        "architecture": ["Axum", "Router"],
+        "conventions": ["extractor", "tower"],
+        "testing": ["cargo test", "tokio"],
+        "deployment": ["cargo", "Docker"],
+    },
+    "rails": {
+        "architecture": ["Rails", "MVC"],
+        "conventions": ["ActiveRecord", "controller"],
+        "testing": ["rails test", "minitest"],
+        "deployment": ["Puma"],
+    },
 }
 
 
@@ -198,7 +210,7 @@ class TestFrameworkContentRegistry:
 
     @pytest.mark.parametrize(
         "framework",
-        ["fastapi", "django", "flask", "nextjs", "gin", "echo", "clap"],
+        ["fastapi", "django", "flask", "nextjs", "gin", "echo", "clap", "axum", "rails"],
     )
     def test_content_has_all_sections(self, framework):
         content = get_framework_content(framework)
@@ -208,7 +220,7 @@ class TestFrameworkContentRegistry:
 
     @pytest.mark.parametrize(
         "framework",
-        ["fastapi", "django", "flask", "nextjs", "gin", "echo", "clap"],
+        ["fastapi", "django", "flask", "nextjs", "gin", "echo", "clap", "axum", "rails"],
     )
     def test_content_sections_are_non_empty_strings(self, framework):
         content = get_framework_content(framework)
@@ -228,6 +240,12 @@ class TestFrameworkContentRegistry:
         # Should have Rust/Clap-specific content
         combined = " ".join(content.values()).lower()
         assert "rust" in combined or "clap" in combined or "cargo" in combined
+
+    def test_axum_maps_to_rust_web_module(self):
+        """axum framework should resolve to rust_web.py module."""
+        content = get_framework_content("axum")
+        combined = " ".join(content.values()).lower()
+        assert "axum" in combined or "tower" in combined or "cargo" in combined
 
 
 class TestDocsDeterminism:

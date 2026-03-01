@@ -46,6 +46,7 @@ _FRAMEWORK_MARKERS: dict[str, str] = {
     "next.config.mjs": "nextjs",
     "next.config.ts": "nextjs",
     "manage.py": "django",
+    "config/application.rb": "rails",
 }
 
 # Template defaults for detected frameworks (matches SMART-DEFAULTS-MATRIX.md §3)
@@ -127,6 +128,28 @@ _FRAMEWORK_DEFAULTS: dict[str, dict[str, str]] = {
         "source_dir": "src",
         "test_dir": "tests",
     },
+    "axum": {
+        "language": "rust",
+        "project_type": "api",
+        "test_cmd": "cargo test",
+        "lint_cmd": "cargo clippy",
+        "format_cmd": "cargo fmt",
+        "typecheck_cmd": "cargo check",
+        "build_cmd": "cargo build",
+        "source_dir": "src",
+        "test_dir": "tests",
+    },
+    "rails": {
+        "language": "ruby",
+        "project_type": "web_fullstack",
+        "test_cmd": "bundle exec rails test",
+        "lint_cmd": "bundle exec rubocop",
+        "format_cmd": "bundle exec rubocop -a",
+        "typecheck_cmd": "",
+        "build_cmd": "",
+        "source_dir": "app",
+        "test_dir": "test",
+    },
 }
 
 
@@ -187,13 +210,26 @@ def _detect_framework_from_deps(project_dir: Path, language: str) -> str:
                 pass
 
     elif language == "rust":
-        # Check Cargo.toml for clap
+        # Check Cargo.toml for axum (web) before clap (CLI)
         cargo = project_dir / "Cargo.toml"
         if cargo.exists():
             try:
                 content = cargo.read_text().lower()
+                if "axum" in content:
+                    return "axum"
                 if "clap" in content:
                     return "clap"
+            except OSError:
+                pass
+
+    elif language == "ruby":
+        # Check Gemfile for rails
+        gemfile = project_dir / "Gemfile"
+        if gemfile.exists():
+            try:
+                content = gemfile.read_text().lower()
+                if "rails" in content:
+                    return "rails"
             except OSError:
                 pass
 

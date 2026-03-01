@@ -435,6 +435,22 @@ TEMPLATE_SKILLS: dict[str, list[str]] = {
         "static-analysis",
         "github-actions-generator",
     ],
+    "rust-web": [
+        "property-based-testing",
+        "static-analysis",
+        "supabase-postgres-best-practices",
+        "planetscale-postgresql",
+        "dockerfile-generator",
+        "github-actions-generator",
+    ],
+    "rails": [
+        "property-based-testing",
+        "webapp-testing",
+        "supabase-postgres-best-practices",
+        "planetscale-postgresql",
+        "dockerfile-generator",
+        "github-actions-generator",
+    ],
 }
 
 

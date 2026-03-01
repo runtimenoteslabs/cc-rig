@@ -17,7 +17,9 @@ TEMPLATE_MCPS = {
     "gin": ["github", "postgres"],
     "echo": ["github", "postgres"],
     "rust-cli": ["github"],
+    "rust-web": ["github", "postgres"],
     "flask": ["github", "postgres"],
+    "rails": ["github", "postgres"],
 }
 
 # Required fields per MCP server entry

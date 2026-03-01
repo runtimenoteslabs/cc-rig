@@ -1,4 +1,4 @@
-"""E2E Test Matrix for cc-rig init — 12 scenarios covering all dimensions.
+"""E2E Test Matrix for cc-rig init — 14 scenarios covering all dimensions.
 
 Tests every template, workflow, harness level, feature flag, and flow type
 at least once. Uses the Python API (compute_defaults + generate_all) for
@@ -17,6 +17,8 @@ Scenario Matrix:
   S10: Django + Speedrun + B0 (Django minimal)
   S11: Rerun — Standard → Verify-Heavy (orphan cleanup)
   S12: Clean after init (full cleanup)
+  S14: Rust-Web (Axum) + Standard + B0 (Rust web template)
+  S15: Rails + Standard + B0 (Ruby/Rails template)
 """
 
 from __future__ import annotations
@@ -1013,7 +1015,7 @@ class TestS12Clean:
 # ── Cross-cutting: All templates produce valid output ─────────────────
 
 
-TEMPLATES = ["fastapi", "django", "flask", "gin", "echo", "nextjs", "rust-cli"]
+TEMPLATES = ["fastapi", "django", "flask", "gin", "echo", "nextjs", "rust-cli", "rust-web", "rails"]
 WORKFLOWS = ["speedrun", "standard", "spec-driven", "gtd-lite", "verify-heavy"]
 
 
@@ -1126,6 +1128,111 @@ def test_worktrees_produces_worktree_command(tmp_path):
     assert "worktree.md" in commands
     agents = _list_dir(tmp_path, ".claude/agents")
     assert "parallel-worker.md" in agents
+
+
+# ── S14: Rust-Web (Axum) + Standard + B0 ──────────────────────────────
+
+
+class TestS14RustWebStandardB0:
+    """Rust web (Axum) template — verifies second Rust template coexists."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.root = tmp_path
+        self.config, self.manifest = _generate(tmp_path, "rust-web", "standard")
+
+    def test_claude_md_references_axum(self):
+        content = _read_claude_md(self.root)
+        assert "axum" in content.lower()
+
+    def test_claude_md_references_rust(self):
+        content = _read_claude_md(self.root)
+        assert "rust" in content.lower()
+
+    def test_format_hook_uses_cargo_fmt(self):
+        content = (self.root / ".claude" / "hooks" / "format.sh").read_text()
+        assert "cargo fmt" in content
+
+    def test_lint_hook_uses_clippy(self):
+        content = (self.root / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "clippy" in content
+
+    def test_typecheck_hook_uses_cargo_check(self):
+        content = (self.root / ".claude" / "hooks" / "typecheck.sh").read_text()
+        assert "cargo check" in content
+
+    def test_agent_docs_contain_axum(self):
+        content = (self.root / "agent_docs" / "architecture.md").read_text()
+        assert "axum" in content.lower() or "router" in content.lower()
+
+    def test_project_type_is_api(self):
+        data = json.loads((self.root / ".cc-rig.json").read_text())
+        assert data["project_type"] == "api"
+
+    def test_hooks_executable(self):
+        _assert_hooks_executable(self.root)
+
+    def test_manifest_consistent(self):
+        _assert_manifest_consistent(self.root)
+
+    def test_no_duplicates(self):
+        _assert_no_duplicates(self.root, ".claude/commands")
+        _assert_no_duplicates(self.root, ".claude/agents")
+
+
+# ── S15: Rails + Standard + B0 ───────────────────────────────────────
+
+
+class TestS15RailsStandardB0:
+    """Ruby/Rails template — verifies new language + no typecheck hook."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.root = tmp_path
+        self.config, self.manifest = _generate(tmp_path, "rails", "standard")
+
+    def test_claude_md_references_rails(self):
+        content = _read_claude_md(self.root)
+        assert "rails" in content.lower()
+
+    def test_claude_md_references_ruby(self):
+        content = _read_claude_md(self.root)
+        assert "ruby" in content.lower()
+
+    def test_format_hook_uses_rubocop(self):
+        content = (self.root / ".claude" / "hooks" / "format.sh").read_text()
+        assert "rubocop" in content
+
+    def test_lint_hook_uses_rubocop(self):
+        content = (self.root / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "rubocop" in content
+
+    def test_no_typecheck_hook(self):
+        """Rails has no typecheck command — hook should be absent."""
+        assert not (self.root / ".claude" / "hooks" / "typecheck.sh").exists()
+
+    def test_agent_docs_contain_rails(self):
+        content = (self.root / "agent_docs" / "architecture.md").read_text()
+        assert "rails" in content.lower() or "mvc" in content.lower()
+
+    def test_project_type_is_web_fullstack(self):
+        data = json.loads((self.root / ".cc-rig.json").read_text())
+        assert data["project_type"] == "web_fullstack"
+
+    def test_test_dir_is_singular(self):
+        """Rails convention: test/ not tests/."""
+        data = json.loads((self.root / ".cc-rig.json").read_text())
+        assert data["test_dir"] == "test"
+
+    def test_hooks_executable(self):
+        _assert_hooks_executable(self.root)
+
+    def test_manifest_consistent(self):
+        _assert_manifest_consistent(self.root)
+
+    def test_no_duplicates(self):
+        _assert_no_duplicates(self.root, ".claude/commands")
+        _assert_no_duplicates(self.root, ".claude/agents")
 
 
 # ── S13: Skill Pack Resolution ────────────────────────────────────────
