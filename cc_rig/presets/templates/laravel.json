@@ -1,0 +1,16 @@
+{
+  "name": "laravel",
+  "language": "php",
+  "framework": "laravel",
+  "project_type": "web_fullstack",
+  "tool_commands": {
+    "test": "php artisan test",
+    "lint": "./vendor/bin/pint",
+    "format": "./vendor/bin/pint",
+    "typecheck": "",
+    "build": ""
+  },
+  "source_dir": "app",
+  "test_dir": "tests",
+  "default_mcps": ["github", "postgres"]
+}

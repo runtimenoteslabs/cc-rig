@@ -1,0 +1,16 @@
+{
+  "name": "go-std",
+  "language": "go",
+  "framework": "go-std",
+  "project_type": "api",
+  "tool_commands": {
+    "test": "go test ./...",
+    "lint": "golangci-lint run",
+    "format": "goimports -w .",
+    "typecheck": "go vet ./...",
+    "build": "go build ./cmd/server"
+  },
+  "source_dir": ".",
+  "test_dir": ".",
+  "default_mcps": ["github", "postgres"]
+}

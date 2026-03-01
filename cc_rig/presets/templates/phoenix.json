@@ -1,0 +1,16 @@
+{
+  "name": "phoenix",
+  "language": "elixir",
+  "framework": "phoenix",
+  "project_type": "web_fullstack",
+  "tool_commands": {
+    "test": "mix test",
+    "lint": "mix credo",
+    "format": "mix format",
+    "typecheck": "",
+    "build": "mix release"
+  },
+  "source_dir": "lib",
+  "test_dir": "test",
+  "default_mcps": ["github", "postgres"]
+}

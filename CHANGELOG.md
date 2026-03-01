@@ -2,6 +2,27 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [1.2.0] - 2026-03-02
+
+### Added
+
+**4 New Framework Templates**
+- `laravel` — PHP + Laravel: MVC, Eloquent ORM, Artisan, PHPUnit, PHP-CS-Fixer
+- `express` — Node.js + Express: middleware patterns, Router, Jest, ESLint, PM2 deployment
+- `phoenix` — Elixir + Phoenix: LiveView, Ecto, ExUnit, Credo, mix release
+- `go-std` — Go standard library: idiomatic Go patterns, go test, golangci-lint, no framework coupling
+
+**Total**: 15 templates × 5 workflows = 75 valid combinations.
+
+**Tests**
+- Unit detection/hooks/markers tests for each new template
+- Generator parametrization auto-covers all 15 templates
+- E2E scenarios S18 (Laravel+Standard), S19 (Express+Standard), S20 (Phoenix+Standard), S21 (Go-Std+Standard)
+- Full 15×5 cross-product verified
+- Test count updated accordingly
+
+---
+
 ## [1.1.0] - 2026-02-25
 
 ### Added
@@ -44,9 +65,9 @@ All notable changes to cc-rig will be documented in this file.
 
 **Core**
 - Two-axis architecture: Config Experience (A0-A3) x Runtime Discipline (B0-B3)
-- 11 framework templates: FastAPI, Django, Flask, Next.js, Gin, Echo, Rust CLI, Rust/Axum, Ruby/Rails, Spring Boot, ASP.NET Core
+- 11 framework templates: FastAPI, Django, Flask, Next.js, Gin, Echo, Rust CLI, Rust/Axum, Ruby/Rails, Spring Boot, ASP.NET Core (15 as of v1.2.0)
 - 5 workflow presets: speedrun, standard, spec-driven, gtd-lite, verify-heavy
-- Smart defaults engine: template + workflow compose independently (55 valid combos)
+- Smart defaults engine: template + workflow compose independently (55 valid combos, 75 as of v1.2.0)
 - ProjectConfig dataclass with full serialization round-trip
 
 **Generators**

@@ -467,6 +467,37 @@ TEMPLATE_SKILLS: dict[str, list[str]] = {
         "dockerfile-generator",
         "github-actions-generator",
     ],
+    "laravel": [
+        "property-based-testing",
+        "webapp-testing",
+        "supabase-postgres-best-practices",
+        "planetscale-postgresql",
+        "dockerfile-generator",
+        "github-actions-generator",
+    ],
+    "express": [
+        "property-based-testing",
+        "webapp-testing",
+        "supabase-postgres-best-practices",
+        "planetscale-postgresql",
+        "dockerfile-generator",
+        "github-actions-generator",
+    ],
+    "phoenix": [
+        "property-based-testing",
+        "supabase-postgres-best-practices",
+        "planetscale-postgresql",
+        "dockerfile-generator",
+        "github-actions-generator",
+    ],
+    "go-std": [
+        "property-based-testing",
+        "static-analysis",
+        "supabase-postgres-best-practices",
+        "planetscale-postgresql",
+        "dockerfile-generator",
+        "github-actions-generator",
+    ],
 }
 
 

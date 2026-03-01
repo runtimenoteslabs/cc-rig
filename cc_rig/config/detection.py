@@ -39,6 +39,7 @@ _LANGUAGE_MARKERS: dict[str, str] = {
     "composer.json": "php",
     "pom.xml": "java",
     "build.gradle": "java",
+    "mix.exs": "elixir",
 }
 
 # Framework-specific markers (checked after language detection)
@@ -50,6 +51,7 @@ _FRAMEWORK_MARKERS: dict[str, str] = {
     "config/application.rb": "rails",
     "src/main/resources/application.properties": "spring-boot",
     "src/main/resources/application.yml": "spring-boot",
+    "artisan": "laravel",
 }
 
 # Template defaults for detected frameworks (matches SMART-DEFAULTS-MATRIX.md §3)
@@ -175,6 +177,50 @@ _FRAMEWORK_DEFAULTS: dict[str, dict[str, str]] = {
         "source_dir": "src",
         "test_dir": "tests",
     },
+    "laravel": {
+        "language": "php",
+        "project_type": "web_fullstack",
+        "test_cmd": "php artisan test",
+        "lint_cmd": "./vendor/bin/pint",
+        "format_cmd": "./vendor/bin/pint",
+        "typecheck_cmd": "",
+        "build_cmd": "",
+        "source_dir": "app",
+        "test_dir": "tests",
+    },
+    "express": {
+        "language": "typescript",
+        "project_type": "api",
+        "test_cmd": "npm test",
+        "lint_cmd": "npm run lint",
+        "format_cmd": "npx prettier --write .",
+        "typecheck_cmd": "npx tsc --noEmit",
+        "build_cmd": "npm run build",
+        "source_dir": "src",
+        "test_dir": "src/__tests__",
+    },
+    "phoenix": {
+        "language": "elixir",
+        "project_type": "web_fullstack",
+        "test_cmd": "mix test",
+        "lint_cmd": "mix credo",
+        "format_cmd": "mix format",
+        "typecheck_cmd": "",
+        "build_cmd": "mix release",
+        "source_dir": "lib",
+        "test_dir": "test",
+    },
+    "go-std": {
+        "language": "go",
+        "project_type": "api",
+        "test_cmd": "go test ./...",
+        "lint_cmd": "golangci-lint run",
+        "format_cmd": "goimports -w .",
+        "typecheck_cmd": "go vet ./...",
+        "build_cmd": "go build ./cmd/server",
+        "source_dir": ".",
+        "test_dir": ".",
+    },
 }
 
 
@@ -210,7 +256,7 @@ def _detect_framework_from_deps(project_dir: Path, language: str) -> str:
                 pass
 
     elif language == "typescript":
-        # Check package.json for Next.js
+        # Check package.json for Next.js or Express
         pkg_json = project_dir / "package.json"
         if pkg_json.exists():
             try:
@@ -218,6 +264,8 @@ def _detect_framework_from_deps(project_dir: Path, language: str) -> str:
                 all_deps = {**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})}
                 if "next" in all_deps:
                     return "nextjs"
+                if "express" in all_deps:
+                    return "express"
             except (OSError, json.JSONDecodeError):
                 pass
 
@@ -286,6 +334,29 @@ def _detect_framework_from_deps(project_dir: Path, language: str) -> str:
                 content = csproj.read_text().lower()
                 if "microsoft.aspnetcore" in content:
                     return "aspnet"
+            except OSError:
+                pass
+
+    elif language == "php":
+        # Check composer.json for Laravel
+        composer = project_dir / "composer.json"
+        if composer.exists():
+            try:
+                pkg = json.loads(composer.read_text())
+                all_deps = {**pkg.get("require", {}), **pkg.get("require-dev", {})}
+                if "laravel/framework" in all_deps:
+                    return "laravel"
+            except (OSError, json.JSONDecodeError):
+                pass
+
+    elif language == "elixir":
+        # Check mix.exs for Phoenix
+        mix_exs = project_dir / "mix.exs"
+        if mix_exs.exists():
+            try:
+                content = mix_exs.read_text().lower()
+                if "phoenix" in content:
+                    return "phoenix"
             except OSError:
                 pass
 

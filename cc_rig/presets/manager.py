@@ -25,6 +25,10 @@ BUILTIN_TEMPLATES = [
     "rails",
     "spring",
     "dotnet",
+    "laravel",
+    "express",
+    "phoenix",
+    "go-std",
 ]
 
 BUILTIN_WORKFLOWS = [
@@ -48,6 +52,10 @@ _TEMPLATE_FILES: dict[str, str] = {
     "rails": "rails.json",
     "spring": "spring.json",
     "dotnet": "dotnet.json",
+    "laravel": "laravel.json",
+    "express": "express.json",
+    "phoenix": "phoenix.json",
+    "go-std": "go_std.json",
 }
 
 _WORKFLOW_FILES: dict[str, str] = {

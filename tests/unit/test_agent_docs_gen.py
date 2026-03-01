@@ -86,6 +86,30 @@ FRAMEWORK_MARKERS = {
         "testing": ["xUnit", "WebApplicationFactory"],
         "deployment": ["Docker", "Kestrel"],
     },
+    "laravel": {
+        "architecture": ["Laravel", "Eloquent"],
+        "conventions": ["Laravel", "controller"],
+        "testing": ["PHPUnit", "artisan"],
+        "deployment": ["Docker", "PHP-FPM"],
+    },
+    "express": {
+        "architecture": ["Express", "Router"],
+        "conventions": ["middleware", "controller"],
+        "testing": ["Jest", "Supertest"],
+        "deployment": ["Docker", "PM2"],
+    },
+    "phoenix": {
+        "architecture": ["Phoenix", "Context"],
+        "conventions": ["Elixir", "Context"],
+        "testing": ["ExUnit", "ConnTest"],
+        "deployment": ["Docker", "release"],
+    },
+    "go-std": {
+        "architecture": ["net/http", "ServeMux"],
+        "conventions": ["handler", "middleware"],
+        "testing": ["go test"],
+        "deployment": ["Docker"],
+    },
 }
 
 
@@ -234,6 +258,10 @@ class TestFrameworkContentRegistry:
             "rails",
             "spring-boot",
             "aspnet",
+            "laravel",
+            "express",
+            "phoenix",
+            "go-std",
         ],
     )
     def test_content_has_all_sections(self, framework):
@@ -256,6 +284,10 @@ class TestFrameworkContentRegistry:
             "rails",
             "spring-boot",
             "aspnet",
+            "laravel",
+            "express",
+            "phoenix",
+            "go-std",
         ],
     )
     def test_content_sections_are_non_empty_strings(self, framework):

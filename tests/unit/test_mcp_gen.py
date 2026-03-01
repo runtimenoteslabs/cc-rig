@@ -22,6 +22,10 @@ TEMPLATE_MCPS = {
     "rails": ["github", "postgres"],
     "spring": ["github", "postgres"],
     "dotnet": ["github", "postgres"],
+    "laravel": ["github", "postgres"],
+    "express": ["github", "postgres"],
+    "phoenix": ["github", "postgres"],
+    "go-std": ["github", "postgres"],
 }
 
 # Required fields per MCP server entry

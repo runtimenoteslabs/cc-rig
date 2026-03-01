@@ -199,6 +199,77 @@ class TestFrameworkDetection:
         assert result.framework == ""
         assert result.confidence == "low"
 
+    def test_laravel_from_artisan_marker(self, tmp_path):
+        (tmp_path / "composer.json").write_text('{"name": "test"}')
+        (tmp_path / "artisan").write_text("#!/usr/bin/env php\n")
+        result = detect_project(tmp_path)
+        assert result.framework == "laravel"
+        assert result.confidence == "high"
+
+    def test_laravel_from_composer_deps(self, tmp_path):
+        """Detect Laravel from composer.json dependencies."""
+        (tmp_path / "composer.json").write_text(
+            json.dumps({"name": "test", "require": {"laravel/framework": "^11.0"}})
+        )
+        result = detect_project(tmp_path)
+        assert result.framework == "laravel"
+        assert result.confidence == "high"
+        assert result.test_cmd == "php artisan test"
+
+    def test_express_from_package_json(self, tmp_path):
+        """Detect Express from package.json dependencies (no next.config)."""
+        (tmp_path / "package.json").write_text(
+            json.dumps({"name": "test", "dependencies": {"express": "^4.18"}})
+        )
+        result = detect_project(tmp_path)
+        assert result.framework == "express"
+        assert result.confidence == "high"
+
+    def test_nextjs_wins_over_express(self, tmp_path):
+        """When both next and express are in deps, Next.js takes priority."""
+        (tmp_path / "package.json").write_text(
+            json.dumps({
+                "name": "test",
+                "dependencies": {"next": "14.0", "express": "^4.18"},
+            })
+        )
+        result = detect_project(tmp_path)
+        assert result.framework == "nextjs"
+
+    def test_phoenix_from_mix_exs(self, tmp_path):
+        """Detect Phoenix from mix.exs dependencies."""
+        (tmp_path / "mix.exs").write_text(
+            'defmodule MyApp.MixProject do\n'
+            '  defp deps do\n'
+            '    [{:phoenix, "~> 1.7"}]\n'
+            '  end\n'
+            'end\n'
+        )
+        result = detect_project(tmp_path)
+        assert result.framework == "phoenix"
+        assert result.confidence == "high"
+        assert result.test_cmd == "mix test"
+
+    def test_elixir_detected_from_mix_exs(self, tmp_path):
+        """mix.exs should detect language as elixir."""
+        (tmp_path / "mix.exs").write_text('defmodule MyApp.MixProject do\nend\n')
+        result = detect_project(tmp_path)
+        assert result.language == "elixir"
+
+    def test_php_detected_from_composer_json(self, tmp_path):
+        """composer.json should detect language as php."""
+        (tmp_path / "composer.json").write_text('{"name": "test"}')
+        result = detect_project(tmp_path)
+        assert result.language == "php"
+
+    def test_go_std_not_auto_detected(self, tmp_path):
+        """go-std should NOT be auto-detected — Go without framework stays low confidence."""
+        (tmp_path / "go.mod").write_text("module example.com/test\n\ngo 1.22\n")
+        result = detect_project(tmp_path)
+        assert result.language == "go"
+        assert result.framework == ""
+        assert result.confidence == "low"
+
 
 class TestFrameworkDefaults:
     def test_nextjs_defaults(self, tmp_path):
@@ -271,6 +342,40 @@ class TestFrameworkDefaults:
         assert result.lint_cmd == "dotnet format --verify-no-changes"
         assert result.typecheck_cmd == ""
         assert result.build_cmd == "dotnet build"
+
+    def test_laravel_defaults(self, tmp_path):
+        (tmp_path / "composer.json").write_text(
+            json.dumps({"name": "test", "require": {"laravel/framework": "^11.0"}})
+        )
+        result = detect_project(tmp_path)
+        assert result.project_type == "web_fullstack"
+        assert result.source_dir == "app"
+        assert result.test_dir == "tests"
+        assert result.lint_cmd == "./vendor/bin/pint"
+        assert result.typecheck_cmd == ""
+
+    def test_express_defaults(self, tmp_path):
+        (tmp_path / "package.json").write_text(
+            json.dumps({"name": "test", "dependencies": {"express": "^4.18"}})
+        )
+        result = detect_project(tmp_path)
+        assert result.project_type == "api"
+        assert result.source_dir == "src"
+        assert result.test_dir == "src/__tests__"
+        assert result.typecheck_cmd == "npx tsc --noEmit"
+        assert result.build_cmd == "npm run build"
+
+    def test_phoenix_defaults(self, tmp_path):
+        (tmp_path / "mix.exs").write_text(
+            'defmodule MyApp.MixProject do\n  defp deps, do: [{:phoenix, "~> 1.7"}]\nend\n'
+        )
+        result = detect_project(tmp_path)
+        assert result.project_type == "web_fullstack"
+        assert result.source_dir == "lib"
+        assert result.test_dir == "test"
+        assert result.lint_cmd == "mix credo"
+        assert result.typecheck_cmd == ""
+        assert result.build_cmd == "mix release"
 
 
 class TestLowConfidence:

@@ -1,4 +1,4 @@
-"""E2E Test Matrix for cc-rig init — 14 scenarios covering all dimensions.
+"""E2E Test Matrix for cc-rig init — 18 scenarios covering all dimensions.
 
 Tests every template, workflow, harness level, feature flag, and flow type
 at least once. Uses the Python API (compute_defaults + generate_all) for
@@ -19,6 +19,12 @@ Scenario Matrix:
   S12: Clean after init (full cleanup)
   S14: Rust-Web (Axum) + Standard + B0 (Rust web template)
   S15: Rails + Standard + B0 (Ruby/Rails template)
+  S16: Spring Boot + Standard + B0 (Java/Spring template)
+  S17: .NET/ASP.NET + Standard + B0 (C#/ASP.NET template)
+  S18: Laravel + Standard + B0 (PHP/Laravel template)
+  S19: Express + Standard + B0 (TypeScript/Express template)
+  S20: Phoenix + Standard + B0 (Elixir/Phoenix template)
+  S21: go-std + Standard + B0 (Go stdlib template)
 """
 
 from __future__ import annotations
@@ -1023,6 +1029,10 @@ TEMPLATES = [
     "rails",
     "spring",
     "dotnet",
+    "laravel",
+    "express",
+    "phoenix",
+    "go-std",
 ]
 WORKFLOWS = ["speedrun", "standard", "spec-driven", "gtd-lite", "verify-heavy"]
 
@@ -1327,6 +1337,211 @@ class TestS17DotnetStandardB0:
     def test_agent_docs_contain_aspnet(self):
         content = (self.root / "agent_docs" / "architecture.md").read_text()
         assert "asp.net" in content.lower() or "controller" in content.lower()
+
+    def test_project_type_is_api(self):
+        data = json.loads((self.root / ".cc-rig.json").read_text())
+        assert data["project_type"] == "api"
+
+    def test_hooks_executable(self):
+        _assert_hooks_executable(self.root)
+
+    def test_manifest_consistent(self):
+        _assert_manifest_consistent(self.root)
+
+    def test_no_duplicates(self):
+        _assert_no_duplicates(self.root, ".claude/commands")
+        _assert_no_duplicates(self.root, ".claude/agents")
+
+
+# ── S18: Laravel + Standard + B0 ──────────────────────────────────────
+
+
+class TestS18LaravelStandardB0:
+    """PHP/Laravel template — verifies new language + no typecheck hook."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.root = tmp_path
+        self.config, self.manifest = _generate(tmp_path, "laravel", "standard")
+
+    def test_claude_md_references_laravel(self):
+        content = _read_claude_md(self.root)
+        assert "laravel" in content.lower()
+
+    def test_claude_md_references_php(self):
+        content = _read_claude_md(self.root)
+        assert "php" in content.lower()
+
+    def test_format_hook_uses_pint(self):
+        content = (self.root / ".claude" / "hooks" / "format.sh").read_text()
+        assert "pint" in content
+
+    def test_lint_hook_uses_pint(self):
+        content = (self.root / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "pint" in content
+
+    def test_no_typecheck_hook(self):
+        """Laravel (PHP) has no typecheck command — hook should be absent."""
+        assert not (self.root / ".claude" / "hooks" / "typecheck.sh").exists()
+
+    def test_agent_docs_contain_laravel(self):
+        content = (self.root / "agent_docs" / "architecture.md").read_text()
+        assert "laravel" in content.lower() or "eloquent" in content.lower()
+
+    def test_project_type_is_web_fullstack(self):
+        data = json.loads((self.root / ".cc-rig.json").read_text())
+        assert data["project_type"] == "web_fullstack"
+
+    def test_hooks_executable(self):
+        _assert_hooks_executable(self.root)
+
+    def test_manifest_consistent(self):
+        _assert_manifest_consistent(self.root)
+
+    def test_no_duplicates(self):
+        _assert_no_duplicates(self.root, ".claude/commands")
+        _assert_no_duplicates(self.root, ".claude/agents")
+
+
+# ── S19: Express + Standard + B0 ─────────────────────────────────────
+
+
+class TestS19ExpressStandardB0:
+    """TypeScript/Express template — verifies Express with tsc typecheck."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.root = tmp_path
+        self.config, self.manifest = _generate(tmp_path, "express", "standard")
+
+    def test_claude_md_references_express(self):
+        content = _read_claude_md(self.root)
+        assert "express" in content.lower()
+
+    def test_claude_md_references_typescript(self):
+        content = _read_claude_md(self.root)
+        assert "typescript" in content.lower()
+
+    def test_format_hook_uses_prettier(self):
+        content = (self.root / ".claude" / "hooks" / "format.sh").read_text()
+        assert "prettier" in content
+
+    def test_lint_hook_uses_npm(self):
+        content = (self.root / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "npm run lint" in content
+
+    def test_typecheck_hook_uses_tsc(self):
+        content = (self.root / ".claude" / "hooks" / "typecheck.sh").read_text()
+        assert "tsc" in content
+
+    def test_agent_docs_contain_express(self):
+        content = (self.root / "agent_docs" / "architecture.md").read_text()
+        assert "express" in content.lower() or "router" in content.lower()
+
+    def test_project_type_is_api(self):
+        data = json.loads((self.root / ".cc-rig.json").read_text())
+        assert data["project_type"] == "api"
+
+    def test_hooks_executable(self):
+        _assert_hooks_executable(self.root)
+
+    def test_manifest_consistent(self):
+        _assert_manifest_consistent(self.root)
+
+    def test_no_duplicates(self):
+        _assert_no_duplicates(self.root, ".claude/commands")
+        _assert_no_duplicates(self.root, ".claude/agents")
+
+
+# ── S20: Phoenix + Standard + B0 ─────────────────────────────────────
+
+
+class TestS20PhoenixStandardB0:
+    """Elixir/Phoenix template — verifies new language + no typecheck hook."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.root = tmp_path
+        self.config, self.manifest = _generate(tmp_path, "phoenix", "standard")
+
+    def test_claude_md_references_phoenix(self):
+        content = _read_claude_md(self.root)
+        assert "phoenix" in content.lower()
+
+    def test_claude_md_references_elixir(self):
+        content = _read_claude_md(self.root)
+        assert "elixir" in content.lower()
+
+    def test_format_hook_uses_mix_format(self):
+        content = (self.root / ".claude" / "hooks" / "format.sh").read_text()
+        assert "mix format" in content
+
+    def test_lint_hook_uses_credo(self):
+        content = (self.root / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "credo" in content
+
+    def test_no_typecheck_hook(self):
+        """Phoenix (Elixir) has no typecheck command — hook should be absent."""
+        assert not (self.root / ".claude" / "hooks" / "typecheck.sh").exists()
+
+    def test_agent_docs_contain_phoenix(self):
+        content = (self.root / "agent_docs" / "architecture.md").read_text()
+        assert "phoenix" in content.lower() or "context" in content.lower()
+
+    def test_project_type_is_web_fullstack(self):
+        data = json.loads((self.root / ".cc-rig.json").read_text())
+        assert data["project_type"] == "web_fullstack"
+
+    def test_test_dir_is_singular(self):
+        """Elixir/Phoenix convention: test/ not tests/."""
+        data = json.loads((self.root / ".cc-rig.json").read_text())
+        assert data["test_dir"] == "test"
+
+    def test_hooks_executable(self):
+        _assert_hooks_executable(self.root)
+
+    def test_manifest_consistent(self):
+        _assert_manifest_consistent(self.root)
+
+    def test_no_duplicates(self):
+        _assert_no_duplicates(self.root, ".claude/commands")
+        _assert_no_duplicates(self.root, ".claude/agents")
+
+
+# ── S21: go-std + Standard + B0 ──────────────────────────────────────
+
+
+class TestS21GoStdStandardB0:
+    """Go stdlib template — verifies Go without framework."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.root = tmp_path
+        self.config, self.manifest = _generate(tmp_path, "go-std", "standard")
+
+    def test_claude_md_references_go(self):
+        content = _read_claude_md(self.root)
+        assert "go" in content.lower()
+
+    def test_claude_md_references_net_http(self):
+        content = _read_claude_md(self.root)
+        assert "net/http" in content.lower() or "stdlib" in content.lower()
+
+    def test_format_hook_uses_goimports(self):
+        content = (self.root / ".claude" / "hooks" / "format.sh").read_text()
+        assert "goimports" in content
+
+    def test_lint_hook_uses_golangci(self):
+        content = (self.root / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "golangci-lint" in content
+
+    def test_typecheck_hook_uses_go_vet(self):
+        content = (self.root / ".claude" / "hooks" / "typecheck.sh").read_text()
+        assert "go vet" in content
+
+    def test_agent_docs_contain_net_http(self):
+        content = (self.root / "agent_docs" / "architecture.md").read_text()
+        assert "net/http" in content.lower() or "servemux" in content.lower()
 
     def test_project_type_is_api(self):
         data = json.loads((self.root / ".cc-rig.json").read_text())

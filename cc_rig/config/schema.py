@@ -14,16 +14,18 @@ if TYPE_CHECKING:
 # Valid value catalogs (from SMART-DEFAULTS-MATRIX.md §1)
 # ---------------------------------------------------------------------------
 
-VALID_LANGUAGES = {"python", "typescript", "go", "rust", "ruby", "java", "csharp"}
+VALID_LANGUAGES = {"python", "typescript", "go", "rust", "ruby", "java", "csharp", "php", "elixir"}
 
 VALID_FRAMEWORKS_BY_LANGUAGE: dict[str, set[str]] = {
     "python": {"fastapi", "django", "flask"},
-    "typescript": {"nextjs"},
-    "go": {"gin", "echo"},
+    "typescript": {"nextjs", "express"},
+    "go": {"gin", "echo", "go-std"},
     "rust": {"clap", "axum"},
     "ruby": {"rails"},
     "java": {"spring-boot"},
     "csharp": {"aspnet"},
+    "php": {"laravel"},
+    "elixir": {"phoenix"},
 }
 
 VALID_FRAMEWORKS = {fw for fws in VALID_FRAMEWORKS_BY_LANGUAGE.values() for fw in fws}

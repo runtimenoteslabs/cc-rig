@@ -285,6 +285,63 @@ class TestHookScriptContent:
         typecheck = tmp_path / ".claude" / "hooks" / "typecheck.sh"
         assert not typecheck.exists()
 
+    def test_lint_hook_laravel_uses_pint(self, tmp_path):
+        _generate_settings("laravel", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "pint" in script
+
+    def test_format_hook_laravel_uses_pint(self, tmp_path):
+        _generate_settings("laravel", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "format.sh").read_text()
+        assert "pint" in script
+
+    def test_no_typecheck_hook_for_laravel(self, tmp_path):
+        """Laravel (PHP) has no typecheck command — hook should not be generated."""
+        _generate_settings("laravel", "standard", tmp_path)
+        typecheck = tmp_path / ".claude" / "hooks" / "typecheck.sh"
+        assert not typecheck.exists()
+
+    def test_lint_hook_express_uses_npm(self, tmp_path):
+        _generate_settings("express", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "npm run lint" in script
+
+    def test_format_hook_express_uses_prettier(self, tmp_path):
+        _generate_settings("express", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "format.sh").read_text()
+        assert "prettier" in script
+
+    def test_typecheck_hook_express_uses_tsc(self, tmp_path):
+        _generate_settings("express", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "typecheck.sh").read_text()
+        assert "tsc" in script
+
+    def test_lint_hook_phoenix_uses_credo(self, tmp_path):
+        _generate_settings("phoenix", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "credo" in script
+
+    def test_format_hook_phoenix_uses_mix_format(self, tmp_path):
+        _generate_settings("phoenix", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "format.sh").read_text()
+        assert "mix format" in script
+
+    def test_no_typecheck_hook_for_phoenix(self, tmp_path):
+        """Phoenix (Elixir) has no typecheck command — hook should not be generated."""
+        _generate_settings("phoenix", "standard", tmp_path)
+        typecheck = tmp_path / ".claude" / "hooks" / "typecheck.sh"
+        assert not typecheck.exists()
+
+    def test_lint_hook_go_std_uses_golangci(self, tmp_path):
+        _generate_settings("go-std", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "lint.sh").read_text()
+        assert "golangci-lint" in script
+
+    def test_typecheck_hook_go_std_uses_vet(self, tmp_path):
+        _generate_settings("go-std", "standard", tmp_path)
+        script = (tmp_path / ".claude" / "hooks" / "typecheck.sh").read_text()
+        assert "go vet" in script
+
 
 class TestHookScriptStructure:
     """Verify hook scripts follow expected patterns."""

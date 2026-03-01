@@ -187,6 +187,10 @@ TEMPLATE_DESCRIPTIONS: dict[str, str] = {
     "rails": "Ruby / Rails - Full-stack MVC web framework",
     "spring": "Java / Spring Boot - Enterprise web framework with dependency injection",
     "dotnet": "C# / ASP.NET Core - Cross-platform web framework with async support",
+    "laravel": "PHP / Laravel - Full-stack web framework with Eloquent ORM",
+    "express": "TypeScript / Express - Minimal and flexible Node.js web framework",
+    "phoenix": "Elixir / Phoenix - Real-time web framework with LiveView",
+    "go-std": "Go / stdlib - HTTP server using net/http without frameworks",
 }
 
 

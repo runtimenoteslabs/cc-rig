@@ -1,0 +1,16 @@
+{
+  "name": "express",
+  "language": "typescript",
+  "framework": "express",
+  "project_type": "api",
+  "tool_commands": {
+    "test": "npm test",
+    "lint": "npm run lint",
+    "format": "npx prettier --write .",
+    "typecheck": "npx tsc --noEmit",
+    "build": "npm run build"
+  },
+  "source_dir": "src",
+  "test_dir": "src/__tests__",
+  "default_mcps": ["github", "postgres"]
+}

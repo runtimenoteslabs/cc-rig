@@ -253,6 +253,47 @@ def _tdd_guidance_for(framework: str) -> str:
             "- Use EF Core InMemory provider or Testcontainers "
             "for database tests."
         ),
+        "laravel": (
+            "- Use `$this->get()`, `$this->post()` for HTTP "
+            "endpoint tests.\n"
+            "- Use `RefreshDatabase` trait for test isolation "
+            "with automatic migration.\n"
+            "- Use model factories for generating test data.\n"
+            "- Assert response status, JSON structure, and "
+            "database state with `assertDatabaseHas`.\n"
+            "- Test Form Request validation rules separately."
+        ),
+        "express": (
+            "- Use Supertest for HTTP endpoint integration "
+            "tests.\n"
+            "- Use `jest.mock()` or `vi.mock()` for mocking "
+            "service dependencies.\n"
+            "- Test middleware independently from handlers.\n"
+            "- Test validation failures return proper error "
+            "responses.\n"
+            "- Use in-memory database or transactions for "
+            "database test isolation."
+        ),
+        "phoenix": (
+            "- Use `ConnTest` from `Phoenix.ConnTest` for "
+            "controller endpoint tests.\n"
+            "- Use `Ecto.Adapters.SQL.Sandbox` for database "
+            "test isolation.\n"
+            "- Test contexts as the primary API boundary.\n"
+            "- Use test fixtures for generating test data.\n"
+            "- Test LiveView with `LiveViewTest` for "
+            "interactive UI testing."
+        ),
+        "go-std": (
+            "- Use `httptest.NewRecorder()` for handler tests.\n"
+            "- Write table-driven tests with `t.Run()` "
+            "subtests.\n"
+            "- Use interfaces for dependency injection in "
+            "services.\n"
+            "- Test middleware independently from handlers.\n"
+            "- Use `testify/assert` or stdlib `testing` "
+            "assertions."
+        ),
     }
     return guides.get(
         framework,
@@ -456,6 +497,49 @@ def _debug_guidance_for(framework: str) -> str:
             "usually means missing service registration.\n"
             "- Use `dotnet ef migrations list` to check pending "
             "database migrations."
+        ),
+        "laravel": (
+            "- Use `php artisan tinker` for interactive debugging "
+            "and data inspection.\n"
+            "- Check `storage/logs/laravel.log` for error details.\n"
+            "- Use `php artisan route:list` to verify URL routing.\n"
+            "- Enable query logging with `DB::enableQueryLog()` "
+            "to inspect generated SQL.\n"
+            "- Check `php artisan migrate:status` for pending "
+            "migrations."
+        ),
+        "express": (
+            "- Use `DEBUG=express:*` environment variable for "
+            "verbose Express logging.\n"
+            "- Check middleware ordering — middleware runs in "
+            "registration order.\n"
+            "- Use TypeScript strict mode to catch type errors "
+            "at compile time.\n"
+            "- Check error middleware placement — it must be "
+            "registered last after all routes.\n"
+            "- Use `node --inspect` for Chrome DevTools debugging."
+        ),
+        "phoenix": (
+            "- Use `IEx.pry()` for breakpoint debugging in "
+            "development.\n"
+            "- Use `Logger.debug()` for detailed logging at "
+            "key decision points.\n"
+            "- Check `mix phx.routes` to verify URL routing.\n"
+            "- Use Observer (`mix run --no-halt` + `:observer.start()`) "
+            "for process inspection.\n"
+            "- Check `mix ecto.migrations` for pending database "
+            "migrations."
+        ),
+        "go-std": (
+            "- Use `log/slog` with `slog.SetDefault(slog.New("
+            "slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{"
+            "Level: slog.LevelDebug})))` for debug logging.\n"
+            "- Use `go vet` and `golangci-lint` for static "
+            "analysis.\n"
+            "- Check middleware chain ordering.\n"
+            "- Concurrency bugs: check for shared state "
+            "without mutexes.\n"
+            "- Use `pprof` for performance-related issues."
         ),
     }
     return guides.get(

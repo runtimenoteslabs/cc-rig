@@ -311,9 +311,13 @@ Templates set your language, framework, tool commands, linting and framework-spe
 | `nextjs` | TypeScript + Next.js | App Router, RSC patterns, Tailwind |
 | `gin` | Go + Gin | Handler→Service→Repository, golangci-lint |
 | `echo` | Go + Echo | Echo conventions, go test |
+| `go-std` | Go (stdlib) | Idiomatic Go, no framework, go test, golangci-lint |
 | `rust-cli` | Rust + Clap | CLI patterns, cargo test, clippy |
 | `rust-web` | Rust + Axum | Async extractors, tower middleware, cargo test |
 | `rails` | Ruby + Rails | MVC, ActiveRecord, minitest, rubocop |
+| `laravel` | PHP + Laravel | MVC, Eloquent, Artisan, PHPUnit, PHP-CS-Fixer |
+| `express` | Node.js + Express | Middleware patterns, Router, Jest, ESLint |
+| `phoenix` | Elixir + Phoenix | LiveView, Ecto, ExUnit, Credo |
 | `spring` | Java + Spring Boot | DI, JPA, JUnit 5, Checkstyle/Spotless |
 | `dotnet` | C# + ASP.NET Core | DI, EF Core, xUnit, dotnet format |
 

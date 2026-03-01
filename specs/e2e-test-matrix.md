@@ -6,7 +6,7 @@
 
 ## Summary
 
-Systematic end-to-end verification that `cc-rig init` produces correct output across all configuration dimensions. 14 representative scenarios cover every template, workflow, harness level, feature flag, and flow type at least once. A full 9×5 cross-product test ensures every template×workflow combination generates without error.
+Systematic end-to-end verification that `cc-rig init` produces correct output across all configuration dimensions. 21 representative scenarios cover every template, workflow, harness level, feature flag, and flow type at least once. A full 15×5 cross-product test ensures every template×workflow combination generates without error.
 
 ## Implementation
 
@@ -19,7 +19,7 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 
 | Dimension | Options |
 |-----------|---------|
-| **Template** | fastapi, django, flask, gin, echo, nextjs, rust-cli, rust-web, rails |
+| **Template** | fastapi, django, flask, gin, echo, go-std, nextjs, rust-cli, rust-web, rails, laravel, express, phoenix, spring, dotnet |
 | **Workflow** | speedrun, standard, spec-driven, gtd-lite, verify-heavy |
 | **Harness** | none (B0), lite (B1), standard (B2), autonomy (B3) |
 | **Features** | memory, spec_workflow, gtd, worktrees |
@@ -89,13 +89,33 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 - **Tests**: 6
 - **Verifies**: generated files removed, empty dirs cleaned, pre-existing README preserved, backup dir removed, .cc-rig.json removed, manifest gone
 
+### S18: Laravel + Standard + B0
+- **Purpose**: PHP template baseline
+- **Tests**: 10
+- **Verifies**: php/laravel/artisan in CLAUDE.md, phpunit in hook scripts, PHP-CS-Fixer format hook, Eloquent in agent docs, standard agent/command/hook counts
+
+### S19: Express + Standard + B0
+- **Purpose**: Node.js/Express template baseline
+- **Tests**: 10
+- **Verifies**: node/express/jest in CLAUDE.md, eslint in hook scripts, prettier format hook, middleware patterns in agent docs, standard agent/command/hook counts
+
+### S20: Phoenix + Standard + B0
+- **Purpose**: Elixir/Phoenix template baseline
+- **Tests**: 10
+- **Verifies**: elixir/phoenix/mix in CLAUDE.md, credo in hook scripts, mix format hook, Ecto in agent docs, standard agent/command/hook counts
+
+### S21: Go-Std + Standard + B0
+- **Purpose**: Idiomatic Go without a web framework
+- **Tests**: 10
+- **Verifies**: go/stdlib in CLAUDE.md, golangci-lint in hook scripts, gofmt format hook, no framework-specific content, standard agent/command/hook counts
+
 ## Cross-Cutting Tests
 
 | Test | Count | Coverage |
 |------|-------|----------|
-| Every template with standard | 11 | All 11 templates generate successfully |
+| Every template with standard | 15 | All 15 templates generate successfully |
 | Every workflow with fastapi | 5 | All 5 workflows generate successfully |
-| Full cross-product (11×5) | 55 | All 55 combinations produce consistent manifests |
+| Full cross-product (15×5) | 75 | All 75 combinations produce consistent manifests |
 | Every harness level | 4 | none/lite/standard/autonomy produce correct files |
 | Feature isolation | 5 | memory, spec_workflow, gtd, worktrees toggle correctly |
 
@@ -110,6 +130,14 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 | **django** | S10 |
 | **flask** | cross-product |
 | **echo** | cross-product |
+| **rust-web** | cross-product |
+| **rails** | cross-product |
+| **spring** | cross-product |
+| **dotnet** | cross-product |
+| **laravel** | S18 |
+| **express** | S19 |
+| **phoenix** | S20 |
+| **go-std** | S21 |
 | **speedrun** | S04, S10 |
 | **standard** | S01, S05, S07, S08, S11 |
 | **spec-driven** | S06 |

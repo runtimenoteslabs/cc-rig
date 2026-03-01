@@ -61,7 +61,7 @@ class TestEnumValidation:
         assert any("unknown language" in e for e in errors)
 
     def test_invalid_framework(self):
-        config = _make_valid_config(framework="express")
+        config = _make_valid_config(framework="sinatra")
         errors = validate_config(config)
         assert any("unknown framework" in e for e in errors)
 
