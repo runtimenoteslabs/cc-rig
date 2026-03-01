@@ -54,14 +54,16 @@ _PROMPT_TEXTS: dict[str, str] = {
     ),
     "memory-stop": (
         "Check if this conversation produced team-relevant decisions, "
-        "patterns, or learnings that should be in memory/ files. "
-        "Personal notes go in auto-memory, not here. "
-        "If they were ALREADY saved to memory/ during this conversation, "
-        "or if there is nothing worth saving, output ONLY the following "
-        "raw JSON with no other text and no markdown formatting:\\n"
+        "patterns, or learnings that should be saved to memory/ files "
+        "(decisions.md, patterns.md, gotchas.md). "
+        "IMPORTANT: If the conversation already wrote to memory/ files "
+        "OR to auto-memory (MEMORY.md), those learnings ARE saved — output ok. "
+        "If no significant team learnings were produced, output ok. "
+        "Output ONLY raw JSON, no markdown:\\n"
         '{"ok": true}\\n'
-        "If there are unsaved items, output ONLY this raw JSON:\\n"
-        '{"ok": false, "reason": "brief list of what to save"}'
+        "Only output the following if there are clearly unsaved TEAM "
+        "learnings (not personal auto-memory):\\n"
+        '{"ok": false, "reason": "brief list"}'
     ),
     "memory-precompact": (
         "Context is about to be compacted. Save any key decisions, "
