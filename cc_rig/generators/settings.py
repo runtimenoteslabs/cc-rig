@@ -53,14 +53,15 @@ _PROMPT_TEXTS: dict[str, str] = {
         "memory/session-log.md for recent team context."
     ),
     "memory-stop": (
-        "Review the conversation for team-relevant decisions, patterns, "
-        "gotchas, or learnings worth saving to memory/ files. "
-        "If Claude has ALREADY written these learnings to memory/ files "
-        "(auto-memory MEMORY.md or team memory files) during this "
-        "conversation, respond with {\"ok\": true}. Only respond with "
-        "{\"ok\": false, \"reason\": \"Save to memory/ before stopping: "
-        "<brief list>\"} if there are notable items that have NOT yet "
-        "been saved. Personal notes go in auto-memory, not here."
+        "Check if this conversation produced team-relevant decisions, "
+        "patterns, or learnings that should be in memory/ files. "
+        "Personal notes go in auto-memory, not here. "
+        "If they were ALREADY saved to memory/ during this conversation, "
+        "or if there is nothing worth saving, output ONLY the following "
+        "raw JSON with no other text and no markdown formatting:\\n"
+        "{\"ok\": true}\\n"
+        "If there are unsaved items, output ONLY this raw JSON:\\n"
+        "{\"ok\": false, \"reason\": \"brief list of what to save\"}"
     ),
     "memory-precompact": (
         "Context is about to be compacted. Save any key decisions, "
@@ -69,8 +70,12 @@ _PROMPT_TEXTS: dict[str, str] = {
     ),
     "push-review": (
         "Before pushing, review the changes being pushed. "
-        "Summarize what is included in this push and confirm "
-        "all tests pass and no sensitive files are included."
+        "Summarize what is included and confirm all tests pass "
+        "and no sensitive files are included. Output ONLY raw JSON "
+        "with no other text and no markdown formatting:\\n"
+        "{\"ok\": true}\\n"
+        "If there are issues, output ONLY:\\n"
+        "{\"ok\": false, \"reason\": \"brief description of issues\"}"
     ),
     "subagent-review": (
         "Review the subagent's output for quality. Check that "
@@ -78,9 +83,12 @@ _PROMPT_TEXTS: dict[str, str] = {
         "project conventions. Flag any concerns."
     ),
     "commit-message": (
-        "Ensure the commit message is descriptive and follows "
-        "conventional commit format. The message should explain "
-        "WHY the change was made, not just WHAT changed."
+        "Ensure the commit message is descriptive and explains "
+        "WHY the change was made, not just WHAT changed. Output "
+        "ONLY raw JSON with no other text and no markdown formatting:\\n"
+        "{\"ok\": true}\\n"
+        "If the message needs improvement, output ONLY:\\n"
+        "{\"ok\": false, \"reason\": \"brief suggestion\"}"
     ),
     "doc-review": (
         "Before stopping, check if documentation needs updating. "
