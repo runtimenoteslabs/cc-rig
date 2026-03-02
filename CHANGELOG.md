@@ -6,7 +6,17 @@ All notable changes to cc-rig will be documented in this file.
 
 ### Added
 - `.claude/settings.local.json` generation — personal permission overrides file (`preserve_on_clean=True`)
-- 12 new tests (10 unit + 1 integration + 1 E2E) for settings.local.json
+- 66 new tests across 4 test files:
+  - `test_memory_content.py` (18 tests) — memory file content, anti-ballooning rules, MEMORY-README
+  - `test_workflow_diff.py` (17 tests) — cross-workflow comparison (speedrun vs standard vs verify-heavy vs spec-driven vs gtd-lite)
+  - `test_command_frontmatter.py` (18 tests) — YAML frontmatter parsing, `$ARGUMENTS` validation, `_COMMAND_DEFS` consistency
+  - `test_permission_modes.py` (13 tests) — default vs permissive mode comparison, allow/deny lists
+- 12 tests (10 unit + 1 integration + 1 E2E) for settings.local.json
+
+### Changed
+- Refactored `_script_lint`/`_script_typecheck` into shared `_script_check_on_commit` helper (settings.py)
+- Refactored `load_template`/`load_workflow` into shared `_load_preset` helper (manager.py)
+- Polished TUI wizard screen descriptions (TemplateScreen, WorkflowScreen, FeaturesScreen)
 
 ### Fixed
 - Version bump: `pyproject.toml` and `__init__.py` synced from 1.0.0 to 1.3.0

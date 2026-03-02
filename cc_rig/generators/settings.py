@@ -293,11 +293,12 @@ def _script_format(config: ProjectConfig) -> str:
     )
 
 
-def _script_lint(config: ProjectConfig) -> str:
-    lint_cmd = _safe_cmd(config.lint_cmd, "echo 'No linter configured'")
+def _script_check_on_commit(tool_name: str, cmd: str) -> str:
+    """Generate a hook script that runs a check tool before git commit."""
+    safe_cmd = _safe_cmd(cmd, f"echo 'No {tool_name} configured'")
     return (
         "#!/usr/bin/env bash\n"
-        "# cc-rig hook: lint — lint before git commit\n"
+        f"# cc-rig hook: {tool_name} — {tool_name} before git commit\n"
         "# Event: PreToolUse (Bash matching git commit)\n"
         "set -euo pipefail\n"
         "\n"
@@ -306,33 +307,20 @@ def _script_lint(config: ProjectConfig) -> str:
         "\n"
         "# Only run on git commit commands\n"
         'if echo "$INPUT" | grep -q "git commit"; then\n'
-        f"  {lint_cmd}\n"
+        f"  {safe_cmd}\n"
         "  exit $?\n"
         "fi\n"
         "\n"
         "exit 0\n"
     )
+
+
+def _script_lint(config: ProjectConfig) -> str:
+    return _script_check_on_commit("lint", config.lint_cmd)
 
 
 def _script_typecheck(config: ProjectConfig) -> str:
-    tc_cmd = _safe_cmd(config.typecheck_cmd, "echo 'No typechecker configured'")
-    return (
-        "#!/usr/bin/env bash\n"
-        "# cc-rig hook: typecheck — typecheck before git commit\n"
-        "# Event: PreToolUse (Bash matching git commit)\n"
-        "set -euo pipefail\n"
-        "\n"
-        "# Read the tool input from stdin\n"
-        'INPUT=$(cat 2>/dev/null || echo "")\n'
-        "\n"
-        "# Only run on git commit commands\n"
-        'if echo "$INPUT" | grep -q "git commit"; then\n'
-        f"  {tc_cmd}\n"
-        "  exit $?\n"
-        "fi\n"
-        "\n"
-        "exit 0\n"
-    )
+    return _script_check_on_commit("typecheck", config.typecheck_cmd)
 
 
 def _script_block_rm_rf(config: ProjectConfig) -> str:

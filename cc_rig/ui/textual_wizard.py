@@ -422,7 +422,7 @@ class TemplateScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Label("Select your stack", classes="screen-title")
             yield Label(
-                "Pick the framework closest to your project.",
+                "Determines tool commands, agent docs, and framework-specific rules.",
                 classes="description",
             )
             if detected:
@@ -479,7 +479,7 @@ class WorkflowScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Label("Select your workflow", classes="screen-title")
             yield Label(
-                "Select a workflow to see details below.",
+                "Controls which agents, commands, hooks, and features are generated.",
                 classes="description",
             )
             buttons = []
@@ -742,7 +742,7 @@ class FeaturesScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Label("Features", classes="screen-title")
             yield Label(
-                "Select a feature to see details below.",
+                "Toggle optional capabilities. Each adds files and hooks.",
                 classes="description",
             )
 

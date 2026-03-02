@@ -69,34 +69,33 @@ _WORKFLOW_FILES: dict[str, str] = {
 }
 
 
-def load_template(name: str) -> dict[str, Any]:
-    """Load a template preset by name. Raises ValueError if not found."""
-    filename = _TEMPLATE_FILES.get(name)
+def _load_preset(
+    name: str,
+    file_map: dict[str, str],
+    preset_type: str,
+    builtins: list[str],
+) -> dict[str, Any]:
+    """Load a preset by name from builtins or user-installed directory."""
+    filename = file_map.get(name)
     if filename is None:
-        # Check user-installed templates
-        user_path = _USER_PRESETS_DIR / "templates" / f"{name}.json"
+        user_path = _USER_PRESETS_DIR / preset_type / f"{name}.json"
         if user_path.exists():
             return json.loads(user_path.read_text())
-        available = ", ".join(BUILTIN_TEMPLATES)
-        raise ValueError(f"Unknown template: {name!r}. Available: {available}")
+        available = ", ".join(builtins)
+        raise ValueError(f"Unknown {preset_type.rstrip('s')}: {name!r}. Available: {available}")
 
-    path = _PRESETS_DIR / "templates" / filename
+    path = _PRESETS_DIR / preset_type / filename
     return json.loads(path.read_text())
+
+
+def load_template(name: str) -> dict[str, Any]:
+    """Load a template preset by name. Raises ValueError if not found."""
+    return _load_preset(name, _TEMPLATE_FILES, "templates", BUILTIN_TEMPLATES)
 
 
 def load_workflow(name: str) -> dict[str, Any]:
     """Load a workflow preset by name. Raises ValueError if not found."""
-    filename = _WORKFLOW_FILES.get(name)
-    if filename is None:
-        # Check user-installed workflows
-        user_path = _USER_PRESETS_DIR / "workflows" / f"{name}.json"
-        if user_path.exists():
-            return json.loads(user_path.read_text())
-        available = ", ".join(BUILTIN_WORKFLOWS)
-        raise ValueError(f"Unknown workflow: {name!r}. Available: {available}")
-
-    path = _PRESETS_DIR / "workflows" / filename
-    return json.loads(path.read_text())
+    return _load_preset(name, _WORKFLOW_FILES, "workflows", BUILTIN_WORKFLOWS)
 
 
 def list_presets(
