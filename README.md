@@ -571,6 +571,7 @@ The broader ecosystem has thousands more. Discover skills at [skills.sh](https:/
 
 cc-rig's defaults draw from community research on what makes Claude Code work well:
 
+- [Thariq on prompt caching](https://www.techtwitter.com/articles/lessons-from-building-claude-code-prompt-caching-is-everything) - how Claude Code's team optimizes caching (informed cc-rig's cache-aware architecture)
 - [Boris Cherny's workflow principles](https://x.com/bcherny/status/2007179832300581177) - seven principles for effective Claude Code usage (creator of Claude Code)
 - [What great CLAUDE.md files have in common](https://blog.devgenius.io/what-great-claude-md-files-have-in-common-db482172ad2c) - content patterns
 - [HumanLayer's CLAUDE.md guide](https://www.humanlayer.dev/blog/writing-a-good-claude-md) - structure principles
