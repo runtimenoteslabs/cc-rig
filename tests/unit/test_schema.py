@@ -138,7 +138,6 @@ class TestFeatureFlagImplications:
             commands=["fix-issue"],  # missing remember
         )
         errors = validate_config(config)
-        assert any("memory-stop" in e for e in errors)
         assert any("memory-precompact" in e for e in errors)
         assert any("remember" in e for e in errors)
 

@@ -45,7 +45,6 @@
     "block-main",
     "session-context",
     "stop-validator",
-    "memory-stop",
     "memory-precompact",
     "push-review",
     "subagent-review",

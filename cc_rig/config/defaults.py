@@ -265,8 +265,6 @@ def compute_defaults(
     # The workflow preset should already include these, but this ensures
     # consistency — especially important when expert mode toggles flags.
     if features.memory:
-        if "memory-stop" not in hooks:
-            hooks.append("memory-stop")
         if "memory-precompact" not in hooks:
             hooks.append("memory-precompact")
         if "remember" not in commands:

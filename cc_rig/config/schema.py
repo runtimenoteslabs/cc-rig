@@ -112,7 +112,6 @@ VALID_HOOKS = {
     "block-main",
     "session-context",
     "stop-validator",
-    "memory-stop",
     "memory-precompact",
     "push-review",
     "subagent-review",
@@ -221,8 +220,6 @@ def validate_config(config: ProjectConfig) -> list[str]:
 
     # Feature flag implications
     if config.features.memory:
-        if "memory-stop" not in config.hooks:
-            errors.append("features.memory is True but 'memory-stop' not in hooks")
         if "memory-precompact" not in config.hooks:
             errors.append("features.memory is True but 'memory-precompact' not in hooks")
         if "remember" not in config.commands:

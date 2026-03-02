@@ -28,7 +28,6 @@
     "block-main",
     "session-context",
     "stop-validator",
-    "memory-stop",
     "memory-precompact"
   ],
   "features": {

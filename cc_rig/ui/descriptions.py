@@ -36,7 +36,6 @@ def get_hook_descriptions() -> dict[str, str]:
         "block-main": "Block direct push to main/master",
         "session-context": "Load project context at session start",
         "stop-validator": "Check uncommitted changes and run tests before stop",
-        "memory-stop": "Save team decisions and learnings before stop",
         "memory-precompact": "Persist team context before compaction",
         "push-review": "Review changes before git push",
         "subagent-review": "Review subagent output for quality",
@@ -85,7 +84,7 @@ WORKFLOW_DETAILS: dict[str, str] = {
         "Includes:\n"
         "  Agents:   code-reviewer, test-writer, explorer\n"
         "  Commands: fix-issue, review, test, plan, gtd-capture, gtd-process, daily-plan\n"
-        "  Hooks:    format, lint, block-rm-rf, block-env, stop-validator, memory-stop\n"
+        "  Hooks:    format, lint, block-rm-rf, block-env, stop-validator, memory-precompact\n"
         "  Features: memory, gtd enabled"
     ),
     "verify-heavy": (

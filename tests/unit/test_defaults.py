@@ -185,8 +185,6 @@ class TestHookCounts:
         config = compute_defaults("fastapi", "speedrun", project_name="test")
         assert len(config.hooks) >= 4
         assert "typecheck" not in config.hooks
-        assert "memory-stop" not in config.hooks
-
     def test_standard_hooks(self):
         config = compute_defaults("fastapi", "standard", project_name="test")
         assert len(config.hooks) > len(
@@ -194,7 +192,6 @@ class TestHookCounts:
         )
         assert "typecheck" in config.hooks
         assert "stop-validator" in config.hooks
-        assert "memory-stop" in config.hooks
         assert "memory-precompact" in config.hooks
 
     def test_spec_driven_hooks(self):
@@ -257,14 +254,12 @@ class TestFeatureImplications:
     def test_memory_implies_hooks_and_command(self):
         config = compute_defaults("fastapi", "standard", project_name="test")
         assert config.features.memory is True
-        assert "memory-stop" in config.hooks
         assert "memory-precompact" in config.hooks
         assert "remember" in config.commands
 
     def test_no_memory_no_hooks(self):
         config = compute_defaults("fastapi", "speedrun", project_name="test")
         assert config.features.memory is False
-        assert "memory-stop" not in config.hooks
         assert "memory-precompact" not in config.hooks
         assert "remember" not in config.commands
 

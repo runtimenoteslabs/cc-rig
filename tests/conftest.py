@@ -55,7 +55,6 @@ def make_valid_config(**overrides) -> ProjectConfig:
             "block-main",
             "session-context",
             "stop-validator",
-            "memory-stop",
             "memory-precompact",
         ],
         "features": Features(memory=True),
