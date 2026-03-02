@@ -69,6 +69,16 @@ class TestGeneratedFilesExist:
         _generate_full("fastapi", "standard", output)
         assert (output / ".mcp.json").exists()
 
+    def test_settings_local_json_exists(self, tmp_path):
+        output = tmp_path / "output"
+        _generate_full("fastapi", "standard", output)
+        path = output / ".claude" / "settings.local.json"
+        assert path.exists()
+        data = json.loads(path.read_text())
+        assert data["permissions"]["allow"] == []
+        assert data["permissions"]["deny"] == []
+        assert data["env"] == {}
+
 
 class TestNoEmptyFiles:
     @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)

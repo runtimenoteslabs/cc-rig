@@ -151,7 +151,7 @@ class TestS01FastapiStandardB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 41, f"Expected 41 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 42, f"Expected 42 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
@@ -276,6 +276,15 @@ class TestS01FastapiStandardB0:
         assert (self.root / "CLAUDE.local.md").exists()
         content = (self.root / "CLAUDE.local.md").read_text()
         assert "Personal Preferences" in content
+
+    def test_settings_local_json_present(self):
+        path = self.root / ".claude" / "settings.local.json"
+        assert path.exists()
+        data = json.loads(path.read_text())
+        assert "permissions" in data
+        assert data["permissions"]["allow"] == []
+        assert data["permissions"]["deny"] == []
+        assert "env" in data
 
     def test_agent_docs_uses_at_imports(self):
         content = _read_claude_md(self.root)
@@ -462,7 +471,7 @@ class TestS04FastapiSpeedrunB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 29, f"Expected 29 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 30, f"Expected 30 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
@@ -888,7 +897,7 @@ class TestS10DjangoSpeedrunB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 29, f"Expected 29 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 30, f"Expected 30 files, got {len(files)}: {sorted(files)}"
 
     def test_hooks_executable(self):
         _assert_hooks_executable(self.root)

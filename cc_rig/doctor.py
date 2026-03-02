@@ -151,7 +151,6 @@ def _check_session_log_staleness(
 
 # Files created by Claude Code itself (not by cc-rig) — never report as orphaned.
 _CC_NATIVE_FILES = {
-    ".claude/settings.local.json",
     ".claude/.cc-rig-manifest.json",
 }
 

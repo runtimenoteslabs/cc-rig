@@ -116,10 +116,7 @@ def run_generation(
         git_files.append(".mcp.json")
     git_files.append(".cc-rig.json")
     file_list = " ".join(git_files)
-    io.say(
-        f"    git add {file_list} "
-        "&& git commit -m 'Add Claude Code config'"
-    )
+    io.say(f"    git add {file_list} && git commit -m 'Add Claude Code config'")
     io.say("    claude          # start Claude Code")
     io.say("    cc-rig doctor   # check project health")
 

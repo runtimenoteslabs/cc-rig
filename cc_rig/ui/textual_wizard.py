@@ -259,9 +259,7 @@ class KeyHintsBar(Static):
     """
 
     def __init__(self) -> None:
-        super().__init__(
-            " ESC Back  |  TAB Navigate  |  ENTER Select  |  SPACE Toggle "
-        )
+        super().__init__(" ESC Back  |  TAB Navigate  |  ENTER Select  |  SPACE Toggle ")
 
 
 # ── Branded header ───────────────────────────────────────────────────
@@ -495,9 +493,7 @@ class WorkflowScreen(ModalScreen[Optional[dict]]):
                 buttons.append(RadioButton(label, value=(w == selected)))
             yield RadioSet(*buttons, id="workflow-radio")
             # Show details for the selected workflow
-            default_detail = WORKFLOW_DETAILS.get(
-                self._state.get("workflow", "standard"), ""
-            )
+            default_detail = WORKFLOW_DETAILS.get(self._state.get("workflow", "standard"), "")
             yield Static(default_detail, id="workflow-details")
         yield NavBar()
         yield KeyHintsBar()
@@ -646,15 +642,9 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
         command_descs = get_command_descriptions()
         hook_descs = get_hook_descriptions()
 
-        agents_label = (
-            f"Agents ({len(current_agents)}/{len(VALID_AGENTS)} selected)"
-        )
-        cmds_label = (
-            f"Commands ({len(current_commands)}/{len(VALID_COMMANDS)} selected)"
-        )
-        hooks_label = (
-            f"Hooks ({len(current_hooks)}/{len(VALID_HOOKS)} selected)"
-        )
+        agents_label = f"Agents ({len(current_agents)}/{len(VALID_AGENTS)} selected)"
+        cmds_label = f"Commands ({len(current_commands)}/{len(VALID_COMMANDS)} selected)"
+        hooks_label = f"Hooks ({len(current_hooks)}/{len(VALID_HOOKS)} selected)"
 
         with VerticalScroll(id="body"):
             yield Label("Expert customization", classes="screen-title")
@@ -919,8 +909,7 @@ class HarnessScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Label("Runtime harness", classes="screen-title")
             yield Label(
-                "Controls supervision level: budgets, quality gates "
-                "and autonomous looping.",
+                "Controls supervision level: budgets, quality gates and autonomous looping.",
                 classes="description",
             )
             prev_level = self._state.get("harness_level", "none")
@@ -1128,16 +1117,9 @@ class WizardApp(App[Optional[dict]]):
                 step += 1
                 continue
 
-            visible = [
-                s for s in self._screens
-                if s[2] is None or s[2](state)
-            ]
-            visible_idx = next(
-                i for i, s in enumerate(visible) if s[0] is screen_cls
-            )
-            state["step_label"] = (
-                f"  Step {visible_idx + 1} of {len(visible)} - {title}"
-            )
+            visible = [s for s in self._screens if s[2] is None or s[2](state)]
+            visible_idx = next(i for i, s in enumerate(visible) if s[0] is screen_cls)
+            state["step_label"] = f"  Step {visible_idx + 1} of {len(visible)} - {title}"
 
             # Compute config before review/confirm screens need it
             if screen_cls in (ReviewScreen, ConfirmScreen) and "config" not in state:
