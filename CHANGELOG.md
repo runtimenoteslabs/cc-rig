@@ -2,6 +2,20 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [1.3.1] - 2026-03-03
+
+### Added
+- `.claude/settings.local.json` generation — personal permission overrides file (`preserve_on_clean=True`)
+- 12 new tests (10 unit + 1 integration + 1 E2E) for settings.local.json
+
+### Fixed
+- Version bump: `pyproject.toml` and `__init__.py` synced from 1.0.0 to 1.3.0
+- Removed `memory-stop` prompt hook — Claude wraps JSON in markdown, causing validation failure every session exit. Auto-memory already handles learning persistence.
+- Fixed `ruff format` issues in `textual_wizard.py` and `generate.py` (CI was failing)
+- CI verified green on Python 3.9, 3.10, 3.11, 3.12
+
+---
+
 ## [1.3.0] - 2026-03-02
 
 ### Added

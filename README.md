@@ -490,7 +490,7 @@ cc-rig's defaults encode seven workflow principles distilled from how the Claude
 |-----------|----------------------|
 | **Plan before coding** | `/plan` and `/assumptions` commands, `/research` for codebase exploration, CLAUDE.md workflow guidance |
 | **Use subagents for research** | `/research` command, `explorer` agent (Haiku), `parallel-worker` for worktree isolation |
-| **Self-improvement loop** | Auto-memory (personal), team memory (`/remember`, `memory-stop` hook, `memory-precompact` hook), persistent `memory/` files |
+| **Self-improvement loop** | Auto-memory (personal), team memory (`/remember`, `memory-precompact` hook), persistent `memory/` files |
 | **Verify before done** | Hooks (format, lint, typecheck), B2+ enforcement gates (lint blocks commits), guardrails in CLAUDE.md |
 | **Demand elegance** | `/refactor` command, `refactorer` agent, workflow principles in CLAUDE.md |
 | **Fix failures immediately** | B1+ session-start task summary, B2+ commit-gate hook, B3 autonomy loop (stuck detection) |
