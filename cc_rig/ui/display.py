@@ -7,9 +7,17 @@ when stdout is not a TTY or NO_COLOR is set.
 from __future__ import annotations
 
 import os
+import re
 import sys
 
 from cc_rig.config.project import ProjectConfig
+
+_ANSI_RE = re.compile(r"\033\[[0-9;]*m")
+
+
+def strip_ansi(text: str) -> str:
+    """Remove ANSI escape codes from text."""
+    return _ANSI_RE.sub("", text)
 
 
 def _use_color() -> bool:
