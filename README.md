@@ -191,7 +191,7 @@ Shell scripts on Claude Code lifecycle events, configured in `settings.json`.
 | **PostToolUse** (Write) | Auto-format (prettier/ruff/gofmt) | Instant cleanup, <1s |
 | **PreToolUse** (Bash) | Lint + typecheck on git commit | Quality gate before commits |
 | **PreToolUse** (Write/Bash) | Block `rm -rf /`, pushes to main, `.env` writes | Safety guards |
-| **Stop** | Save learnings to memory, remind about tests | Preserve context without blocking on full test suite |
+| **Stop** | Save learnings to memory, remind about tests, show session cost | Preserve context, cost awareness |
 | **PreCompact** | Save context before compaction | Survive context loss |
 | **SessionStart** | Load project context and active tasks | Continuity |
 | **SessionStart** | Print open/done task counts (harness B1+) | Quick orientation |
@@ -427,7 +427,9 @@ The standard level generates `init-sh.sh` (wraps your test/lint/format commands)
 
 **Warning**: `loop.sh` uses `--dangerously-skip-permissions`. Run inside a Docker container or sandboxed environment. See [Claude Code security docs](https://docs.anthropic.com/en/docs/claude-code/security).
 
-Safety rails included: iteration limits, checkpoint commits after each task, stuck detection, entropy management (tidy between iterations) and Ctrl+C emergency stop.
+Safety rails included: iteration limits, budget enforcement (stops the loop when token budget exceeded, warns at configurable threshold), checkpoint auto-commits (when Claude doesn't commit, the loop does), stuck detection, entropy management (tidy between iterations), per-iteration cost tracking in the progress ledger and a cost summary on exit (Ctrl+C, budget exceeded or completion).
+
+The `budget-reminder` Stop hook shows actual session token usage and estimated cost (parsed from Claude Code's JSONL session logs) every time a session ends. Works at all harness levels (B1+), degrades gracefully when python3 is unavailable.
 
 ### Health check and cleanup
 
@@ -535,7 +537,7 @@ cc-rig and community skills are complementary. cc-rig generates your project sca
 <details>
 <summary><strong>What's the autonomous mode?</strong></summary>
 
-A harness that lets Claude work through a task list unattended. It uses structural enforcement: hooks that block commits when lint fails, a utility script (`init-sh.sh`) wrapping your test/lint/format commands, iteration limits, checkpoint commits, stuck detection and an emergency stop. Set it up, walk away, review the results.
+A harness that lets Claude work through a task list unattended. It uses structural enforcement: hooks that block commits when lint fails, a utility script (`init-sh.sh`) wrapping your test/lint/format commands, iteration limits, budget enforcement with cost tracking, checkpoint auto-commits, stuck detection and an emergency stop. On exit you get a cost summary showing total tokens and estimated spend. Set it up, walk away, review the results.
 </details>
 
 <details>

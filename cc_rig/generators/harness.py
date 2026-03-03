@@ -408,8 +408,8 @@ def _generate_b3(
     )
     files.append("claude-progress.txt")
 
-    # ── loop.sh — enhanced with config reading + progress ────────
-    loop_content = (
+    # ── loop.sh — enhanced with config reading + budget + cost ───
+    loop_header = (
         "#!/usr/bin/env bash\n"
         "# Autonomy loop - based on the Ralph Wiggum technique by Geoffrey Huntley.\n"
         "# https://github.com/ghuntley/how-to-ralph-wiggum\n"
@@ -421,6 +421,9 @@ def _generate_b3(
         "# See: https://docs.anthropic.com/en/docs/claude-code/security\n"
         "\n"
         "set -euo pipefail\n"
+    )
+
+    loop_config = (
         "\n"
         "# Read config from harness-config.json if available\n"
         "CONFIG_FILE=.claude/harness-config.json\n"
@@ -429,9 +432,15 @@ def _generate_b3(
         "| grep -o '[0-9]*' || echo " + str(h.max_iterations) + ")\n"
         '    CHECKPOINT=$(grep -o \'"checkpoint_commits": *[a-z]*\' "$CONFIG_FILE" '
         "| grep -oE 'true|false' || echo true)\n"
+        '    BUDGET_TOKENS=$(grep -o \'"per_run_tokens": *[0-9]*\' "$CONFIG_FILE" '
+        "| grep -o '[0-9]*' || echo 0)\n"
+        '    WARN_PERCENT=$(grep -o \'"warn_at_percent": *[0-9]*\' "$CONFIG_FILE" '
+        "| grep -o '[0-9]*' || echo 80)\n"
         "else\n"
         f"    DEFAULT_MAX={h.max_iterations}\n"
         "    CHECKPOINT=true\n"
+        "    BUDGET_TOKENS=0\n"
+        "    WARN_PERCENT=80\n"
         "fi\n"
         "\n"
         'MAX_ITERATIONS="${1:-$DEFAULT_MAX}"\n'
@@ -439,13 +448,59 @@ def _generate_b3(
         'PREV_TASK=""\n'
         "STUCK_COUNT=0\n"
         "\n"
+        "# Budget tracking accumulators\n"
+        "CUMULATIVE_INPUT=0\n"
+        "CUMULATIVE_OUTPUT=0\n"
+        "CUMULATIVE_CACHE=0\n"
+        "CUMULATIVE_COST_USD=0\n"
+        "TOTAL_TOKENS=0\n"
+        'if [ "$BUDGET_TOKENS" -gt 0 ] 2>/dev/null; then\n'
+        "    WARN_THRESHOLD=$(( BUDGET_TOKENS * WARN_PERCENT / 100 ))\n"
+        "else\n"
+        "    BUDGET_TOKENS=0\n"
+        "    WARN_THRESHOLD=0\n"
+        "fi\n"
+    )
+
+    loop_trap = (
+        "\n"
+        "# Cost summary on exit\n"
+        "cleanup() {\n"
+        '    echo ""\n'
+        '    echo "================================================"\n'
+        '    echo "  Cost Summary"\n'
+        '    echo "  Iterations: ${ITERATION}"\n'
+        '    echo "  Total tokens in: ${CUMULATIVE_INPUT}"\n'
+        '    echo "  Total tokens out: ${CUMULATIVE_OUTPUT}"\n'
+        '    echo "  Total cache tokens: ${CUMULATIVE_CACHE}"\n'
+        '    if [ "$CUMULATIVE_COST_USD" = "0" ] && [ "$TOTAL_TOKENS" -gt 0 ]; then\n'
+        '        echo "  Est. cost: unavailable (python3 required)"\n'
+        "    else\n"
+        '        echo "  Est. cost: ~\\$${CUMULATIVE_COST_USD}"\n'
+        "    fi\n"
+        '    echo "================================================"\n'
+        "}\n"
+        "trap cleanup INT TERM\n"
+    )
+
+    loop_banner = (
+        "\n"
         'echo ""\n'
         'echo "================================================"\n'
         'echo "  AUTONOMY LOOP - STARTING"\n'
         'echo "  Max iterations: ${MAX_ITERATIONS}"\n'
+    )
+    if h.budget_per_run_tokens is not None:
+        loop_banner += (
+            'echo "  Budget: ${BUDGET_TOKENS} tokens"\n'
+        )
+    loop_banner += (
         'echo "  Press Ctrl+C to stop at any time."\n'
         'echo "================================================"\n'
         'echo ""\n'
+    )
+
+    loop_body_start = (
         "\n"
         "while [ $ITERATION -lt $MAX_ITERATIONS ]; do\n"
         "    ITERATION=$((ITERATION + 1))\n"
@@ -458,10 +513,86 @@ def _generate_b3(
         "        bash .claude/hooks/init-sh.sh tidy 2>/dev/null"
         ' || echo "Tidy failed, continuing..."\n'
         "    fi\n"
+    )
+
+    loop_body_claude = (
         "\n"
-        "    # Feed the prompt to Claude.\n"
+        "    # Feed the prompt to Claude with JSON output for cost tracking.\n"
         "    # --dangerously-skip-permissions is required for unattended operation.\n"
-        "    cat PROMPT.md | claude --dangerously-skip-permissions || true\n"
+        "    RESULT_FILE=$(mktemp)\n"
+        '    BEFORE_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "none")\n'
+        "    cat PROMPT.md | claude --dangerously-skip-permissions"
+        ' --output-format json > "$RESULT_FILE" 2>/dev/null || true\n'
+        "\n"
+        "    # Parse cost from JSON result (requires python3)\n"
+        "    ITER_INPUT=0\n"
+        "    ITER_OUTPUT=0\n"
+        "    ITER_CACHE=0\n"
+        "    ITER_COST=0\n"
+        "    HAS_PYTHON3=false\n"
+        "    if command -v python3 >/dev/null 2>&1; then\n"
+        "        HAS_PYTHON3=true\n"
+        '        COST_DATA=$(python3 -c "\n'
+        "import json, sys\n"
+        "PRICING = {\n"
+        "    'opus': (15.0, 75.0, 18.75, 1.50),\n"
+        "    'sonnet': (3.0, 15.0, 3.75, 0.30),\n"
+        "    'haiku': (0.80, 4.0, 1.0, 0.08),\n"
+        "}\n"
+        "try:\n"
+        "    data = json.load(open(sys.argv[1]))\n"
+        "    # Try top-level usage first, then nested message.usage\n"
+        "    u = data.get('usage') or data.get('message', {}).get('usage', {})\n"
+        "    t_in = u.get('input_tokens', 0)\n"
+        "    t_out = u.get('output_tokens', 0)\n"
+        "    t_cc = u.get('cache_creation_input_tokens', 0)\n"
+        "    t_cr = u.get('cache_read_input_tokens', 0)\n"
+        "    model_id = data.get('model') or data.get('message', {}).get('model', '')\n"
+        "    family = 'opus' if 'opus' in model_id else 'haiku' if 'haiku' in model_id else 'sonnet'\n"
+        "    p_in, p_out, p_cc, p_cr = PRICING[family]\n"
+        "    cost = (t_in * p_in + t_out * p_out + t_cc * p_cc + t_cr * p_cr) / 1_000_000\n"
+        "    print(f'{t_in} {t_out} {t_cc + t_cr} {cost:.4f}')\n"
+        "except Exception:\n"
+        "    print('0 0 0 0')\n"
+        '" "$RESULT_FILE" 2>/dev/null) || COST_DATA="0 0 0 0"\n'
+        '        ITER_INPUT=$(echo "$COST_DATA" | awk \'{print $1}\')\n'
+        '        ITER_OUTPUT=$(echo "$COST_DATA" | awk \'{print $2}\')\n'
+        '        ITER_CACHE=$(echo "$COST_DATA" | awk \'{print $3}\')\n'
+        '        ITER_COST=$(echo "$COST_DATA" | awk \'{print $4}\')\n'
+        "    fi\n"
+        '    rm -f "$RESULT_FILE"\n'
+        "\n"
+        "    # Accumulate totals (all integer arithmetic except cost)\n"
+        "    CUMULATIVE_INPUT=$((CUMULATIVE_INPUT + ITER_INPUT))\n"
+        "    CUMULATIVE_OUTPUT=$((CUMULATIVE_OUTPUT + ITER_OUTPUT))\n"
+        "    CUMULATIVE_CACHE=$((CUMULATIVE_CACHE + ITER_CACHE))\n"
+        "    TOTAL_TOKENS=$((CUMULATIVE_INPUT + CUMULATIVE_OUTPUT + CUMULATIVE_CACHE))\n"
+        '    if [ "$HAS_PYTHON3" = "true" ]; then\n'
+        "        CUMULATIVE_COST_USD=$(python3 -c"
+        " \"import sys; print(f'{float(sys.argv[1]) + float(sys.argv[2]):.4f}')\""
+        ' "$CUMULATIVE_COST_USD" "$ITER_COST" 2>/dev/null) || true\n'
+        "    fi\n"
+    )
+
+    loop_body_budget = (
+        "\n"
+        "    # Budget enforcement\n"
+        '    if [ "$BUDGET_TOKENS" -gt 0 ] 2>/dev/null; then\n'
+        '        if [ "$TOTAL_TOKENS" -ge "$BUDGET_TOKENS" ]; then\n'
+        '            echo ""\n'
+        '            echo "BUDGET EXCEEDED: ${TOTAL_TOKENS} / ${BUDGET_TOKENS} tokens used."\n'
+        "            cleanup\n"
+        "            break\n"
+        "        fi\n"
+        '        if [ "$WARN_THRESHOLD" -gt 0 ] && [ "$TOTAL_TOKENS" -ge "$WARN_THRESHOLD" ]'
+        "; then\n"
+        '            echo "WARNING: ${TOTAL_TOKENS} / ${BUDGET_TOKENS}'
+        ' tokens used (${WARN_PERCENT}% threshold)."\n'
+        "        fi\n"
+        "    fi\n"
+    )
+
+    loop_body_stuck = (
         "\n"
         "    # Detect stuck state (same first open task 2+ consecutive iterations)\n"
         "    if [ -f tasks/todo.md ]; then\n"
@@ -480,14 +611,32 @@ def _generate_b3(
         "        fi\n"
         '        PREV_TASK="$CURRENT_TASK"\n'
         "    fi\n"
+    )
+
+    loop_body_checkpoint = (
         "\n"
-        "    # Check for uncommitted changes if checkpoint_commits enabled\n"
+        "    # Checkpoint enforcement: auto-commit if Claude didn't\n"
         '    if [ "$CHECKPOINT" = "true" ]; then\n'
-        "        if ! git diff --quiet 2>/dev/null ||"
+        '        AFTER_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "none")\n'
+        '        if [ "$BEFORE_HEAD" = "$AFTER_HEAD" ]; then\n'
+        "            if ! git diff --quiet 2>/dev/null ||"
         " ! git diff --cached --quiet 2>/dev/null; then\n"
-        '            echo "WARNING: Uncommitted changes after iteration ${ITERATION}." >&2\n'
+        '                git add -A && git commit -m'
+        ' "checkpoint: auto-commit after iteration ${ITERATION}" 2>/dev/null || true\n'
+        "            fi\n"
         "        fi\n"
         "    fi\n"
+    )
+
+    loop_body_progress = (
+        "\n"
+        "    # Progress ledger with cost\n"
+        '    echo "iter=${ITERATION} | tokens_in=${ITER_INPUT} tokens_out=${ITER_OUTPUT}'
+        " | cost=\\$${ITER_COST} | cumulative=\\$${CUMULATIVE_COST_USD}\""
+        " >> claude-progress.txt\n"
+    )
+
+    loop_body_tasks_done = (
         "\n"
         "    # Check if all tasks are done.\n"
         "    if [ -f tasks/todo.md ]; then\n"
@@ -497,16 +646,36 @@ def _generate_b3(
         '            echo "  ALL TASKS COMPLETE"\n'
         '            echo "  Finished after ${ITERATION} iterations."\n'
         '            echo "================================================"\n'
+        "            cleanup\n"
         "            exit 0\n"
         "        fi\n"
         "    fi\n"
         "done\n"
+    )
+
+    loop_footer = (
         "\n"
         'echo ""\n'
         'echo "================================================"\n'
         'echo "  MAX ITERATIONS REACHED (${MAX_ITERATIONS})"\n'
         'echo "  Check tasks/todo.md for remaining work."\n'
         'echo "================================================"\n'
+        "cleanup\n"
+    )
+
+    loop_content = (
+        loop_header
+        + loop_config
+        + loop_trap
+        + loop_banner
+        + loop_body_start
+        + loop_body_claude
+        + loop_body_budget
+        + loop_body_stuck
+        + loop_body_checkpoint
+        + loop_body_progress
+        + loop_body_tasks_done
+        + loop_footer
     )
     _write(
         output_dir / "loop.sh",

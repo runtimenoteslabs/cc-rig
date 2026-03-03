@@ -5,6 +5,11 @@ All notable changes to cc-rig will be documented in this file.
 ## [1.3.1] - 2026-03-03
 
 ### Added
+- **V2 Runtime: Budget Enforcement + Cost Tracking** (Path A + Path B)
+  - `budget-reminder.sh` (Stop hook) now parses JSONL session logs via inline Python heredoc — shows actual session tokens + estimated cost (Sonnet 4.6 pricing). Graceful degradation: no python3 or no JSONL → shows "unavailable", never blocks.
+  - `loop.sh` (B3 autonomy) enhanced with: `--output-format json` for cost capture, budget tracking accumulators (`CUMULATIVE_INPUT`/`OUTPUT`/`COST_USD`), budget enforcement (breaks loop on exceed, warns at threshold), checkpoint auto-commit (when Claude doesn't commit), progress ledger with cost per iteration, `cleanup()` trap with cost summary on exit.
+  - loop.sh refactored from single string into 12 named parts for maintainability.
+  - 14 new tests: 4 for budget-reminder (session cost parsing, graceful degradation, estimated cost display, session tokens display), 8 for loop.sh (output-format json, budget enforcement, budget tracking, auto-checkpoint, cost summary, progress logging, cleanup trap, bash syntax), 2 E2E (S02/S07 `--output-format json` assertions).
 - `.claude/settings.local.json` generation — personal permission overrides file (`preserve_on_clean=True`)
 - 66 new tests across 4 test files:
   - `test_memory_content.py` (18 tests) — memory file content, anti-ballooning rules, MEMORY-README

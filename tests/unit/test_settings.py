@@ -674,3 +674,25 @@ class TestBudgetReminderHook:
                     if h.get("type") == "command" and "command" in h:
                         all_commands.append(h["command"])
         assert not any("budget-reminder" in c for c in all_commands)
+
+    def test_script_has_session_cost_parsing(self, tmp_path):
+        self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
+        content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
+        assert "python3" in content
+        assert "jsonl" in content.lower()
+
+    def test_script_has_graceful_degradation(self, tmp_path):
+        self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
+        content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
+        assert "command -v python3" in content
+        assert "unavailable" in content
+
+    def test_script_has_estimated_cost_display(self, tmp_path):
+        self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
+        content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
+        assert "Est. cost" in content
+
+    def test_script_has_session_tokens_display(self, tmp_path):
+        self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
+        content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
+        assert "Session tokens" in content

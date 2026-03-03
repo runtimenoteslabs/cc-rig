@@ -323,6 +323,59 @@ class TestB3Autonomy:
         # 2 B1 + init-sh.sh + 4 B3 (PROMPT.md, progress.txt, loop.sh, config.json)
         assert len(files) == 7
 
+    def test_loop_sh_uses_output_format_json(self, tmp_path):
+        config = _make_config(level="autonomy")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "loop.sh").read_text()
+        assert "--output-format json" in content
+
+    def test_loop_sh_has_budget_enforcement(self, tmp_path):
+        config = _make_config(level="autonomy")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "loop.sh").read_text()
+        assert "BUDGET EXCEEDED" in content
+
+    def test_loop_sh_has_budget_tracking(self, tmp_path):
+        config = _make_config(level="autonomy")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "loop.sh").read_text()
+        assert "CUMULATIVE_COST_USD" in content
+
+    def test_loop_sh_has_auto_checkpoint(self, tmp_path):
+        config = _make_config(level="autonomy")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "loop.sh").read_text()
+        assert "auto-commit" in content
+        assert "git add -A" in content
+
+    def test_loop_sh_has_cost_summary(self, tmp_path):
+        config = _make_config(level="autonomy")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "loop.sh").read_text()
+        assert "Cost Summary" in content
+
+    def test_loop_sh_has_progress_logging(self, tmp_path):
+        config = _make_config(level="autonomy")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "loop.sh").read_text()
+        assert "tokens_in=" in content
+
+    def test_loop_sh_has_cleanup_trap(self, tmp_path):
+        config = _make_config(level="autonomy")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "loop.sh").read_text()
+        assert "trap cleanup" in content
+
+    def test_loop_sh_passes_bash_syntax(self, tmp_path):
+        import subprocess
+
+        config = _make_config(level="autonomy")
+        config.harness.budget_per_run_tokens = 500000
+        generate_harness(config, tmp_path)
+        script = tmp_path / "loop.sh"
+        result = subprocess.run(["bash", "-n", str(script)], capture_output=True, text=True)
+        assert result.returncode == 0, f"Syntax error:\n{result.stderr}"
+
 
 class TestHarnessConfig:
     def test_default_harness_is_none(self):

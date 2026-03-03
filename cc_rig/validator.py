@@ -303,6 +303,11 @@ def _check_no_placeholders(
     """V14: No placeholder content in markdown files."""
     placeholder_patterns = ["<!-- TODO", "FILL IN", "YOUR_", "PLACEHOLDER"]
     for rel in _iter_manifest_files(output_dir, manifest_files, suffix=".md"):
+        # Skip community skill files — they naturally contain words like
+        # "your_", "placeholder" in docs/examples. Only check project-patterns
+        # which is the cc-rig-generated template stub.
+        if ".claude/skills/" in rel and "project-patterns" not in rel:
+            continue
         path = output_dir / rel
         content = path.read_text().upper()
         for pattern in placeholder_patterns:

@@ -384,6 +384,10 @@ class TestS02FastapiVerifyHeavyB3:
         assert data["harness_level"] == "autonomy"
         assert data["max_iterations"] == 20
 
+    def test_loop_sh_has_json_output(self):
+        content = (self.root / "loop.sh").read_text()
+        assert "--output-format json" in content
+
     def test_harness_hooks(self):
         hooks = _list_dir(self.root, ".claude/hooks")
         assert "budget-reminder.sh" in hooks
@@ -717,6 +721,10 @@ class TestS07RustCliStandardB3:
         assert path.exists()
         data = json.loads(path.read_text())
         assert data["harness_level"] == "autonomy"
+
+    def test_loop_sh_has_json_output(self):
+        content = (self.root / "loop.sh").read_text()
+        assert "--output-format json" in content
 
     def test_claude_md_references_rust(self):
         content = _read_claude_md(self.root)
