@@ -112,6 +112,7 @@ your-project/
 ├── .mcp.json                       # MCP server integrations
 ├── .claude/
 │   ├── settings.json               # Permissions, hooks, safety guards
+│   ├── cc-rig-init.log             # Generation log (what was created + validation)
 │   ├── agents/                     # Specialized agents for different tasks
 │   ├── commands/                   # Slash commands you trigger with /
 │   ├── hooks/                      # Auto-format, lint, safety blocks

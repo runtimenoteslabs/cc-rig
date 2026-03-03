@@ -2,6 +2,13 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [1.3.2] - 2026-03-04
+
+### Added
+- **Generation log**: `cc-rig init` now saves output to `.claude/cc-rig-init.log` — file list, validation results, next steps. Symlink at project root for discoverability. ANSI codes stripped. Log saved on both success and validation failure. Not tracked in manifest (preserved by `cc-rig clean`).
+
+---
+
 ## [1.3.1] - 2026-03-03
 
 ### Added
