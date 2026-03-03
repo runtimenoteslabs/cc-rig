@@ -214,7 +214,7 @@ class TestToolRestrictions:
         invalid = tools - VALID_TOOLS
         assert not invalid, f"{agent_name}: invalid tools {invalid}"
 
-    @pytest.mark.parametrize("agent_name", list(READ_ONLY_AGENTS))
+    @pytest.mark.parametrize("agent_name", sorted(READ_ONLY_AGENTS))
     def test_read_only_agents_have_no_write_tools(self, agent_name):
         defn = _AGENT_DEFS[agent_name]
         tools = {t.strip() for t in defn.tools.split(",")}

@@ -1,4 +1,4 @@
-"""Integration tests: full generation for all 35 template × workflow combos."""
+"""Integration tests: full generation for all 80 template × workflow combos."""
 
 import json
 
@@ -17,14 +17,53 @@ def _generate_full(template, workflow, output_dir):
     return config, manifest
 
 
-class TestAllCombosGenerate:
-    @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
-    @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
-    def test_generation_succeeds(self, template, workflow, tmp_path):
-        output = tmp_path / "output"
-        config, manifest = _generate_full(template, workflow, output)
+# ── Shared fixture: generate once per (template, workflow) combo ──
+
+
+@pytest.fixture(
+    params=[
+        (t, w) for t in BUILTIN_TEMPLATES for w in BUILTIN_WORKFLOWS
+    ],
+    ids=lambda tw: f"{tw[0]}-{tw[1]}",
+)
+def generated_project(request, tmp_path):
+    """Generate a project once, reuse for all cross-product assertions."""
+    template, workflow = request.param
+    output = tmp_path / "output"
+    config, manifest = _generate_full(template, workflow, output)
+    return config, manifest, output, template, workflow
+
+
+class TestCrossProduct:
+    """All 4 cross-product checks share one generate_all() call per combo."""
+
+    def test_generation_succeeds(self, generated_project):
+        config, manifest, output, template, workflow = generated_project
         assert (output / "CLAUDE.md").exists()
         assert len(manifest["files"]) > 0
+
+    def test_no_empty_files(self, generated_project):
+        config, manifest, output, template, workflow = generated_project
+        for path in output.rglob("*"):
+            if path.is_file():
+                assert path.stat().st_size > 0, f"Empty file: {path.relative_to(output)}"
+
+    def test_all_json_valid(self, generated_project):
+        config, manifest, output, template, workflow = generated_project
+        for path in output.rglob("*.json"):
+            try:
+                json.loads(path.read_text())
+            except json.JSONDecodeError:
+                pytest.fail(f"Invalid JSON: {path.relative_to(output)}")
+
+    def test_validator_passes(self, generated_project):
+        config, manifest, output, template, workflow = generated_project
+        result = validate_output(config, output, manifest)
+        errors = [f"{i.check}: {i.message} ({i.file})" for i in result.errors]
+        assert result.passed, "Validator errors:\n" + "\n".join(errors)
+
+
+# ── Non-parametrized tests (single-combo, run once each) ──
 
 
 class TestGeneratedFilesExist:
@@ -78,41 +117,6 @@ class TestGeneratedFilesExist:
         assert data["permissions"]["allow"] == []
         assert data["permissions"]["deny"] == []
         assert data["env"] == {}
-
-
-class TestNoEmptyFiles:
-    @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
-    @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
-    def test_no_empty_files(self, template, workflow, tmp_path):
-        output = tmp_path / "output"
-        _generate_full(template, workflow, output)
-        for path in output.rglob("*"):
-            if path.is_file():
-                assert path.stat().st_size > 0, f"Empty file: {path.relative_to(output)}"
-
-
-class TestJsonValidity:
-    @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
-    @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
-    def test_all_json_valid(self, template, workflow, tmp_path):
-        output = tmp_path / "output"
-        _generate_full(template, workflow, output)
-        for path in output.rglob("*.json"):
-            try:
-                json.loads(path.read_text())
-            except json.JSONDecodeError:
-                pytest.fail(f"Invalid JSON: {path.relative_to(output)}")
-
-
-class TestValidatorPasses:
-    @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
-    @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
-    def test_validator_passes(self, template, workflow, tmp_path):
-        output = tmp_path / "output"
-        config, manifest = _generate_full(template, workflow, output)
-        result = validate_output(config, output, manifest)
-        errors = [f"{i.check}: {i.message} ({i.file})" for i in result.errors]
-        assert result.passed, "Validator errors:\n" + "\n".join(errors)
 
 
 class TestManifestCompleteness:
