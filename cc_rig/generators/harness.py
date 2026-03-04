@@ -50,7 +50,8 @@ def generate_harness(
         files.extend(_generate_b2(config, output_dir, tracker))
 
     # Autonomy loop: generate PROMPT.md, loop.sh, progress, config
-    if h.autonomy_loop:
+    # Skip when ralph_loop_plugin is True — plugin handles autonomy
+    if h.autonomy_loop and not h.ralph_loop_plugin:
         files.extend(_generate_b3(config, output_dir, tracker))
 
     return files

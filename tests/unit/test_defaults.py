@@ -185,6 +185,7 @@ class TestHookCounts:
         config = compute_defaults("fastapi", "speedrun", project_name="test")
         assert len(config.hooks) >= 4
         assert "typecheck" not in config.hooks
+
     def test_standard_hooks(self):
         config = compute_defaults("fastapi", "standard", project_name="test")
         assert len(config.hooks) > len(
@@ -332,9 +333,14 @@ class TestTemplateStackData:
         assert len(config.recommended_skills) > 0
 
     @pytest.mark.parametrize("template", TEMPLATES)
-    def test_default_mcps_include_github(self, template):
+    def test_github_plugin_replaces_github_mcp(self, template):
+        """GitHub plugin replaces GitHub MCP — github should not be in default_mcps."""
         config = compute_defaults(template, "standard", project_name="test")
-        assert "github" in config.default_mcps
+        # github MCP removed because github plugin has replaces_mcp="github"
+        assert "github" not in config.default_mcps
+        # github plugin should be present instead
+        plugin_names = [p.name for p in config.recommended_plugins]
+        assert "github" in plugin_names
 
 
 # ---------------------------------------------------------------------------
@@ -899,3 +905,97 @@ class TestModelOverridesByTier:
             "fastapi", "verify-heavy", project_name="test", claude_plan="enterprise"
         )
         assert config.model_overrides == {}
+
+
+# ---------------------------------------------------------------------------
+# Plugin resolution in compute_defaults
+# ---------------------------------------------------------------------------
+
+
+class TestPluginResolution:
+    """Verify compute_defaults() resolves plugins correctly."""
+
+    @pytest.mark.parametrize("template", TEMPLATES)
+    def test_all_templates_have_plugins(self, template):
+        """Every template gets at least one plugin (github)."""
+        config = compute_defaults(template, "standard", project_name="test")
+        assert len(config.recommended_plugins) > 0
+
+    @pytest.mark.parametrize("template", TEMPLATES)
+    def test_all_templates_have_github_plugin(self, template):
+        config = compute_defaults(template, "standard", project_name="test")
+        plugin_names = [p.name for p in config.recommended_plugins]
+        assert "github" in plugin_names
+
+    def test_python_gets_pyright_lsp(self):
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        plugin_names = [p.name for p in config.recommended_plugins]
+        assert "pyright-lsp" in plugin_names
+
+    def test_typescript_gets_typescript_lsp(self):
+        config = compute_defaults("nextjs", "standard", project_name="test")
+        plugin_names = [p.name for p in config.recommended_plugins]
+        assert "typescript-lsp" in plugin_names
+
+    def test_go_gets_gopls_lsp(self):
+        config = compute_defaults("gin", "standard", project_name="test")
+        plugin_names = [p.name for p in config.recommended_plugins]
+        assert "gopls-lsp" in plugin_names
+
+    def test_ruby_no_lsp(self):
+        config = compute_defaults("rails", "standard", project_name="test")
+        lsp_plugins = [p for p in config.recommended_plugins if p.category == "lsp"]
+        assert len(lsp_plugins) == 0
+
+    def test_generic_no_lsp(self):
+        config = compute_defaults("generic", "standard", project_name="test")
+        lsp_plugins = [p for p in config.recommended_plugins if p.category == "lsp"]
+        assert len(lsp_plugins) == 0
+
+    def test_nextjs_gets_vercel_plugin(self):
+        config = compute_defaults("nextjs", "standard", project_name="test")
+        plugin_names = [p.name for p in config.recommended_plugins]
+        assert "vercel" in plugin_names
+
+    def test_fastapi_no_vercel_plugin(self):
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        plugin_names = [p.name for p in config.recommended_plugins]
+        assert "vercel" not in plugin_names
+
+    def test_github_mcp_removed(self):
+        """GitHub MCP should be removed when github plugin is present."""
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        assert "github" not in config.default_mcps
+
+    def test_other_mcps_preserved(self):
+        """Non-github MCPs like postgres should be preserved."""
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        assert "postgres" in config.default_mcps
+
+    def test_workflow_plugins_scale(self):
+        """More complex workflows should have more plugins."""
+        speedrun = compute_defaults("fastapi", "speedrun", project_name="test")
+        standard = compute_defaults("fastapi", "standard", project_name="test")
+        verify = compute_defaults("fastapi", "verify-heavy", project_name="test")
+        assert len(speedrun.recommended_plugins) <= len(standard.recommended_plugins)
+        assert len(standard.recommended_plugins) <= len(verify.recommended_plugins)
+
+    def test_ralph_loop_not_in_defaults(self):
+        """ralph-loop plugin should not appear in compute_defaults output."""
+        for wf in WORKFLOWS:
+            config = compute_defaults("fastapi", wf, project_name="test")
+            plugin_names = [p.name for p in config.recommended_plugins]
+            assert "ralph-loop" not in plugin_names
+
+    def test_plugin_count_fastapi_standard(self):
+        """FastAPI + standard should produce an exact known plugin count."""
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        names = [p.name for p in config.recommended_plugins]
+        # language: python → pyright-lsp
+        # template: fastapi → github
+        # workflow: standard → commit-commands, code-review
+        assert len(names) == 4, f"Expected 4 plugins, got {len(names)}: {names}"
+        assert "pyright-lsp" in names
+        assert "github" in names
+        assert "commit-commands" in names
+        assert "code-review" in names

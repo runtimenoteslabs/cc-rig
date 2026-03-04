@@ -6,7 +6,7 @@
 
 ## Summary
 
-Systematic end-to-end verification that `cc-rig init` produces correct output across all configuration dimensions. 21 representative scenarios cover every template, workflow, harness level, feature flag, and flow type at least once. A full 15×5 cross-product test ensures every template×workflow combination generates without error.
+Systematic end-to-end verification that `cc-rig init` produces correct output across all configuration dimensions. 23 representative scenarios cover every template, workflow, harness level, feature flag, plugin integration, and flow type at least once. A full 16×5 cross-product test ensures every template×workflow combination generates without error.
 
 ## Implementation
 
@@ -19,7 +19,7 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 
 | Dimension | Options |
 |-----------|---------|
-| **Template** | fastapi, django, flask, gin, echo, go-std, nextjs, rust-cli, rust-web, rails, laravel, express, phoenix, spring, dotnet |
+| **Template** | fastapi, django, flask, gin, echo, go-std, nextjs, rust-cli, rust-web, rails, laravel, express, phoenix, spring, dotnet, generic |
 | **Workflow** | speedrun, standard, spec-driven, gtd-lite, verify-heavy |
 | **Harness** | none (B0), lite (B1), standard (B2), autonomy (B3) |
 | **Features** | memory, spec_workflow, gtd, worktrees |
@@ -109,15 +109,26 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 - **Tests**: 10
 - **Verifies**: go/stdlib in CLAUDE.md, golangci-lint in hook scripts, gofmt format hook, no framework-specific content, standard agent/command/hook counts
 
+### S22: Generic + Standard + B0
+- **Purpose**: Language-agnostic template baseline
+- **Tests**: 10
+- **Verifies**: generic/language-agnostic in CLAUDE.md, no LSP plugin (generic has no language), github integration plugin in enabledPlugins, no framework-specific hook content, standard agent/command/hook counts, empty tool commands (""), source_dir=".", test_dir="tests", CLAUDE.local.md present
+
+### S23: FastAPI + Standard + Ralph-Loop Plugin
+- **Purpose**: Ralph-loop plugin with B1/B2 harness features
+- **Tests**: 12
+- **Verifies**: ralph-loop in enabledPlugins, autonomy_loop=false (mutual exclusion), task_tracking=true, budget_awareness=true, no loop.sh (ralph-loop replaces it), budget-reminder hook present, harness-config.json with ralph_loop=true, pyright-lsp + github + commit-commands + code-review in enabledPlugins, schema validates ralph_loop + autonomy_loop mutual exclusion
+
 ## Cross-Cutting Tests
 
 | Test | Count | Coverage |
 |------|-------|----------|
-| Every template with standard | 15 | All 15 templates generate successfully |
+| Every template with standard | 16 | All 16 templates generate successfully |
 | Every workflow with fastapi | 5 | All 5 workflows generate successfully |
-| Full cross-product (15×5) | 75 | All 75 combinations produce consistent manifests |
+| Full cross-product (16×5) | 80 | All 80 combinations produce consistent manifests |
 | Every harness level | 4 | none/lite/standard/autonomy produce correct files |
 | Feature isolation | 5 | memory, spec_workflow, gtd, worktrees toggle correctly |
+| Plugin validation | 80 | All cross-product combos have correct enabledPlugins (LSP + integration + workflow) |
 
 ## Coverage Matrix
 
@@ -138,8 +149,9 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 | **express** | S19 |
 | **phoenix** | S20 |
 | **go-std** | S21 |
+| **generic** | S22 |
 | **speedrun** | S04, S10 |
-| **standard** | S01, S05, S07, S08, S11 |
+| **standard** | S01, S05, S07, S08, S11, S22, S23 |
 | **spec-driven** | S06 |
 | **gtd-lite** | S03 |
 | **verify-heavy** | S02, S09, S11, S12 |
@@ -155,6 +167,8 @@ Systematic end-to-end verification that `cc-rig init` produces correct output ac
 | **spec_workflow=true** | S02, S06, S08, S09 |
 | **gtd=true** | S03, S09 |
 | **worktrees=true** | S02, S03, S06 |
+| **enabledPlugins** | S22, S23, cross-product |
+| **ralph-loop** | S23 |
 
 ## Verification Checks (Per Scenario)
 
@@ -172,6 +186,7 @@ Each scenario verifies a subset of:
 10. **V10**: Settings permissions match workflow mode
 11. **V11**: Manifest lists only files that exist on disk
 12. **V12**: Template-specific hook content (language-correct commands)
+13. **V13**: `enabledPlugins` in settings.json matches resolved plugins (LSP + integration + workflow)
 
 ## Technical Notes
 
@@ -181,3 +196,4 @@ Each scenario verifies a subset of:
 - Rerun (S11) calls `generate_all` twice and verifies orphan cleanup via `cleanup_files`
 - Clean (S12) uses `run_clean(force=True)` to skip confirmation
 - All tests use pytest's `tmp_path` fixture for isolation
+- Plugin validation runs in cross-product tests: every 16×5 combination verifies `enabledPlugins` in generated settings.json contains the correct LSP (by language), integration (by template), and workflow (by workflow) plugins

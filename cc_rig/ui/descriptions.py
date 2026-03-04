@@ -21,6 +21,13 @@ def get_command_descriptions() -> dict[str, str]:
     return {name: tup[0] for name, tup in _COMMAND_DEFS.items()}
 
 
+def get_plugin_descriptions() -> dict[str, str]:
+    """Extract {name: description} from plugin catalog."""
+    from cc_rig.plugins.registry import PLUGIN_CATALOG
+
+    return {name: spec.description for name, spec in PLUGIN_CATALOG.items()}
+
+
 def get_hook_descriptions() -> dict[str, str]:
     """User-facing descriptions for all hooks.
 
@@ -57,6 +64,7 @@ WORKFLOW_DETAILS: dict[str, str] = {
         "  Agents:   explorer, implementer\n"
         "  Commands: fix-issue, test, plan\n"
         "  Hooks:    format, block-rm-rf, block-env\n"
+        "  Plugins:  commit-commands + LSP for your language\n"
         "  Features: none enabled by default"
     ),
     "standard": (
@@ -66,6 +74,7 @@ WORKFLOW_DETAILS: dict[str, str] = {
         "  Agents:   code-reviewer, test-writer, explorer, refactorer\n"
         "  Commands: fix-issue, review, test, plan, learn, assumptions, refactor\n"
         "  Hooks:    format, lint, block-rm-rf, block-env, block-main, stop-validator\n"
+        "  Plugins:  commit-commands, code-review + LSP for your language\n"
         "  Features: none enabled by default"
     ),
     "spec-driven": (
@@ -76,6 +85,7 @@ WORKFLOW_DETAILS: dict[str, str] = {
         "  Commands: fix-issue, review, test, plan, spec-create, spec-execute, assumptions\n"
         "  Hooks:    format, lint, typecheck, block-rm-rf, block-env, block-main,\n"
         "            stop-validator, push-review, commit-message\n"
+        "  Plugins:  commit-commands, code-review, feature-dev, pr-review-toolkit + LSP\n"
         "  Features: spec-workflow enabled"
     ),
     "gtd-lite": (
@@ -85,6 +95,7 @@ WORKFLOW_DETAILS: dict[str, str] = {
         "  Agents:   code-reviewer, test-writer, explorer\n"
         "  Commands: fix-issue, review, test, plan, gtd-capture, gtd-process, daily-plan\n"
         "  Hooks:    format, lint, block-rm-rf, block-env, stop-validator, memory-precompact\n"
+        "  Plugins:  commit-commands, code-review + LSP for your language\n"
         "  Features: memory, gtd enabled"
     ),
     "verify-heavy": (
@@ -96,6 +107,8 @@ WORKFLOW_DETAILS: dict[str, str] = {
         "  Commands: fix-issue, review, test, plan, security, document, assumptions\n"
         "  Hooks:    format, lint, typecheck, block-rm-rf, block-env, block-main,\n"
         "            stop-validator, push-review, subagent-review, commit-message, doc-review\n"
+        "  Plugins:  commit-commands, code-review, pr-review-toolkit,\n"
+        "            security-guidance + LSP for your language\n"
         "  Features: none enabled by default"
     ),
 }
@@ -181,6 +194,23 @@ HARNESS_DETAILS: dict[str, str] = {
         "  Autonomy loop       - PROMPT.md + loop.sh + progress tracking\n"
         "\n"
         "Best for: Users who want specific features without the full tier."
+    ),
+    "ralph-loop": (
+        "Ralph Loop - Official Anthropic autonomous loop plugin\n"
+        "\n"
+        "Uses the ralph-loop plugin from the Claude Code marketplace\n"
+        "instead of cc-rig's loop.sh script. The plugin runs autonomously\n"
+        "via Anthropic's official plugin system.\n"
+        "\n"
+        "You can still pick B1/B2 harness features alongside the plugin:\n"
+        "  Task tracking       - todo.md + session-tasks hook\n"
+        "  Budget awareness    - budget-reminder hook + budget docs\n"
+        "  Verification gates  - commit-gate hook + init-sh.sh\n"
+        "\n"
+        "The plugin replaces: PROMPT.md, loop.sh, claude-progress.txt,\n"
+        "  harness-config.json (cc-rig's autonomy files are not generated).\n"
+        "\n"
+        "Best for: Users who prefer the official Anthropic autonomy system."
     ),
 }
 

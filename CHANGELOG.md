@@ -2,6 +2,28 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [1.4.0] - 2026-03-05
+
+### Added
+- **Official Claude Code Plugin Integration** — cc-rig now curates official Anthropic marketplace plugins alongside skills, hooks, agents, commands, and MCPs.
+  - New `cc_rig/plugins/` module with 24-plugin catalog across 5 categories: LSP (7), integration (10), workflow (5), autonomy (1), utility (1).
+  - `PluginRecommendation` dataclass on `ProjectConfig` with full serialization support.
+  - Smart defaults: `compute_defaults()` resolves plugins by language (LSP), template (integrations), and workflow (workflow plugins). GitHub MCP replaced by github plugin (self-contained, auto-start).
+  - `enabledPlugins` section in generated `settings.json` — format: `"name@marketplace": true`.
+  - **Ralph-loop plugin** — official Anthropic autonomous loop as alternative to cc-rig's loop.sh. Harness picker shows 6th option. Custom-style B1/B2 feature confirms (task_tracking, budget_awareness, verification_gates). Mutual exclusion with `autonomy_loop`.
+  - Expert mode plugins category — multi-select from full catalog (TUI tab + CLI).
+  - TUI: Plugins tab in ExpertScreen, ralph-loop RadioButton in HarnessScreen with detail panel.
+  - Doctor check: LSP binary PATH detection (warning if binary not found).
+  - Schema validation: plugin category values, ralph-loop + autonomy_loop mutual exclusion.
+  - 184 new tests across 10 test files: plugin registry (33), config (16), defaults (15), settings (8), schema (5), harness (8), E2E (26), TUI wizard (9), wizard flow (1).
+  - Workflow detail panel: each workflow shows its plugin set (LSP + workflow plugins).
+  - Configuration preview and "Ready to generate" screens show plugin count.
+  - Templates grouped by language in picker (Python, TypeScript, Go, Rust, Ruby, Java, C#, PHP, Elixir).
+  - Ralph-loop TUI: B1/B2 feature checkboxes (task tracking, budget, gates) shown when selected.
+  - Generated CLAUDE.md: 6 new workflow principles (plan first, clarify ambiguity, suggest tests, break up large changes, test-first debugging, learn from corrections).
+
+---
+
 ## [1.3.2] - 2026-03-04
 
 ### Added

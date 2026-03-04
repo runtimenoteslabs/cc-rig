@@ -696,3 +696,97 @@ class TestBudgetReminderHook:
         self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
         content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
         assert "Session tokens" in content
+
+
+# ---------------------------------------------------------------------------
+# enabledPlugins in settings.json
+# ---------------------------------------------------------------------------
+
+
+class TestEnabledPlugins:
+    """Verify enabledPlugins section in settings.json."""
+
+    def _make_config(self):
+        return compute_defaults("fastapi", "standard", project_name="test-project")
+
+    def test_plugins_present_when_config_has_plugins(self, tmp_path):
+        from cc_rig.config.project import PluginRecommendation
+
+        config = self._make_config()
+        config.recommended_plugins = [
+            PluginRecommendation(name="pyright-lsp", category="lsp"),
+            PluginRecommendation(name="github", category="integration"),
+        ]
+        generate_settings(config, tmp_path)
+        settings = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        assert "enabledPlugins" in settings
+        assert settings["enabledPlugins"]["pyright-lsp@claude-plugins-official"] is True
+        assert settings["enabledPlugins"]["github@claude-plugins-official"] is True
+
+    def test_no_plugins_key_when_empty(self, tmp_path):
+        config = self._make_config()
+        config.recommended_plugins = []
+        generate_settings(config, tmp_path)
+        settings = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        assert "enabledPlugins" not in settings
+
+    def test_plugin_key_format(self, tmp_path):
+        from cc_rig.config.project import PluginRecommendation
+
+        config = self._make_config()
+        config.recommended_plugins = [
+            PluginRecommendation(
+                name="commit-commands",
+                marketplace="claude-plugins-official",
+                category="workflow",
+            ),
+        ]
+        generate_settings(config, tmp_path)
+        settings = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        plugins = settings["enabledPlugins"]
+        assert len(plugins) == 1
+        key = list(plugins.keys())[0]
+        assert key == "commit-commands@claude-plugins-official"
+        assert plugins[key] is True
+
+    def test_multiple_plugins(self, tmp_path):
+        from cc_rig.config.project import PluginRecommendation
+
+        config = self._make_config()
+        config.recommended_plugins = [
+            PluginRecommendation(name="pyright-lsp", category="lsp"),
+            PluginRecommendation(name="github", category="integration"),
+            PluginRecommendation(name="commit-commands", category="workflow"),
+            PluginRecommendation(name="code-review", category="workflow"),
+        ]
+        generate_settings(config, tmp_path)
+        settings = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        assert len(settings["enabledPlugins"]) == 4
+
+    def test_ralph_loop_plugin_in_settings(self, tmp_path):
+        from cc_rig.config.project import PluginRecommendation
+
+        config = self._make_config()
+        config.recommended_plugins = [
+            PluginRecommendation(name="ralph-loop", category="autonomy"),
+        ]
+        generate_settings(config, tmp_path)
+        settings = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        assert "ralph-loop@claude-plugins-official" in settings["enabledPlugins"]
+
+    def test_generated_plugins_from_compute_defaults(self, tmp_path):
+        """Verify compute_defaults output produces enabledPlugins in settings."""
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        generate_settings(config, tmp_path)
+        settings = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        assert "enabledPlugins" in settings
+        assert "pyright-lsp@claude-plugins-official" in settings["enabledPlugins"]
+        assert "github@claude-plugins-official" in settings["enabledPlugins"]
+
+    def test_enabled_plugins_values_are_boolean(self, tmp_path):
+        """enabledPlugins values must be boolean True, not strings or ints."""
+        config = self._make_config()
+        generate_settings(config, tmp_path)
+        settings = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        for key, val in settings.get("enabledPlugins", {}).items():
+            assert val is True, f"{key} value is {val!r}, expected True (boolean)"

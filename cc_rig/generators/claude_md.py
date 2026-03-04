@@ -20,8 +20,8 @@ def generate_claude_md(
     """Generate CLAUDE.md with sections ordered for prompt-cache efficiency.
 
     Static sections first (rarely change), dynamic sections last.
-    Target line counts: speedrun ~60, standard ~86, spec-driven ~102,
-    gtd-lite ~105, verify-heavy ~111.
+    Target line counts: speedrun ~56, standard ~93, spec-driven ~111,
+    gtd-lite ~114, verify-heavy ~114.
     """
     if skip:
         return []
@@ -148,18 +148,29 @@ def _section_workflow_principles() -> str:
     return (
         "## Workflow Principles\n"
         "\n"
-        "- **Plan first.** Use `/plan` or `/assumptions` before "
-        "implementing non-trivial changes. Explore the codebase, "
-        "design the approach, then get approval.\n"
+        "- **Plan first.** Before writing any code, describe your "
+        "approach and wait for approval. Use `/plan` or `/assumptions` "
+        "before implementing non-trivial changes.\n"
+        "- **Clarify before coding.** If the requirements are ambiguous, "
+        "ask clarifying questions before writing any code.\n"
         "- **Research before coding.** Spawn an explorer subagent "
         "(Task tool with Explore type) to map unfamiliar code "
         "before modifying it. Keep the main context clean.\n"
+        "- **Suggest tests.** After writing code, list the edge cases "
+        "and suggest test cases to cover them.\n"
+        "- **Break up large changes.** If a task requires changes to "
+        "more than 3 files, stop and break it into smaller tasks first.\n"
+        "- **Test-first debugging.** When there's a bug, start by writing "
+        "a test that reproduces it, then fix it until the test passes.\n"
         "- **Verify before done.** Run tests, lint, and typecheck "
         "before committing. Never assume code works without "
         "running it.\n"
         "- **Fix failures immediately.** When tests or lint fail, "
         "diagnose and fix the root cause now. Don't log it for "
         "later.\n"
+        "- **Learn from corrections.** Every time you are corrected, "
+        "reflect on what went wrong and plan to avoid the same "
+        "mistake again.\n"
         "- **Demand elegance.** After getting code working, "
         "consider a refactor pass. Leave code measurably better "
         "than you found it.\n"

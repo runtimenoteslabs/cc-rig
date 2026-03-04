@@ -197,6 +197,14 @@ def generate_settings(
     if hooks_by_event:
         settings["hooks"] = hooks_by_event
 
+    # Plugins
+    if config.recommended_plugins:
+        enabled_plugins: dict[str, bool] = {}
+        for plugin in config.recommended_plugins:
+            key = f"{plugin.name}@{plugin.marketplace}"
+            enabled_plugins[key] = True
+        settings["enabledPlugins"] = enabled_plugins
+
     # Write settings.json
     settings_content = json.dumps(settings, indent=2) + "\n"
     if tracker is not None:

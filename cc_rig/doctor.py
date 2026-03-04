@@ -7,6 +7,7 @@ Supports --fix for safe auto-remediation of common issues.
 from __future__ import annotations
 
 import json
+import shutil
 import stat
 from datetime import datetime, timezone
 from pathlib import Path
@@ -92,6 +93,9 @@ def run_doctor(
 
     # ── Check 8: Claude Code version ───────────────────────────
     _check_cc_version(result)
+
+    # ── Check 9: LSP plugin binaries ─────────────────────────
+    _check_plugin_binaries(config, result)
 
     return result
 
@@ -208,3 +212,14 @@ def _check_and_fix_memory(
                 filepath.write_text(template)
                 result.fixes.append(f"Created missing memory file: {filename}")
             # Note: missing memory files are already caught by validator V19
+
+
+def _check_plugin_binaries(config: ProjectConfig, result: DoctorResult) -> None:
+    """Check that LSP plugin binaries are available on PATH."""
+    for plugin in config.recommended_plugins:
+        if plugin.requires_binary:
+            if not shutil.which(plugin.requires_binary):
+                result.warnings.append(
+                    f"Plugin {plugin.name!r} requires {plugin.requires_binary!r} "
+                    f"but it was not found on PATH. LSP features may not activate."
+                )

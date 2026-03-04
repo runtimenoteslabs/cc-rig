@@ -21,9 +21,7 @@ def _generate_full(template, workflow, output_dir):
 
 
 @pytest.fixture(
-    params=[
-        (t, w) for t in BUILTIN_TEMPLATES for w in BUILTIN_WORKFLOWS
-    ],
+    params=[(t, w) for t in BUILTIN_TEMPLATES for w in BUILTIN_WORKFLOWS],
     ids=lambda tw: f"{tw[0]}-{tw[1]}",
 )
 def generated_project(request, tmp_path):
@@ -136,10 +134,10 @@ class TestManifestCompleteness:
 class TestCLAUDEmdLineCounts:
     _TARGETS = {
         "speedrun": 65,
-        "standard": 95,
-        "spec-driven": 110,
-        "gtd-lite": 115,
-        "verify-heavy": 120,
+        "standard": 100,
+        "spec-driven": 120,
+        "gtd-lite": 120,
+        "verify-heavy": 125,
     }
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)

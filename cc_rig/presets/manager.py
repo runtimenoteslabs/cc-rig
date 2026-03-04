@@ -14,22 +14,32 @@ _USER_PRESETS_DIR = Path.home() / ".cc-rig" / "presets"
 
 # Built-in preset name lists
 BUILTIN_TEMPLATES = [
+    # Generic (language-agnostic)
     "generic",
-    "nextjs",
+    # Python
     "fastapi",
     "django",
+    "flask",
+    # TypeScript / JavaScript
+    "nextjs",
+    "express",
+    # Go
     "gin",
     "echo",
+    "go-std",
+    # Rust
     "rust-cli",
     "rust-web",
-    "flask",
+    # Ruby
     "rails",
+    # Java
     "spring",
+    # C#
     "dotnet",
+    # PHP
     "laravel",
-    "express",
+    # Elixir
     "phoenix",
-    "go-std",
 ]
 
 BUILTIN_WORKFLOWS = [

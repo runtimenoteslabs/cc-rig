@@ -1,8 +1,14 @@
-"""Tests for ProjectConfig, Features, and SkillRecommendation dataclasses."""
+"""Tests for ProjectConfig, Features, SkillRecommendation, and PluginRecommendation."""
 
 import json
 
-from cc_rig.config.project import Features, ProjectConfig, SkillRecommendation
+from cc_rig.config.project import (
+    Features,
+    HarnessConfig,
+    PluginRecommendation,
+    ProjectConfig,
+    SkillRecommendation,
+)
 from tests.conftest import make_valid_config as _make_valid_config
 
 
@@ -188,3 +194,135 @@ class TestSkillBackwardCompat:
         json_str = config.to_json()
         restored = ProjectConfig.from_json(json_str)
         assert restored.recommended_skills == config.recommended_skills
+
+
+class TestPluginRecommendation:
+    """PluginRecommendation dataclass serialization."""
+
+    def test_creation(self):
+        p = PluginRecommendation(
+            name="pyright-lsp",
+            category="lsp",
+            description="Python LSP",
+            requires_binary="pyright",
+        )
+        assert p.name == "pyright-lsp"
+        assert p.marketplace == "claude-plugins-official"
+        assert p.requires_binary == "pyright"
+
+    def test_defaults(self):
+        p = PluginRecommendation()
+        assert p.name == ""
+        assert p.marketplace == "claude-plugins-official"
+        assert p.requires_binary == ""
+        assert p.replaces_mcp == ""
+
+    def test_to_dict(self):
+        p = PluginRecommendation(name="github", category="integration", replaces_mcp="github")
+        d = p.to_dict()
+        assert d["name"] == "github"
+        assert d["marketplace"] == "claude-plugins-official"
+        assert d["replaces_mcp"] == "github"
+
+    def test_from_dict(self):
+        d = {"name": "gopls-lsp", "category": "lsp", "requires_binary": "gopls"}
+        p = PluginRecommendation.from_dict(d)
+        assert p.name == "gopls-lsp"
+        assert p.category == "lsp"
+        assert p.requires_binary == "gopls"
+        assert p.marketplace == "claude-plugins-official"
+
+    def test_round_trip(self):
+        p = PluginRecommendation(
+            name="github",
+            marketplace="claude-plugins-official",
+            category="integration",
+            description="GitHub integration",
+            replaces_mcp="github",
+        )
+        assert PluginRecommendation.from_dict(p.to_dict()) == p
+
+
+class TestPluginInProjectConfig:
+    """PluginRecommendation integration with ProjectConfig."""
+
+    def test_default_is_empty_list(self):
+        config = ProjectConfig()
+        assert config.recommended_plugins == []
+
+    def test_to_dict_includes_plugins(self):
+        config = _make_valid_config()
+        config.recommended_plugins = [PluginRecommendation(name="pyright-lsp", category="lsp")]
+        d = config.to_dict()
+        assert "recommended_plugins" in d
+        assert len(d["recommended_plugins"]) == 1
+        assert d["recommended_plugins"][0]["name"] == "pyright-lsp"
+
+    def test_from_dict_parses_plugins(self):
+        data = {
+            "project_name": "test",
+            "recommended_plugins": [
+                {"name": "github", "category": "integration", "replaces_mcp": "github"}
+            ],
+        }
+        config = ProjectConfig.from_dict(data)
+        assert len(config.recommended_plugins) == 1
+        assert config.recommended_plugins[0].name == "github"
+        assert config.recommended_plugins[0].replaces_mcp == "github"
+
+    def test_backward_compat_missing_key(self):
+        """Old configs without recommended_plugins should default to empty list."""
+        data = {"project_name": "test"}
+        config = ProjectConfig.from_dict(data)
+        assert config.recommended_plugins == []
+
+    def test_json_round_trip_with_plugins(self):
+        config = _make_valid_config()
+        config.recommended_plugins = [
+            PluginRecommendation(name="pyright-lsp", category="lsp"),
+            PluginRecommendation(name="github", category="integration"),
+        ]
+        json_str = config.to_json()
+        restored = ProjectConfig.from_json(json_str)
+        assert restored.recommended_plugins == config.recommended_plugins
+
+
+class TestHarnessRalphLoopPlugin:
+    """HarnessConfig ralph_loop_plugin field."""
+
+    def test_default_is_false(self):
+        h = HarnessConfig()
+        assert h.ralph_loop_plugin is False
+
+    def test_ralph_loop_level_sets_flag(self):
+        h = HarnessConfig(level="ralph-loop")
+        assert h.ralph_loop_plugin is True
+
+    def test_to_dict_includes_ralph_loop_plugin(self):
+        h = HarnessConfig(level="ralph-loop")
+        d = h.to_dict()
+        assert d["ralph_loop_plugin"] is True
+
+    def test_from_dict_with_ralph_loop_plugin(self):
+        data = {"level": "custom", "ralph_loop_plugin": True, "task_tracking": True}
+        h = HarnessConfig.from_dict(data)
+        assert h.ralph_loop_plugin is True
+
+    def test_backward_compat_missing_ralph_loop(self):
+        """Old configs without ralph_loop_plugin default to False."""
+        data = {"level": "none"}
+        h = HarnessConfig.from_dict(data)
+        assert h.ralph_loop_plugin is False
+
+    def test_ralph_loop_preserves_individual_flags(self):
+        """ralph-loop level preserves flags set before __post_init__."""
+        h = HarnessConfig(
+            level="ralph-loop",
+            task_tracking=True,
+            budget_awareness=True,
+            verification_gates=False,
+        )
+        assert h.ralph_loop_plugin is True
+        assert h.task_tracking is True
+        assert h.budget_awareness is True
+        assert h.verification_gates is False

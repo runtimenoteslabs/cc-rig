@@ -10,24 +10,29 @@ from cc_rig.presets.manager import BUILTIN_TEMPLATES, BUILTIN_WORKFLOWS
 
 # ── Expected MCP assignments per template ────────────────────────────
 
+# Note: github MCP is replaced by the github plugin since v1.4.0.
+# Templates that only had github MCP now have empty MCP lists.
 TEMPLATE_MCPS = {
-    "generic": ["github"],
-    "nextjs": ["github", "playwright"],
-    "fastapi": ["github", "postgres"],
-    "django": ["github", "postgres"],
-    "gin": ["github", "postgres"],
-    "echo": ["github", "postgres"],
-    "rust-cli": ["github"],
-    "rust-web": ["github", "postgres"],
-    "flask": ["github", "postgres"],
-    "rails": ["github", "postgres"],
-    "spring": ["github", "postgres"],
-    "dotnet": ["github", "postgres"],
-    "laravel": ["github", "postgres"],
-    "express": ["github", "postgres"],
-    "phoenix": ["github", "postgres"],
-    "go-std": ["github", "postgres"],
+    "generic": [],
+    "nextjs": ["playwright"],
+    "fastapi": ["postgres"],
+    "django": ["postgres"],
+    "gin": ["postgres"],
+    "echo": ["postgres"],
+    "rust-cli": [],
+    "rust-web": ["postgres"],
+    "flask": ["postgres"],
+    "rails": ["postgres"],
+    "spring": ["postgres"],
+    "dotnet": ["postgres"],
+    "laravel": ["postgres"],
+    "express": ["postgres"],
+    "phoenix": ["postgres"],
+    "go-std": ["postgres"],
 }
+
+# Templates with no MCPs after plugin replacement
+_NO_MCP_TEMPLATES = {t for t, mcps in TEMPLATE_MCPS.items() if not mcps}
 
 # Required fields per MCP server entry
 REQUIRED_SERVER_FIELDS = {"command", "args", "env"}
@@ -49,10 +54,17 @@ class TestMcpFileGeneration:
     @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
     def test_mcp_file_created(self, template, tmp_path):
         _, files = _generate_mcp(template, "standard", tmp_path)
-        assert files == [".mcp.json"]
-        assert (tmp_path / ".mcp.json").exists()
+        if template in _NO_MCP_TEMPLATES:
+            assert files == []
+            assert not (tmp_path / ".mcp.json").exists()
+        else:
+            assert files == [".mcp.json"]
+            assert (tmp_path / ".mcp.json").exists()
 
-    @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
+    @pytest.mark.parametrize(
+        "template",
+        [t for t in BUILTIN_TEMPLATES if t not in _NO_MCP_TEMPLATES],
+    )
     def test_mcp_file_is_valid_json(self, template, tmp_path):
         _generate_mcp(template, "standard", tmp_path)
         data = _read_mcp_json(tmp_path)
@@ -67,23 +79,26 @@ class TestMcpFileGeneration:
         assert not (tmp_path / ".mcp.json").exists()
 
 
+_TEMPLATES_WITH_MCPS = [t for t in BUILTIN_TEMPLATES if t not in _NO_MCP_TEMPLATES]
+
+
 class TestMcpSchema:
     """Verify the MCP JSON structure matches Claude Code's expected schema."""
 
-    @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
+    @pytest.mark.parametrize("template", _TEMPLATES_WITH_MCPS)
     def test_has_mcpServers_key(self, template, tmp_path):
         _generate_mcp(template, "standard", tmp_path)
         data = _read_mcp_json(tmp_path)
         assert "mcpServers" in data
         assert isinstance(data["mcpServers"], dict)
 
-    @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
+    @pytest.mark.parametrize("template", _TEMPLATES_WITH_MCPS)
     def test_no_extra_top_level_keys(self, template, tmp_path):
         _generate_mcp(template, "standard", tmp_path)
         data = _read_mcp_json(tmp_path)
         assert set(data.keys()) == {"mcpServers"}
 
-    @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
+    @pytest.mark.parametrize("template", _TEMPLATES_WITH_MCPS)
     def test_server_entries_have_required_fields(self, template, tmp_path):
         _generate_mcp(template, "standard", tmp_path)
         data = _read_mcp_json(tmp_path)
@@ -91,14 +106,14 @@ class TestMcpSchema:
             missing = REQUIRED_SERVER_FIELDS - set(server.keys())
             assert not missing, f"Server '{name}' missing fields: {missing}"
 
-    @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
+    @pytest.mark.parametrize("template", _TEMPLATES_WITH_MCPS)
     def test_command_is_string(self, template, tmp_path):
         _generate_mcp(template, "standard", tmp_path)
         data = _read_mcp_json(tmp_path)
         for name, server in data["mcpServers"].items():
             assert isinstance(server["command"], str), f"Server '{name}': command should be string"
 
-    @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
+    @pytest.mark.parametrize("template", _TEMPLATES_WITH_MCPS)
     def test_args_is_list_of_strings(self, template, tmp_path):
         _generate_mcp(template, "standard", tmp_path)
         data = _read_mcp_json(tmp_path)
@@ -107,7 +122,7 @@ class TestMcpSchema:
             for arg in server["args"]:
                 assert isinstance(arg, str), f"Server '{name}': arg '{arg}' should be string"
 
-    @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
+    @pytest.mark.parametrize("template", _TEMPLATES_WITH_MCPS)
     def test_env_is_dict_of_strings(self, template, tmp_path):
         _generate_mcp(template, "standard", tmp_path)
         data = _read_mcp_json(tmp_path)
@@ -130,16 +145,18 @@ class TestMcpServerAssignment:
             f"{template}: expected MCPs {expected}, got {config.default_mcps}"
         )
 
-    @pytest.mark.parametrize("template", BUILTIN_TEMPLATES)
+    @pytest.mark.parametrize("template", _TEMPLATES_WITH_MCPS)
     def test_generated_servers_match_config(self, template, tmp_path):
         config, _ = _generate_mcp(template, "standard", tmp_path)
         data = _read_mcp_json(tmp_path)
         assert sorted(data["mcpServers"].keys()) == sorted(config.default_mcps)
 
-    def test_all_templates_include_github(self):
-        """GitHub MCP should be universal across all templates."""
+    def test_github_mcp_replaced_by_plugin(self):
+        """GitHub MCP is replaced by github plugin — no template has github MCP."""
         for template in BUILTIN_TEMPLATES:
-            assert "github" in TEMPLATE_MCPS[template], f"{template} missing github MCP"
+            assert "github" not in TEMPLATE_MCPS[template], (
+                f"{template} still has github MCP (should be replaced by plugin)"
+            )
 
     def test_db_templates_include_postgres(self):
         """Templates with database backends should include postgres."""
@@ -157,7 +174,7 @@ class TestMcpServerAssignment:
     def test_mcps_same_across_workflows(self, workflow, tmp_path):
         """MCP assignment is template-driven, not workflow-driven."""
         config, _ = _generate_mcp("fastapi", workflow, tmp_path)
-        assert sorted(config.default_mcps) == ["github", "postgres"]
+        assert sorted(config.default_mcps) == ["postgres"]
 
 
 class TestMcpServerDefinitions:
@@ -208,13 +225,13 @@ class TestMcpDeepCopy:
         data1 = _read_mcp_json(tmp_path)
 
         # Mutate returned data — should not affect next generation
-        data1["mcpServers"]["github"]["env"]["HACKED"] = "true"
+        data1["mcpServers"]["postgres"]["env"]["HACKED"] = "true"
 
         _generate_mcp("fastapi", "standard", tmp_path)
         data2 = _read_mcp_json(tmp_path)
-        assert "HACKED" not in data2["mcpServers"]["github"]["env"]
+        assert "HACKED" not in data2["mcpServers"]["postgres"]["env"]
 
     def test_registry_not_mutated_by_generation(self, tmp_path):
-        original_keys = set(_MCP_SERVERS["github"]["env"].keys())
+        original_keys = set(_MCP_SERVERS["postgres"]["env"].keys())
         _generate_mcp("fastapi", "standard", tmp_path)
-        assert set(_MCP_SERVERS["github"]["env"].keys()) == original_keys
+        assert set(_MCP_SERVERS["postgres"]["env"].keys()) == original_keys

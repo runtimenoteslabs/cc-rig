@@ -184,9 +184,7 @@ class TestModelAssignment:
 
     def test_haiku_agents_are_read_only_fast_tasks(self):
         """Haiku should only be used for fast, read-only scanning."""
-        haiku_agents = {
-            name for name, raw in _AGENT_DEFS.items() if raw.model == "haiku"
-        }
+        haiku_agents = {name for name, raw in _AGENT_DEFS.items() if raw.model == "haiku"}
         assert haiku_agents == {"explorer"}
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
@@ -349,9 +347,7 @@ class TestTierAwareModelResolution:
 
     def test_pro_tier_all_sonnet(self, tmp_path):
         """Pro tier overrides all non-sonnet agents to sonnet."""
-        config = compute_defaults(
-            "fastapi", "verify-heavy", project_name="test", claude_plan="pro"
-        )
+        config = compute_defaults("fastapi", "verify-heavy", project_name="test", claude_plan="pro")
         generate_agents(config, tmp_path)
         for agent in config.agents:
             content = (tmp_path / ".claude" / "agents" / f"{agent}.md").read_text()
@@ -362,9 +358,7 @@ class TestTierAwareModelResolution:
 
     def test_max_tier_uses_opus_for_deep_reasoning(self, tmp_path):
         """Max tier keeps opus for reasoning agents."""
-        config = compute_defaults(
-            "fastapi", "verify-heavy", project_name="test", claude_plan="max"
-        )
+        config = compute_defaults("fastapi", "verify-heavy", project_name="test", claude_plan="max")
         generate_agents(config, tmp_path)
         for agent in ("architect", "pr-reviewer", "pm-spec", "security-auditor"):
             content = (tmp_path / ".claude" / "agents" / f"{agent}.md").read_text()
@@ -375,9 +369,7 @@ class TestTierAwareModelResolution:
 
     def test_max_tier_explorer_uses_haiku(self, tmp_path):
         """Max tier keeps haiku for explorer."""
-        config = compute_defaults(
-            "fastapi", "verify-heavy", project_name="test", claude_plan="max"
-        )
+        config = compute_defaults("fastapi", "verify-heavy", project_name="test", claude_plan="max")
         generate_agents(config, tmp_path)
         content = (tmp_path / ".claude" / "agents" / "explorer.md").read_text()
         fields, _ = _parse_frontmatter(content)
@@ -417,54 +409,42 @@ class TestOptionalFrontmatterFields:
     """Verify optional CC frontmatter fields are emitted correctly."""
 
     def test_parallel_worker_has_background_true(self, tmp_path):
-        config = compute_defaults(
-            "fastapi", "spec-driven", project_name="test", claude_plan="max"
-        )
+        config = compute_defaults("fastapi", "spec-driven", project_name="test", claude_plan="max")
         generate_agents(config, tmp_path)
         content = (tmp_path / ".claude" / "agents" / "parallel-worker.md").read_text()
         fields, _ = _parse_frontmatter(content)
         assert fields["background"] == "true"
 
     def test_parallel_worker_has_isolation_worktree(self, tmp_path):
-        config = compute_defaults(
-            "fastapi", "spec-driven", project_name="test", claude_plan="max"
-        )
+        config = compute_defaults("fastapi", "spec-driven", project_name="test", claude_plan="max")
         generate_agents(config, tmp_path)
         content = (tmp_path / ".claude" / "agents" / "parallel-worker.md").read_text()
         fields, _ = _parse_frontmatter(content)
         assert fields["isolation"] == "worktree"
 
     def test_explorer_has_plan_permission_mode(self, tmp_path):
-        config = compute_defaults(
-            "fastapi", "standard", project_name="test", claude_plan="max"
-        )
+        config = compute_defaults("fastapi", "standard", project_name="test", claude_plan="max")
         generate_agents(config, tmp_path)
         content = (tmp_path / ".claude" / "agents" / "explorer.md").read_text()
         fields, _ = _parse_frontmatter(content)
         assert fields["permissionMode"] == "plan"
 
     def test_explorer_has_max_turns(self, tmp_path):
-        config = compute_defaults(
-            "fastapi", "standard", project_name="test", claude_plan="max"
-        )
+        config = compute_defaults("fastapi", "standard", project_name="test", claude_plan="max")
         generate_agents(config, tmp_path)
         content = (tmp_path / ".claude" / "agents" / "explorer.md").read_text()
         fields, _ = _parse_frontmatter(content)
         assert fields["maxTurns"] == "15"
 
     def test_code_reviewer_has_project_memory(self, tmp_path):
-        config = compute_defaults(
-            "fastapi", "standard", project_name="test", claude_plan="max"
-        )
+        config = compute_defaults("fastapi", "standard", project_name="test", claude_plan="max")
         generate_agents(config, tmp_path)
         content = (tmp_path / ".claude" / "agents" / "code-reviewer.md").read_text()
         fields, _ = _parse_frontmatter(content)
         assert fields["memory"] == "project"
 
     def test_architect_has_project_memory(self, tmp_path):
-        config = compute_defaults(
-            "fastapi", "standard", project_name="test", claude_plan="max"
-        )
+        config = compute_defaults("fastapi", "standard", project_name="test", claude_plan="max")
         generate_agents(config, tmp_path)
         content = (tmp_path / ".claude" / "agents" / "architect.md").read_text()
         fields, _ = _parse_frontmatter(content)
@@ -485,9 +465,7 @@ class TestOptionalFrontmatterFields:
         assert fields["disallowedTools"] == "Write, Edit, Bash"
 
     def test_security_auditor_has_disallowed_tools(self, tmp_path):
-        config = compute_defaults(
-            "fastapi", "verify-heavy", project_name="test", claude_plan="max"
-        )
+        config = compute_defaults("fastapi", "verify-heavy", project_name="test", claude_plan="max")
         generate_agents(config, tmp_path)
         content = (tmp_path / ".claude" / "agents" / "security-auditor.md").read_text()
         fields, _ = _parse_frontmatter(content)
@@ -511,16 +489,16 @@ class TestOptionalFrontmatterFields:
 
     def test_agents_without_optional_fields_omit_them(self, tmp_path):
         """Agents like test-writer should NOT have optional fields in frontmatter."""
-        config = compute_defaults(
-            "fastapi", "standard", project_name="test", claude_plan="max"
-        )
+        config = compute_defaults("fastapi", "standard", project_name="test", claude_plan="max")
         generate_agents(config, tmp_path)
         content = (tmp_path / ".claude" / "agents" / "test-writer.md").read_text()
         fields, _ = _parse_frontmatter(content)
         for optional_field in (
-            "permissionMode", "maxTurns", "background", "isolation", "memory",
+            "permissionMode",
+            "maxTurns",
+            "background",
+            "isolation",
+            "memory",
             "disallowedTools",
         ):
-            assert optional_field not in fields, (
-                f"test-writer.md should not have {optional_field}"
-            )
+            assert optional_field not in fields, f"test-writer.md should not have {optional_field}"

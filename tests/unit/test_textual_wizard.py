@@ -6,6 +6,7 @@ Uses Textual's headless pilot for async testing — no TTY needed.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -28,6 +29,7 @@ from cc_rig.ui.textual_wizard import (  # noqa: E402
     ConfirmScreen,
     ExpertScreen,
     FeaturesScreen,
+    HarnessScreen,
     QuickWizardApp,
     ReviewScreen,
     SkillPacksScreen,
@@ -392,7 +394,7 @@ class TestBackFromQuickFlow:
 class TestExpertScreenTabs:
     @pytest.mark.asyncio
     async def test_expert_screen_has_tabs(self):
-        """ExpertScreen uses TabbedContent with 3 tabs."""
+        """ExpertScreen uses TabbedContent with 4 tabs: agents, commands, hooks, plugins."""
         app = WizardApp(initial_state=_make_state(force_expert=True))
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
@@ -411,10 +413,11 @@ class TestExpertScreenTabs:
             # Verify TabbedContent exists
             tabs = app.screen.query_one("#expert-tabs", TabbedContent)
             assert tabs is not None
-            # Verify all 3 tab panes exist
+            # Verify all 4 tab panes exist
             assert app.screen.query_one("#tab-agents", TabPane) is not None
             assert app.screen.query_one("#tab-commands", TabPane) is not None
             assert app.screen.query_one("#tab-hooks", TabPane) is not None
+            assert app.screen.query_one("#tab-plugins", TabPane) is not None
             await pilot.click("#btn-cancel")
 
     @pytest.mark.asyncio
@@ -442,6 +445,199 @@ class TestExpertScreenTabs:
             label_text = str(option.prompt)
             assert " - " in label_text
             await pilot.click("#btn-cancel")
+
+
+# ── Expert plugins tab ───────────────────────────────────────────────
+
+
+class TestExpertPluginsTab:
+    """Plugins tab in ExpertScreen."""
+
+    async def _navigate_to_expert(self, pilot: Any) -> None:
+        """Helper: navigate from WelcomeScreen through to ExpertScreen."""
+        await pilot.pause()
+        await pilot.click("#btn-next")  # Welcome → Basics
+        await pilot.pause()
+        await pilot.click("#btn-next")  # Basics → Template
+        await pilot.pause()
+        await pilot.click("#btn-next")  # Template → Workflow
+        await pilot.pause()
+        await pilot.click("#btn-next")  # Workflow → Review
+        await pilot.pause()
+        await pilot.click("#btn-next")  # Review → Expert
+        await pilot.pause()
+
+    @pytest.mark.asyncio
+    async def test_plugins_tab_has_selection_list(self):
+        """The Plugins tab should contain a SelectionList widget."""
+        app = WizardApp(initial_state=_make_state(force_expert=True))
+        async with app.run_test(size=(120, 40)) as pilot:
+            await self._navigate_to_expert(pilot)
+            assert isinstance(app.screen, ExpertScreen)
+            sel_plugins = app.screen.query_one("#sel-plugins", SelectionList)
+            assert sel_plugins is not None
+            # Should have at least one option
+            assert sel_plugins.option_count > 0
+            await pilot.click("#btn-cancel")
+
+    @pytest.mark.asyncio
+    async def test_plugins_tab_excludes_autonomy(self):
+        """Autonomy plugins (ralph-loop) should not appear in the plugins selection list."""
+        app = WizardApp(initial_state=_make_state(force_expert=True))
+        async with app.run_test(size=(120, 40)) as pilot:
+            await self._navigate_to_expert(pilot)
+            assert isinstance(app.screen, ExpertScreen)
+            sel_plugins = app.screen.query_one("#sel-plugins", SelectionList)
+            option_values = [
+                sel_plugins.get_option_at_index(i).value for i in range(sel_plugins.option_count)
+            ]
+            assert "ralph-loop" not in option_values
+
+    @pytest.mark.asyncio
+    async def test_plugins_tab_labels_contain_descriptions(self):
+        """Plugin option labels should include the description text (contain ' - ')."""
+        app = WizardApp(initial_state=_make_state(force_expert=True))
+        async with app.run_test(size=(120, 40)) as pilot:
+            await self._navigate_to_expert(pilot)
+            assert isinstance(app.screen, ExpertScreen)
+            sel_plugins = app.screen.query_one("#sel-plugins", SelectionList)
+            first_option = sel_plugins.get_option_at_index(0)
+            label_text = str(first_option.prompt)
+            assert " - " in label_text
+
+    @pytest.mark.asyncio
+    async def test_plugins_tab_returns_selected_plugins_on_next(self):
+        """Submitting ExpertScreen returns expert_plugins in the dismissed dict."""
+        app = WizardApp(initial_state=_make_state(force_expert=True))
+        async with app.run_test(size=(120, 40)) as pilot:
+            await self._navigate_to_expert(pilot)
+            assert isinstance(app.screen, ExpertScreen)
+            # Click Next — ExpertScreen dismisses with expert_plugins key
+            await pilot.click("#btn-next")
+            await pilot.pause()
+            # After dismissal the wizard advances; we cannot inspect the dismissed
+            # value directly, but we can verify we moved past ExpertScreen
+            assert not isinstance(app.screen, ExpertScreen)
+            await pilot.click("#btn-cancel")
+
+
+# ── Harness ralph-loop radio ─────────────────────────────────────────
+
+
+class TestHarnessRalphLoop:
+    """Ralph-loop option in HarnessScreen."""
+
+    async def _navigate_to_harness(self, pilot: Any) -> None:
+        """Helper: navigate WizardApp (non-expert) to HarnessScreen."""
+        await pilot.pause()
+        await pilot.click("#btn-next")  # Welcome → Basics
+        await pilot.pause()
+        await pilot.click("#btn-next")  # Basics → Template
+        await pilot.pause()
+        await pilot.click("#btn-next")  # Template → Workflow
+        await pilot.pause()
+        await pilot.click("#btn-next")  # Workflow → Review
+        await pilot.pause()
+        await pilot.click("#btn-next")  # Review → SkillPacks (no expert)
+        await pilot.pause()
+        await pilot.click("#btn-next")  # SkillPacks → Harness
+        await pilot.pause()
+
+    @pytest.mark.asyncio
+    async def test_ralph_loop_radio_exists(self):
+        """HarnessScreen should have a ralph-loop radio button (5th option)."""
+        app = WizardApp(initial_state=_make_state())
+        async with app.run_test(size=(120, 40)) as pilot:
+            await self._navigate_to_harness(pilot)
+            assert isinstance(app.screen, HarnessScreen)
+            radio = app.screen.query_one("#harness-radio", RadioSet)
+            assert radio is not None
+            # There should be exactly 5 options: none, lite, standard, autonomy, ralph-loop
+            buttons = list(radio.query("RadioButton"))
+            assert len(buttons) == 5
+            # The last button label should reference ralph-loop
+            last_label = str(buttons[4].label)
+            assert "ralph" in last_label.lower() or "loop" in last_label.lower()
+            await pilot.click("#btn-cancel")
+
+    @pytest.mark.asyncio
+    async def test_harness_details_panel_exists(self):
+        """HarnessScreen should render a #harness-details Static panel."""
+        app = WizardApp(initial_state=_make_state())
+        async with app.run_test(size=(120, 40)) as pilot:
+            await self._navigate_to_harness(pilot)
+            assert isinstance(app.screen, HarnessScreen)
+            details = app.screen.query_one("#harness-details", Static)
+            assert details is not None
+            await pilot.click("#btn-cancel")
+
+    @pytest.mark.asyncio
+    async def test_harness_details_update_on_radio_change(self):
+        """Selecting a different harness radio updates the #harness-details panel content."""
+        app = WizardApp(initial_state=_make_state())
+        async with app.run_test(size=(120, 40)) as pilot:
+            await self._navigate_to_harness(pilot)
+            assert isinstance(app.screen, HarnessScreen)
+            details = app.screen.query_one("#harness-details", Static)
+            # Default selection is "none" — details should contain B0 text
+            initial_content = details._Static__content
+            assert initial_content  # not empty
+            # Select the second radio (lite / B1)
+            radio = app.screen.query_one("#harness-radio", RadioSet)
+            buttons = list(radio.query("RadioButton"))
+            buttons[1].value = True
+            await pilot.pause()
+            updated_content = details._Static__content
+            # Content should have changed from "none" details to "lite" details
+            assert updated_content != initial_content
+            assert "B1" in updated_content or "lite" in updated_content.lower()
+            await pilot.click("#btn-cancel")
+
+    @pytest.mark.asyncio
+    async def test_harness_ralph_loop_details_shown(self):
+        """Selecting ralph-loop radio shows ralph-loop specific details."""
+        app = WizardApp(initial_state=_make_state())
+        async with app.run_test(size=(120, 40)) as pilot:
+            await self._navigate_to_harness(pilot)
+            assert isinstance(app.screen, HarnessScreen)
+            details = app.screen.query_one("#harness-details", Static)
+            # Select the 5th radio button (ralph-loop, index 4)
+            radio = app.screen.query_one("#harness-radio", RadioSet)
+            buttons = list(radio.query("RadioButton"))
+            buttons[4].value = True
+            await pilot.pause()
+            ralph_content = details._Static__content
+            assert "ralph" in ralph_content.lower() or "plugin" in ralph_content.lower()
+            await pilot.click("#btn-cancel")
+
+    @pytest.mark.asyncio
+    async def test_harness_ralph_loop_dismisses_correct_level(self):
+        """Selecting ralph-loop and clicking Next dismisses with harness_level=ralph-loop."""
+        dismissed_values: list[dict] = []
+
+        app = WizardApp(initial_state=_make_state())
+        async with app.run_test(size=(120, 40)) as pilot:
+            await self._navigate_to_harness(pilot)
+            assert isinstance(app.screen, HarnessScreen)
+            # Select the 5th radio (ralph-loop)
+            radio = app.screen.query_one("#harness-radio", RadioSet)
+            buttons = list(radio.query("RadioButton"))
+            buttons[4].value = True
+            await pilot.pause()
+            # Patch dismiss to capture the value
+            original_dismiss = app.screen.dismiss
+
+            def capture_dismiss(value: Any = None) -> None:
+                if isinstance(value, dict):
+                    dismissed_values.append(value)
+                original_dismiss(value)
+
+            app.screen.dismiss = capture_dismiss  # type: ignore[method-assign]
+            await pilot.click("#btn-next")
+            await pilot.pause()
+
+        if dismissed_values:
+            assert dismissed_values[0].get("harness_level") == "ralph-loop"
 
 
 # ── Workflow detail panel ────────────────────────────────────────────

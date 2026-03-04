@@ -10,7 +10,13 @@ from datetime import datetime, timezone
 from typing import Any
 
 from cc_rig import __version__
-from cc_rig.config.project import Features, ProjectConfig, SkillRecommendation
+from cc_rig.config.project import (
+    Features,
+    PluginRecommendation,
+    ProjectConfig,
+    SkillRecommendation,
+)
+from cc_rig.plugins.registry import resolve_plugins as _plugin_resolve
 from cc_rig.presets.manager import load_template, load_workflow
 from cc_rig.skills.registry import resolve_skills as _registry_resolve
 
@@ -326,11 +332,30 @@ def compute_defaults(
         for s in specs
     ]
 
+    # Step 8: Resolve plugins from language/template/workflow
+    language = tmpl["language"]
+    plugin_specs, mcps_to_remove = _plugin_resolve(template, workflow, language, default_mcps)
+    recommended_plugins = [
+        PluginRecommendation(
+            name=p.name,
+            marketplace=p.marketplace,
+            category=p.category,
+            description=p.description,
+            requires_binary=p.requires_binary,
+            replaces_mcp=p.replaces_mcp,
+        )
+        for p in plugin_specs
+    ]
+
+    # MCP dedup: remove MCPs that have plugin replacements
+    if mcps_to_remove:
+        default_mcps = [m for m in default_mcps if m not in mcps_to_remove]
+
     return ProjectConfig(
         project_name=project_name,
         project_desc=project_desc,
         output_dir=output_dir,
-        language=tmpl["language"],
+        language=language,
         framework=tmpl["framework"],
         project_type=tmpl["project_type"],
         test_cmd=tool_cmds.get("test", ""),
@@ -347,6 +372,7 @@ def compute_defaults(
         features=features,
         permission_mode=wf.get("permission_mode", "default"),
         recommended_skills=recommended_skills,
+        recommended_plugins=recommended_plugins,
         default_mcps=default_mcps,
         skill_packs=resolved_packs,
         claude_plan=claude_plan,

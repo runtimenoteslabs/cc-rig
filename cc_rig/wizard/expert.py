@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from cc_rig.config.project import Features, ProjectConfig
+from cc_rig.config.project import Features, PluginRecommendation, ProjectConfig
 from cc_rig.config.schema import VALID_AGENTS, VALID_COMMANDS, VALID_HOOKS
+from cc_rig.plugins.registry import PLUGIN_CATALOG
 from cc_rig.ui.prompts import IO, ask_choice, ask_multi
 
 
@@ -19,7 +20,7 @@ def run_expert(config: ProjectConfig, io: IO) -> ProjectConfig:
     io.say("\n--- Expert Configurator ---")
     io.say(
         f"  Agents: {len(config.agents)}  Commands: {len(config.commands)}  "
-        f"Hooks: {len(config.hooks)}"
+        f"Plugins: {len(config.recommended_plugins)}  Hooks: {len(config.hooks)}"
     )
     io.say("")
 
@@ -28,6 +29,7 @@ def run_expert(config: ProjectConfig, io: IO) -> ProjectConfig:
         [
             ("agents", f"Agents ({len(config.agents)} selected)"),
             ("commands", f"Commands ({len(config.commands)} selected)"),
+            ("plugins", f"Plugins ({len(config.recommended_plugins)} selected)"),
             ("hooks", f"Hooks ({len(config.hooks)} selected)"),
             ("features", "Feature flags"),
             ("permissions", "Permission mode"),
@@ -53,6 +55,32 @@ def run_expert(config: ProjectConfig, io: IO) -> ProjectConfig:
             defaults=config.commands,
             io=io,
         )
+
+    if "plugins" in categories:
+        current_plugin_names = {p.name for p in config.recommended_plugins}
+        plugin_options = [
+            (name, f"{name} - {spec.description}")
+            for name, spec in sorted(PLUGIN_CATALOG.items())
+            if spec.category != "autonomy"  # ralph-loop managed by harness
+        ]
+        selected_names = ask_multi(
+            "Select plugins:",
+            plugin_options,
+            defaults=list(current_plugin_names),
+            io=io,
+        )
+        config.recommended_plugins = [
+            PluginRecommendation(
+                name=name,
+                marketplace=PLUGIN_CATALOG[name].marketplace,
+                category=PLUGIN_CATALOG[name].category,
+                description=PLUGIN_CATALOG[name].description,
+                requires_binary=PLUGIN_CATALOG[name].requires_binary,
+                replaces_mcp=PLUGIN_CATALOG[name].replaces_mcp,
+            )
+            for name in selected_names
+            if name in PLUGIN_CATALOG
+        ]
 
     if "hooks" in categories:
         hook_options = [(h, h) for h in sorted(VALID_HOOKS)]

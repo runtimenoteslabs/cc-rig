@@ -400,9 +400,7 @@ class TestGenerateSkillsWithPacks:
         assert base_names.issubset(pack_names)
 
     def test_multiple_packs_combine_specs(self, tmp_path):
-        _, specs = self._generate_with_packs(
-            tmp_path, ["security", "devops"]
-        )
+        _, specs = self._generate_with_packs(tmp_path, ["security", "devops"])
         spec_names = {s.name for s in specs}
         # From security
         assert "supply-chain-risk-auditor" in spec_names
@@ -418,9 +416,7 @@ class TestGenerateSkillsWithPacks:
 
     def test_pack_bypasses_speedrun_gating(self, tmp_path):
         """Pack skills appear in specs even with speedrun workflow."""
-        _, specs = self._generate_with_packs(
-            tmp_path, ["security"], workflow="speedrun"
-        )
+        _, specs = self._generate_with_packs(tmp_path, ["security"], workflow="speedrun")
         spec_names = {s.name for s in specs}
         assert "supply-chain-risk-auditor" in spec_names
 

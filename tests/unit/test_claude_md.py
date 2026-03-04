@@ -64,10 +64,10 @@ class TestConditionalSections:
 class TestLineCounts:
     _TARGETS = {
         "speedrun": 65,
-        "standard": 95,
-        "spec-driven": 110,
-        "gtd-lite": 115,
-        "verify-heavy": 120,
+        "standard": 100,
+        "spec-driven": 120,
+        "gtd-lite": 120,
+        "verify-heavy": 125,
     }
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)

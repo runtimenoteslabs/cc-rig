@@ -65,6 +65,39 @@ class SkillRecommendation:
 
 
 @dataclass
+class PluginRecommendation:
+    """A recommended official Claude Code plugin."""
+
+    name: str = ""
+    marketplace: str = "claude-plugins-official"
+    category: str = ""
+    description: str = ""
+    requires_binary: str = ""
+    replaces_mcp: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "marketplace": self.marketplace,
+            "category": self.category,
+            "description": self.description,
+            "requires_binary": self.requires_binary,
+            "replaces_mcp": self.replaces_mcp,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> PluginRecommendation:
+        return cls(
+            name=data.get("name", ""),
+            marketplace=data.get("marketplace", "claude-plugins-official"),
+            category=data.get("category", ""),
+            description=data.get("description", ""),
+            requires_binary=data.get("requires_binary", ""),
+            replaces_mcp=data.get("replaces_mcp", ""),
+        )
+
+
+@dataclass
 class HarnessConfig:
     """Runtime harness configuration (Axis B: B0-B3 + custom).
 
@@ -79,6 +112,7 @@ class HarnessConfig:
     budget_awareness: bool = False  # B1: budget-reminder hook + budget section
     verification_gates: bool = False  # B2: commit-gate hook + gates section
     autonomy_loop: bool = False  # B3: PROMPT.md + loop.sh + progress + config
+    ralph_loop_plugin: bool = False  # Alternative to autonomy_loop (official plugin)
 
     # Budget (B1+)
     budget_per_run_tokens: int | None = None
@@ -99,6 +133,10 @@ class HarnessConfig:
             # Auto-dependency: autonomy_loop needs task_tracking
             if self.autonomy_loop:
                 self.task_tracking = True
+            return
+        if self.level == "ralph-loop":
+            # Ralph-loop is plugin-based autonomy — individual flags from user
+            self.ralph_loop_plugin = True
             return
 
         # Derive flags from level
@@ -121,6 +159,7 @@ class HarnessConfig:
             "budget_awareness": self.budget_awareness,
             "verification_gates": self.verification_gates,
             "autonomy_loop": self.autonomy_loop,
+            "ralph_loop_plugin": self.ralph_loop_plugin,
             "budget_per_run_tokens": self.budget_per_run_tokens,
             "budget_warn_at_percent": self.budget_warn_at_percent,
             "require_tests_pass": self.require_tests_pass,
@@ -149,7 +188,20 @@ class HarnessConfig:
             kwargs["budget_awareness"] = data.get("budget_awareness", False)
             kwargs["verification_gates"] = data.get("verification_gates", False)
             kwargs["autonomy_loop"] = data.get("autonomy_loop", False)
+        if "ralph_loop_plugin" in data:
+            kwargs["ralph_loop_plugin"] = data["ralph_loop_plugin"]
         return cls(**kwargs)
+
+
+def _parse_plugins(raw: list[Any]) -> list[PluginRecommendation]:
+    """Parse a list of plugins from dicts or PluginRecommendation objects."""
+    result = []
+    for item in raw:
+        if isinstance(item, dict):
+            result.append(PluginRecommendation.from_dict(item))
+        elif isinstance(item, PluginRecommendation):
+            result.append(item)
+    return result
 
 
 def _parse_skills(raw: list[Any]) -> list[SkillRecommendation]:
@@ -206,6 +258,7 @@ class ProjectConfig:
 
     # Stack-specific recommendations
     recommended_skills: list[SkillRecommendation] = field(default_factory=list)
+    recommended_plugins: list[PluginRecommendation] = field(default_factory=list)
     default_mcps: list[str] = field(default_factory=list)
     skill_packs: list[str] = field(default_factory=list)
 
@@ -242,6 +295,7 @@ class ProjectConfig:
             "permission_mode": self.permission_mode,
             "harness": self.harness.to_dict(),
             "recommended_skills": [s.to_dict() for s in self.recommended_skills],
+            "recommended_plugins": [p.to_dict() for p in self.recommended_plugins],
             "default_mcps": list(self.default_mcps),
             "skill_packs": list(self.skill_packs),
             "claude_plan": self.claude_plan,
@@ -288,6 +342,7 @@ class ProjectConfig:
             permission_mode=data.get("permission_mode", "default"),
             harness=harness,
             recommended_skills=_parse_skills(data.get("recommended_skills", [])),
+            recommended_plugins=_parse_plugins(data.get("recommended_plugins", [])),
             default_mcps=list(data.get("default_mcps", [])),
             skill_packs=list(data.get("skill_packs", [])),
             claude_plan=data.get("claude_plan", "pro"),

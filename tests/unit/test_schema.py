@@ -266,3 +266,63 @@ class TestConfigWarnings:
         )
         warnings = validate_config_warnings(config)
         assert len(warnings) == 0
+
+
+class TestPluginValidation:
+    """Plugin category validation and ralph-loop mutual exclusion."""
+
+    def test_valid_plugin_passes(self):
+        from cc_rig.config.project import PluginRecommendation
+
+        config = _make_valid_config()
+        config.recommended_plugins = [
+            PluginRecommendation(name="github", category="integration"),
+        ]
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_invalid_plugin_category(self):
+        from cc_rig.config.project import PluginRecommendation
+
+        config = _make_valid_config()
+        config.recommended_plugins = [
+            PluginRecommendation(name="test", category="invalid_cat"),
+        ]
+        errors = validate_config(config)
+        assert any("unknown category" in e for e in errors)
+
+    def test_empty_category_no_error(self):
+        from cc_rig.config.project import PluginRecommendation
+
+        config = _make_valid_config()
+        config.recommended_plugins = [
+            PluginRecommendation(name="test", category=""),
+        ]
+        errors = validate_config(config)
+        # Empty category is valid (not checked)
+        assert not any("unknown category" in e for e in errors)
+
+    def test_ralph_loop_plus_autonomy_loop_error(self):
+        from cc_rig.config.project import HarnessConfig
+
+        config = _make_valid_config()
+        config.harness = HarnessConfig(
+            level="custom",
+            ralph_loop_plugin=True,
+            autonomy_loop=True,
+            task_tracking=True,
+        )
+        errors = validate_config(config)
+        assert any("ralph_loop_plugin" in e and "autonomy_loop" in e for e in errors)
+
+    def test_ralph_loop_without_autonomy_loop_ok(self):
+        from cc_rig.config.project import HarnessConfig
+
+        config = _make_valid_config()
+        config.harness = HarnessConfig(
+            level="custom",
+            ralph_loop_plugin=True,
+            task_tracking=True,
+        )
+        errors = validate_config(config)
+        assert not any("ralph_loop_plugin" in e for e in errors)

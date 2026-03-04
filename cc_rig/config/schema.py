@@ -50,6 +50,8 @@ VALID_PERMISSION_MODES = {"default", "permissive"}
 
 VALID_CLAUDE_PLANS = {"pro", "team", "max", "enterprise"}
 
+VALID_PLUGIN_CATEGORIES = {"lsp", "integration", "workflow", "autonomy", "utility"}
+
 VALID_SDLC_PHASES = {
     "planning",
     "coding",
@@ -250,6 +252,18 @@ def validate_config(config: ProjectConfig) -> list[str]:
     for skill in config.recommended_skills:
         if skill.sdlc_phase and skill.sdlc_phase not in VALID_SDLC_PHASES:
             errors.append(f"skill {skill.name!r} has unknown sdlc_phase: {skill.sdlc_phase!r}")
+
+    # Plugin validation
+    for plugin in config.recommended_plugins:
+        if plugin.category and plugin.category not in VALID_PLUGIN_CATEGORIES:
+            errors.append(f"plugin {plugin.name!r} has unknown category: {plugin.category!r}")
+
+    # Mutual exclusion: ralph-loop plugin + autonomy_loop
+    if config.harness.ralph_loop_plugin and config.harness.autonomy_loop:
+        errors.append(
+            "harness.ralph_loop_plugin and harness.autonomy_loop cannot both be enabled — "
+            "use either the ralph-loop plugin or cc-rig's loop.sh, not both."
+        )
 
     # Model override validation
     for agent_name in config.model_overrides:

@@ -357,9 +357,7 @@ class TestComputeDefaultsWithPacks:
         assert "modern-python" in skill_names
 
     def test_multiple_packs_in_recommended_skills(self):
-        config = compute_defaults(
-            "fastapi", "standard", skill_packs=["security", "devops"]
-        )
+        config = compute_defaults("fastapi", "standard", skill_packs=["security", "devops"])
         skill_names = {s.name for s in config.recommended_skills}
         # Security pack
         assert "supply-chain-risk-auditor" in skill_names

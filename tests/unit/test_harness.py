@@ -766,3 +766,84 @@ class TestCustomHarness:
         assert ".claude/hooks/init-sh.sh" in files
         content = (tmp_path / "agent_docs" / "harness.md").read_text()
         assert "Verification Gates" in content
+
+
+class TestRalphLoopPlugin:
+    """Ralph-loop plugin harness — no loop.sh, but B1/B2 features work."""
+
+    def test_ralph_loop_no_loop_sh(self, tmp_path):
+        """ralph_loop_plugin=True should not generate loop.sh or PROMPT.md."""
+        config = _make_config()
+        config.harness = HarnessConfig(
+            level="ralph-loop",
+            task_tracking=True,
+            budget_awareness=True,
+        )
+        files = generate_harness(config, tmp_path)
+        assert "loop.sh" not in files
+        assert "PROMPT.md" not in files
+        assert "claude-progress.txt" not in files
+        assert ".claude/harness-config.json" not in files
+
+    def test_ralph_loop_with_task_tracking(self, tmp_path):
+        """ralph_loop_plugin with task_tracking generates B1 files."""
+        config = _make_config()
+        config.harness = HarnessConfig(
+            level="ralph-loop",
+            task_tracking=True,
+            budget_awareness=True,
+        )
+        files = generate_harness(config, tmp_path)
+        assert "tasks/todo.md" in files
+        assert "agent_docs/harness.md" in files
+
+    def test_ralph_loop_with_verification_gates(self, tmp_path):
+        """ralph_loop_plugin with verification_gates generates init-sh.sh."""
+        config = _make_config()
+        config.harness = HarnessConfig(
+            level="ralph-loop",
+            task_tracking=True,
+            verification_gates=True,
+        )
+        files = generate_harness(config, tmp_path)
+        assert ".claude/hooks/init-sh.sh" in files
+
+    def test_ralph_loop_no_features_no_files(self, tmp_path):
+        """ralph_loop_plugin without any B1/B2 flags generates no files."""
+        config = _make_config()
+        config.harness = HarnessConfig(
+            level="ralph-loop",
+            task_tracking=False,
+            budget_awareness=False,
+            verification_gates=False,
+        )
+        files = generate_harness(config, tmp_path)
+        assert files == []
+
+    def test_ralph_loop_flag_serialization(self):
+        """ralph_loop_plugin round-trips through to_dict/from_dict."""
+        h = HarnessConfig(
+            level="ralph-loop",
+            task_tracking=True,
+            budget_awareness=True,
+        )
+        d = h.to_dict()
+        restored = HarnessConfig.from_dict(d)
+        assert restored.ralph_loop_plugin is True
+        assert restored.task_tracking is True
+        assert restored.budget_awareness is True
+        assert restored.autonomy_loop is False
+
+    def test_ralph_loop_plus_autonomy_loop_invalid(self):
+        """ralph_loop_plugin + autonomy_loop should fail validation."""
+        from cc_rig.config.schema import validate_config
+
+        config = _make_config()
+        config.harness = HarnessConfig(
+            level="custom",
+            ralph_loop_plugin=True,
+            autonomy_loop=True,
+            task_tracking=True,
+        )
+        errors = validate_config(config)
+        assert any("ralph_loop_plugin" in e for e in errors)

@@ -232,6 +232,22 @@ npx skills add <repo> --skill <name>  # Install any skill from any repo
 
 Browse the full ecosystem: [skills.sh](https://skills.sh/) · [awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) · [skillsmp.com](https://skillsmp.com/)
 
+### Plugins
+
+cc-rig also curates 24 official Anthropic marketplace plugins and writes them into `settings.json` as `enabledPlugins`. Plugins are self-contained extensions that Claude Code installs and manages natively — no manual MCP setup or binary downloads.
+
+Five categories:
+
+| Category | Count | Examples |
+|----------|-------|---------|
+| **LSP** | 7 | pyright-lsp, typescript-lsp, gopls-lsp, rust-analyzer-lsp, jdtls-lsp, csharp-lsp, php-lsp |
+| **Integration** | 10 | github, vercel, supabase, sentry, slack, linear, notion, firebase, gitlab, atlassian |
+| **Workflow** | 5 | commit-commands, code-review, pr-review-toolkit, feature-dev, security-guidance |
+| **Autonomy** | 1 | ralph-loop (official Anthropic autonomous iteration loop) |
+| **Utility** | 1 | hookify (visual hook builder) |
+
+Smart defaults resolve plugins by language (LSP), template (integrations) and workflow (workflow plugins). The github plugin replaces the GitHub MCP server — self-contained, auto-start, no token config needed. Expert mode offers a multi-select from the full catalog.
+
 ### Memory
 
 Two complementary memory systems:
@@ -278,9 +294,11 @@ Safety hooks handle the rest by blocking `.env` edits, pushes to main and destru
 
 `.mcp.json` at the project root, configured for your stack. Available integrations:
 
-**Auto-configured** (selected by template): GitHub · PostgreSQL · Playwright
+**Auto-configured** (selected by template): PostgreSQL · Playwright
 
 **Available** (add via expert mode): Slack · Linear · Sentry · Filesystem
+
+> **Note**: GitHub is now an official plugin (self-contained, auto-start) rather than an MCP server. It is enabled by default via `enabledPlugins` in `settings.json` and no longer requires manual token configuration in `.mcp.json`.
 
 ### Agent Docs
 
@@ -417,7 +435,7 @@ cc-rig harness init               # + enforcement gates (lint blocks commits) + 
 cc-rig harness init --autonomy    # + loop script, 5-step PROMPT.md, progress ledger
 ```
 
-Each level builds on the previous. Or pick individual features à la carte — the wizard's "Custom" option lets you enable any combination of task tracking, budget awareness, verification gates and autonomy loop independently.
+Each level builds on the previous. Or pick individual features à la carte — the wizard's "Custom" option lets you enable any combination of task tracking, budget awareness, verification gates and autonomy loop independently. A 6th option enables the **ralph-loop plugin** — Anthropic's official autonomous iteration loop plugin — as an alternative to cc-rig's generated `loop.sh`.
 
 The standard level generates `init-sh.sh` (wraps your test/lint/format commands) and a commit-gate hook that structurally blocks commits when lint fails. The autonomy level generates `loop.sh` and `PROMPT.md` (5-step workflow: assess, advance, tidy, verify, record), an external bash loop that feeds tasks to Claude one at a time, each with fresh context. Based on the [Ralph Wiggum technique](https://github.com/ghuntley/how-to-ralph-wiggum) by Geoffrey Huntley.
 
@@ -532,7 +550,7 @@ Yes. Everything is plain text. Edit whatever you want. cc-rig won't overwrite yo
 <details>
 <summary><strong>What about Claude Code plugins and skills?</strong></summary>
 
-cc-rig and community skills are complementary. cc-rig generates your project scaffold (CLAUDE.md, settings, agents, commands, hooks, memory) and installs a starter set of community skills matched to your framework. The wizard offers optional packs for deeper coverage (security, DevOps, web quality). You can install any additional skill from <a href="https://skills.sh/">skills.sh</a> (73K+), <a href="https://github.com/ComposioHQ/awesome-claude-skills">awesome-claude-skills</a> or any GitHub repo.
+cc-rig handles both community skills and official Anthropic plugins. For skills, cc-rig installs a starter set of community skills matched to your framework from 9 repos, with optional packs for deeper coverage. For plugins, cc-rig curates a 24-plugin official marketplace catalog across 5 categories (LSP, integration, workflow, autonomy, utility) and writes <code>enabledPlugins</code> into <code>settings.json</code> with smart defaults resolved by language, template and workflow. You can install any additional skill from <a href="https://skills.sh/">skills.sh</a> (73K+), <a href="https://github.com/ComposioHQ/awesome-claude-skills">awesome-claude-skills</a> or any GitHub repo.
 </details>
 
 <details>

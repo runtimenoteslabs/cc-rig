@@ -15,6 +15,15 @@ AUTONOMY_WARNING_LINES = [
     "  ================================================",
 ]
 
+RALPH_LOOP_WARNING_LINES = [
+    "  ================================================",
+    "  WARNING: RALPH-LOOP PLUGIN (AUTONOMOUS)",
+    "  The ralph-loop plugin runs Claude autonomously",
+    "  via the official Anthropic plugin system.",
+    "  Ensure you have appropriate safeguards in place.",
+    "  ================================================",
+]
+
 
 def ask_harness(io: IO) -> HarnessConfig:
     """Prompt the user to choose a harness level.
@@ -33,6 +42,10 @@ def ask_harness(io: IO) -> HarnessConfig:
             "Autonomy - autonomous iteration with safety rails (B3)",
         ),
         (
+            "ralph-loop",
+            "Ralph Loop - official Anthropic autonomous loop (plugin)",
+        ),
+        (
             "custom",
             "Custom - pick individual features",
         ),
@@ -47,6 +60,9 @@ def ask_harness(io: IO) -> HarnessConfig:
 
     if level == "custom":
         return _ask_custom_harness(io)
+
+    if level == "ralph-loop":
+        return _ask_ralph_loop_harness(io)
 
     if level == "autonomy":
         io.say("")
@@ -111,4 +127,46 @@ def _ask_custom_harness(io: IO) -> HarnessConfig:
         budget_awareness=budget_awareness,
         verification_gates=verification_gates,
         autonomy_loop=autonomy_loop,
+    )
+
+
+def _ask_ralph_loop_harness(io: IO) -> HarnessConfig:
+    """Prompt for ralph-loop plugin with B1/B2 feature confirms."""
+    io.say("")
+    for line in RALPH_LOOP_WARNING_LINES:
+        io.say(line)
+    io.say("")
+    try:
+        response = io.ask('  Type "I understand" to confirm: ').strip()
+    except (EOFError, KeyboardInterrupt):
+        io.say("\nCancelled.")
+        return HarnessConfig(level="none")
+    if response.lower() != "i understand":
+        io.say("  Cancelled. Ralph-loop not enabled.")
+        return HarnessConfig(level="none")
+
+    io.say("\n  Pick additional harness features (B1/B2):")
+
+    task_tracking = confirm(
+        "  Task tracking? (todo.md + session-tasks hook)",
+        default=True,
+        io=io,
+    )
+    budget_awareness = confirm(
+        "  Budget awareness? (budget-reminder hook)",
+        default=True,
+        io=io,
+    )
+    verification_gates = confirm(
+        "  Verification gates? (commit-gate hook + init-sh.sh)",
+        default=False,
+        io=io,
+    )
+
+    return HarnessConfig(
+        level="ralph-loop",
+        task_tracking=task_tracking,
+        budget_awareness=budget_awareness,
+        verification_gates=verification_gates,
+        ralph_loop_plugin=True,
     )

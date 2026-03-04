@@ -1089,7 +1089,7 @@ def test_full_cross_product(tmp_path, template, workflow):
 
 @pytest.mark.parametrize(
     "level",
-    ["none", "lite", "standard", "autonomy"],
+    ["none", "lite", "standard", "autonomy", "ralph-loop"],
 )
 def test_every_harness_level(tmp_path, level):
     """Every harness level generates appropriate files."""
@@ -1117,6 +1117,11 @@ def test_every_harness_level(tmp_path, level):
         assert (tmp_path / "PROMPT.md").exists()
         assert (tmp_path / "claude-progress.txt").exists()
         assert (tmp_path / ".claude" / "harness-config.json").exists()
+    elif level == "ralph-loop":
+        # Plugin-based autonomy: no loop.sh or PROMPT.md (handled by ralph-loop plugin)
+        assert not (tmp_path / "loop.sh").exists()
+        assert not (tmp_path / "PROMPT.md").exists()
+        assert not (tmp_path / ".claude" / "harness-config.json").exists()
 
     _assert_manifest_consistent(tmp_path)
 
@@ -1624,11 +1629,13 @@ class TestS22GenericStandardB0:
     def test_no_typecheck_hook(self):
         assert not (self.root / ".claude" / "hooks" / "typecheck.sh").exists()
 
-    def test_mcp_json_has_github_only(self):
-        data = json.loads((self.root / ".mcp.json").read_text())
-        servers = list(data.get("mcpServers", {}).keys())
-        assert "github" in servers
-        assert "postgres" not in servers
+    def test_github_plugin_replaces_github_mcp(self):
+        """GitHub MCP replaced by github plugin — no .mcp.json for generic."""
+        # Generic template only had github MCP, now replaced by plugin
+        assert not (self.root / ".mcp.json").exists()
+        settings = json.loads((self.root / ".claude" / "settings.json").read_text())
+        plugins = settings.get("enabledPlugins", {})
+        assert "github@claude-plugins-official" in plugins
 
     def test_project_type_is_generic(self):
         data = json.loads((self.root / ".cc-rig.json").read_text())
@@ -1859,3 +1866,153 @@ def test_pack_skills_in_claude_md_per_pack(tmp_path, pack_name):
         assert skill_name in content, (
             f"Pack {pack_name!r} skill {skill_name!r} missing from CLAUDE.md"
         )
+
+
+# ── Plugin integration E2E tests ─────────────────────────────────────
+
+
+@pytest.mark.parametrize("template", TEMPLATES)
+def test_all_templates_have_enabled_plugins(tmp_path, template):
+    """Every template should have enabledPlugins in settings.json."""
+    config, _ = _generate(tmp_path, template, "standard")
+    settings = _read_settings(tmp_path)
+    assert "enabledPlugins" in settings
+    plugins = settings["enabledPlugins"]
+    assert "github@claude-plugins-official" in plugins
+
+
+@pytest.mark.parametrize("template", TEMPLATES)
+def test_github_mcp_not_in_config(tmp_path, template):
+    """GitHub MCP should be removed from config when github plugin is present."""
+    config, _ = _generate(tmp_path, template, "standard")
+    assert "github" not in config.default_mcps
+
+
+def test_python_template_has_pyright_lsp(tmp_path):
+    config, _ = _generate(tmp_path, "fastapi", "standard")
+    settings = _read_settings(tmp_path)
+    assert "pyright-lsp@claude-plugins-official" in settings["enabledPlugins"]
+
+
+def test_typescript_template_has_typescript_lsp(tmp_path):
+    config, _ = _generate(tmp_path, "nextjs", "standard")
+    settings = _read_settings(tmp_path)
+    assert "typescript-lsp@claude-plugins-official" in settings["enabledPlugins"]
+
+
+def test_go_template_has_gopls_lsp(tmp_path):
+    config, _ = _generate(tmp_path, "gin", "standard")
+    settings = _read_settings(tmp_path)
+    assert "gopls-lsp@claude-plugins-official" in settings["enabledPlugins"]
+
+
+def test_ruby_template_no_lsp(tmp_path):
+    config, _ = _generate(tmp_path, "rails", "standard")
+    settings = _read_settings(tmp_path)
+    plugins = settings["enabledPlugins"]
+    lsp_plugins = [k for k in plugins if "lsp" in k]
+    assert len(lsp_plugins) == 0
+
+
+def test_nextjs_has_vercel_plugin(tmp_path):
+    config, _ = _generate(tmp_path, "nextjs", "standard")
+    settings = _read_settings(tmp_path)
+    assert "vercel@claude-plugins-official" in settings["enabledPlugins"]
+
+
+def test_verify_heavy_has_security_guidance(tmp_path):
+    config, _ = _generate(tmp_path, "fastapi", "verify-heavy")
+    settings = _read_settings(tmp_path)
+    assert "security-guidance@claude-plugins-official" in settings["enabledPlugins"]
+
+
+def test_speedrun_has_commit_commands(tmp_path):
+    config, _ = _generate(tmp_path, "fastapi", "speedrun")
+    settings = _read_settings(tmp_path)
+    assert "commit-commands@claude-plugins-official" in settings["enabledPlugins"]
+
+
+# ── S23: FastAPI + Standard + ralph-loop ─────────────────────────────
+
+
+class TestS23RalphLoopPlugin:
+    """Ralph-loop plugin harness with B1/B2 features."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.root = tmp_path
+        config = compute_defaults("fastapi", "standard", project_name="test-ralph")
+        config.harness = HarnessConfig(
+            level="ralph-loop",
+            task_tracking=True,
+            budget_awareness=True,
+            verification_gates=True,
+        )
+        # Add ralph-loop plugin manually (harness wizard does this)
+        from cc_rig.config.project import PluginRecommendation
+        from cc_rig.plugins.registry import PLUGIN_CATALOG
+
+        ralph = PLUGIN_CATALOG["ralph-loop"]
+        config.recommended_plugins = list(config.recommended_plugins) + [
+            PluginRecommendation(
+                name=ralph.name,
+                marketplace=ralph.marketplace,
+                category=ralph.category,
+                description=ralph.description,
+            )
+        ]
+        self.manifest = generate_all(config, tmp_path)
+        self.config = config
+
+    def test_no_loop_sh(self):
+        assert not (self.root / "loop.sh").exists()
+
+    def test_no_prompt_md(self):
+        assert not (self.root / "PROMPT.md").exists()
+
+    def test_no_progress_txt(self):
+        assert not (self.root / "claude-progress.txt").exists()
+
+    def test_task_tracking_files(self):
+        assert (self.root / "tasks" / "todo.md").exists()
+        assert (self.root / "agent_docs" / "harness.md").exists()
+
+    def test_init_sh_exists(self):
+        assert (self.root / ".claude" / "hooks" / "init-sh.sh").exists()
+
+    def test_ralph_loop_in_settings(self):
+        settings = _read_settings(self.root)
+        assert "ralph-loop@claude-plugins-official" in settings["enabledPlugins"]
+
+    def test_pyright_lsp_in_settings(self):
+        settings = _read_settings(self.root)
+        assert "pyright-lsp@claude-plugins-official" in settings["enabledPlugins"]
+
+    def test_github_plugin_in_settings(self):
+        settings = _read_settings(self.root)
+        assert "github@claude-plugins-official" in settings["enabledPlugins"]
+
+    def test_budget_reminder_hook_exists(self):
+        assert (self.root / ".claude" / "hooks" / "budget-reminder.sh").exists()
+
+    def test_no_harness_config_json(self):
+        assert not (self.root / ".claude" / "harness-config.json").exists()
+
+
+# ── Workflow × template plugin cross-product ─────────────────────────
+
+
+@pytest.mark.parametrize(
+    "workflow,expected_plugin",
+    [
+        ("speedrun", "commit-commands"),
+        ("standard", "code-review"),
+        ("spec-driven", "feature-dev"),
+        ("verify-heavy", "security-guidance"),
+    ],
+)
+def test_workflow_plugin_across_templates(workflow, expected_plugin, tmp_path):
+    """Each workflow's characteristic plugin appears regardless of template."""
+    config = compute_defaults("fastapi", workflow)
+    names = [p.name for p in config.recommended_plugins]
+    assert expected_plugin in names

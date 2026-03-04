@@ -58,7 +58,7 @@ class TestGuidedFlow:
                 "1",  # launcher: fresh project
                 "my-project",  # project name
                 "A test project",  # description
-                "3",  # template: fastapi (index 3, after generic)
+                "2",  # template: fastapi (index 2, after generic)
                 "2",  # workflow: standard (index 2)
                 "n",  # add optional skill packs? no
                 "n",  # customize? no
@@ -101,7 +101,7 @@ class TestQuickFlow:
         # Inputs: template pick, workflow pick, name
         io = _make_io(
             [
-                "3",  # template: fastapi (after generic)
+                "2",  # template: fastapi (after generic)
                 "2",  # workflow: standard
                 "quick-proj",  # name
             ]
@@ -121,7 +121,7 @@ class TestExpertFlow:
                 "1",  # launcher: fresh project
                 "expert-proj",  # name
                 "",  # description
-                "3",  # template: fastapi (after generic)
+                "2",  # template: fastapi (after generic)
                 "2",  # workflow: standard
                 "none",  # expert: customize nothing
                 "n",  # add optional skill packs? no
@@ -133,6 +133,34 @@ class TestExpertFlow:
         rc = run_wizard(args, io)
         assert rc == 0
         assert (output / "CLAUDE.md").exists()
+
+    def test_expert_plugins_category_applies_selection(self, tmp_path):
+        """Selecting 'plugins' in expert category picker applies the plugin selection."""
+        output = tmp_path / "out"
+        # Plugin options (sorted, non-autonomy) indices (1-based):
+        #   7=github, 16=pyright-lsp
+        io = _make_io(
+            [
+                "1",  # launcher: fresh project
+                "plugin-proj",  # name
+                "",  # description
+                "2",  # template: fastapi (after generic)
+                "2",  # workflow: standard
+                "3",  # expert categories: plugins (3rd option in ask_multi)
+                "7,16",  # plugin selection: github + pyright-lsp
+                "n",  # add optional skill packs? no
+                "n",  # add runtime harness? no
+                "y",  # generate? yes
+            ]
+        )
+        args = _make_args(expert=True, output=str(output))
+        rc = run_wizard(args, io)
+        assert rc == 0
+        assert (output / "CLAUDE.md").exists()
+        data = json.loads((output / ".cc-rig.json").read_text())
+        plugin_names = [p["name"] for p in data.get("recommended_plugins", [])]
+        assert "github" in plugin_names
+        assert "pyright-lsp" in plugin_names
 
 
 class TestConfigLoadFlow:

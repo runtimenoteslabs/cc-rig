@@ -241,8 +241,15 @@ class TestDoctorAndClean:
         # Generate a project first so doctor has something to check
         main(
             [
-                "init", "--template", "fastapi", "--workflow", "speedrun",
-                "--name", "test", "-o", str(tmp_path),
+                "init",
+                "--template",
+                "fastapi",
+                "--workflow",
+                "speedrun",
+                "--name",
+                "test",
+                "-o",
+                str(tmp_path),
             ]
         )
         rc = main(["doctor", "--dir", str(tmp_path)])

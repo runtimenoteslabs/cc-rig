@@ -30,6 +30,7 @@ from textual.widgets import (
 )
 
 from cc_rig.config.schema import VALID_AGENTS, VALID_COMMANDS, VALID_HOOKS
+from cc_rig.plugins.registry import PLUGIN_CATALOG, WORKFLOW_PLUGINS
 from cc_rig.presets.manager import BUILTIN_TEMPLATES, BUILTIN_WORKFLOWS, load_workflow
 from cc_rig.ui.banner import BANNER, BANNER_COMPACT, TAGLINE
 
@@ -103,7 +104,7 @@ TabbedContent {
     border-left: thick #10999e;
     padding: 1 2;
     min-height: 5;
-    max-height: 12;
+    max-height: 16;
     overflow-y: auto;
     margin: 1 0;
 }
@@ -191,6 +192,10 @@ _Button.-primary:focus {
     max-height: 10;
     overflow-y: auto;
     margin: 1 0;
+}
+
+.hidden {
+    display: none;
 }
 """
 
@@ -479,7 +484,7 @@ class WorkflowScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Label("Select your workflow", classes="screen-title")
             yield Label(
-                "Controls which agents, commands, hooks, and features are generated.",
+                "Controls which agents, commands, hooks, plugins, and features are generated.",
                 classes="description",
             )
             buttons = []
@@ -488,7 +493,8 @@ class WorkflowScreen(ModalScreen[Optional[dict]]):
                 desc = data.get("description", w)
                 agents = len(data.get("agents", []))
                 commands = len(data.get("commands", []))
-                label = f"{w} - {desc} ({agents} agents, {commands} cmds)"
+                plugins = len(WORKFLOW_PLUGINS.get(w, []))
+                label = f"{w} - {desc} ({agents} agents, {commands} cmds, {plugins} plugins)"
                 selected = self._state.get("workflow", "standard")
                 buttons.append(RadioButton(label, value=(w == selected)))
             yield RadioSet(*buttons, id="workflow-radio")
@@ -552,6 +558,7 @@ def _format_config_summary(config: Any, output_dir: str = ".") -> str:
         f"  Hooks:      {len(config.hooks)}",
         f"  Features:   {features_str}",
         f"  Skills:     {len(config.recommended_skills)} recommended",
+        f"  Plugins:    {len(config.recommended_plugins)}",
         f"  MCPs:       {len(config.default_mcps)}",
         f"  Harness:    {config.harness.level}",
         f"  Output:     {output_dir}",
@@ -585,11 +592,11 @@ class ReviewScreen(ModalScreen[Optional[dict]]):
             yield Label("")
             yield Label("Expert mode", classes="screen-title")
             yield Checkbox(
-                "Customize agents, commands, hooks and features",
+                "Customize agents, commands, hooks, plugins and features",
                 id="chk-customize",
             )
             yield Label(
-                "  Add or remove individual agents, commands and hooks\n"
+                "  Add or remove individual agents, commands, hooks and plugins\n"
                 "  Toggle features: memory, spec workflow, GTD, worktrees\n"
                 "  The defaults above work well for most projects",
                 classes="description",
@@ -630,6 +637,7 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
             get_agent_descriptions,
             get_command_descriptions,
             get_hook_descriptions,
+            get_plugin_descriptions,
         )
 
         yield BrandHeader(self._state.get("step_label", ""))
@@ -637,19 +645,25 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
         current_agents = config.agents if config else []
         current_commands = config.commands if config else []
         current_hooks = config.hooks if config else []
+        current_plugin_names = {p.name for p in config.recommended_plugins} if config else set()
 
         agent_descs = get_agent_descriptions()
         command_descs = get_command_descriptions()
         hook_descs = get_hook_descriptions()
+        plugin_descs = get_plugin_descriptions()
+
+        # Exclude autonomy plugins (ralph-loop managed by harness)
+        available_plugins = {k: v for k, v in PLUGIN_CATALOG.items() if v.category != "autonomy"}
 
         agents_label = f"Agents ({len(current_agents)}/{len(VALID_AGENTS)} selected)"
         cmds_label = f"Commands ({len(current_commands)}/{len(VALID_COMMANDS)} selected)"
+        plugins_label = f"Plugins ({len(current_plugin_names)}/{len(available_plugins)} selected)"
         hooks_label = f"Hooks ({len(current_hooks)}/{len(VALID_HOOKS)} selected)"
 
         with VerticalScroll(id="body"):
             yield Label("Expert customization", classes="screen-title")
             yield Label(
-                "Select agents, commands and hooks for your project.",
+                "Select agents, commands, plugins and hooks for your project.",
                 classes="description",
             )
 
@@ -678,6 +692,18 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
                         ],
                         id="sel-commands",
                     )
+                with TabPane(plugins_label, id="tab-plugins"):
+                    yield SelectionList[str](
+                        *[
+                            (
+                                f"{name} - {plugin_descs.get(name, '')}",
+                                name,
+                                name in current_plugin_names,
+                            )
+                            for name in sorted(available_plugins)
+                        ],
+                        id="sel-plugins",
+                    )
                 with TabPane(hooks_label, id="tab-hooks"):
                     yield SelectionList[str](
                         *[
@@ -702,11 +728,13 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
             agents = list(self.query_one("#sel-agents", SelectionList).selected)
             commands = list(self.query_one("#sel-commands", SelectionList).selected)
             hooks = list(self.query_one("#sel-hooks", SelectionList).selected)
+            plugins = list(self.query_one("#sel-plugins", SelectionList).selected)
             self.dismiss(
                 {
                     "expert_agents": agents,
                     "expert_commands": commands,
                     "expert_hooks": hooks,
+                    "expert_plugins": plugins,
                 }
             )
         elif event.button.id == "btn-back":
@@ -891,9 +919,10 @@ class SkillPacksScreen(ModalScreen[Optional[dict]]):
 
 
 class HarnessScreen(ModalScreen[Optional[dict]]):
-    """Select runtime harness level (B0-B3) with educational detail panel."""
+    """Select runtime harness level (B0-B3 + ralph-loop) with educational detail panel."""
 
-    _LEVELS = ["none", "lite", "standard", "autonomy"]
+    _LEVELS = ["none", "lite", "standard", "autonomy", "ralph-loop"]
+    _FEATURE_LEVELS = {"ralph-loop", "custom"}
 
     BINDINGS = [("escape", "go_back", "Back")]
 
@@ -930,10 +959,40 @@ class HarnessScreen(ModalScreen[Optional[dict]]):
                     "Autonomy (B3) - Autonomous iteration with safety rails",
                     value=(prev_level == "autonomy"),
                 ),
+                RadioButton(
+                    "Ralph Loop - Official Anthropic autonomous loop (plugin)",
+                    value=(prev_level == "ralph-loop"),
+                ),
                 id="harness-radio",
             )
             default_detail = HARNESS_DETAILS.get(prev_level, "")
             yield Static(default_detail, id="harness-details")
+
+            # B1/B2 feature checkboxes — shown for ralph-loop and custom
+            show_features = prev_level in self._FEATURE_LEVELS
+            yield Label(
+                "Select individual features:",
+                id="harness-features-label",
+                classes="" if show_features else "hidden",
+            )
+            yield Checkbox(
+                "Task tracking (todo.md + session-tasks hook)",
+                value=self._state.get("harness_task_tracking", True),
+                id="harness-task-tracking",
+                classes="" if show_features else "hidden",
+            )
+            yield Checkbox(
+                "Budget awareness (budget-reminder hook)",
+                value=self._state.get("harness_budget_awareness", True),
+                id="harness-budget-awareness",
+                classes="" if show_features else "hidden",
+            )
+            yield Checkbox(
+                "Verification gates (commit-gate hook + init-sh.sh)",
+                value=self._state.get("harness_verification_gates", False),
+                id="harness-verification-gates",
+                classes="" if show_features else "hidden",
+            )
         yield NavBar()
         yield KeyHintsBar()
 
@@ -948,13 +1007,38 @@ class HarnessScreen(ModalScreen[Optional[dict]]):
             level = self._LEVELS[idx]
             detail = HARNESS_DETAILS.get(level, "")
             self.query_one("#harness-details", Static).update(detail)
+            # Show/hide B1/B2 feature checkboxes
+            show = level in self._FEATURE_LEVELS
+            for wid in (
+                "#harness-features-label",
+                "#harness-task-tracking",
+                "#harness-budget-awareness",
+                "#harness-verification-gates",
+            ):
+                widget = self.query_one(wid)
+                if show:
+                    widget.remove_class("hidden")
+                else:
+                    widget.add_class("hidden")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-next":
             radio = self.query_one("#harness-radio", RadioSet)
             idx = radio.pressed_index if radio.pressed_index >= 0 else 0
             level = self._LEVELS[idx]
-            self.dismiss({"harness_level": level})
+            result: dict[str, Any] = {"harness_level": level}
+            # Include feature flags for ralph-loop and custom
+            if level in self._FEATURE_LEVELS:
+                result["harness_task_tracking"] = self.query_one(
+                    "#harness-task-tracking", Checkbox
+                ).value
+                result["harness_budget_awareness"] = self.query_one(
+                    "#harness-budget-awareness", Checkbox
+                ).value
+                result["harness_verification_gates"] = self.query_one(
+                    "#harness-verification-gates", Checkbox
+                ).value
+            self.dismiss(result)
         elif event.button.id == "btn-back":
             self.dismiss(None)
         elif event.button.id == "btn-cancel":
@@ -1235,7 +1319,7 @@ class WizardApp(App[Optional[dict]]):
 
     def _apply_expert(self, state: dict[str, Any]) -> dict[str, Any]:
         """Apply expert screen selections to config."""
-        from cc_rig.config.project import Features
+        from cc_rig.config.project import Features, PluginRecommendation
 
         config = state.get("config")
         if config is None:
@@ -1249,6 +1333,19 @@ class WizardApp(App[Optional[dict]]):
             config.hooks = state["expert_hooks"]
         if "expert_features" in state:
             config.features = Features(**state["expert_features"])
+        if "expert_plugins" in state:
+            config.recommended_plugins = [
+                PluginRecommendation(
+                    name=name,
+                    marketplace=PLUGIN_CATALOG[name].marketplace,
+                    category=PLUGIN_CATALOG[name].category,
+                    description=PLUGIN_CATALOG[name].description,
+                    requires_binary=PLUGIN_CATALOG[name].requires_binary,
+                    replaces_mcp=PLUGIN_CATALOG[name].replaces_mcp,
+                )
+                for name in state["expert_plugins"]
+                if name in PLUGIN_CATALOG
+            ]
 
         state["config"] = config
         return state
@@ -1285,19 +1382,44 @@ class WizardApp(App[Optional[dict]]):
         """Apply harness level to config.
 
         B3 (autonomy) automatically adds the autonomy-loop hook if missing.
+        Ralph-loop adds the ralph-loop plugin if not already present.
         """
-        from cc_rig.config.project import HarnessConfig
+        from cc_rig.config.project import HarnessConfig, PluginRecommendation
+        from cc_rig.plugins.registry import PLUGIN_CATALOG
 
         config = state.get("config")
         if config is None:
             return state
 
         level = state.get("harness_level", "none")
-        config.harness = HarnessConfig(level=level)
+        if level in ("ralph-loop", "custom"):
+            config.harness = HarnessConfig(
+                level=level,
+                task_tracking=state.get("harness_task_tracking", False),
+                budget_awareness=state.get("harness_budget_awareness", False),
+                verification_gates=state.get("harness_verification_gates", False),
+            )
+        else:
+            config.harness = HarnessConfig(level=level)
 
         # B3 requires the autonomy-loop hook — add it automatically
         if level == "autonomy" and "autonomy-loop" not in config.hooks:
             config.hooks = list(config.hooks) + ["autonomy-loop"]
+
+        # Ralph-loop: add the plugin to recommended_plugins
+        if level == "ralph-loop":
+            ralph_spec = PLUGIN_CATALOG.get("ralph-loop")
+            if ralph_spec:
+                plugin_names = {p.name for p in config.recommended_plugins}
+                if "ralph-loop" not in plugin_names:
+                    config.recommended_plugins = list(config.recommended_plugins) + [
+                        PluginRecommendation(
+                            name=ralph_spec.name,
+                            marketplace=ralph_spec.marketplace,
+                            category=ralph_spec.category,
+                            description=ralph_spec.description,
+                        )
+                    ]
 
         state["config"] = config
         return state
