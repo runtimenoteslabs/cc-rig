@@ -491,9 +491,7 @@ def _generate_b3(
         'echo "  Max iterations: ${MAX_ITERATIONS}"\n'
     )
     if h.budget_per_run_tokens is not None:
-        loop_banner += (
-            'echo "  Budget: ${BUDGET_TOKENS} tokens"\n'
-        )
+        loop_banner += 'echo "  Budget: ${BUDGET_TOKENS} tokens"\n'
     loop_banner += (
         'echo "  Press Ctrl+C to stop at any time."\n'
         'echo "================================================"\n'
@@ -556,10 +554,10 @@ def _generate_b3(
         "except Exception:\n"
         "    print('0 0 0 0')\n"
         '" "$RESULT_FILE" 2>/dev/null) || COST_DATA="0 0 0 0"\n'
-        '        ITER_INPUT=$(echo "$COST_DATA" | awk \'{print $1}\')\n'
-        '        ITER_OUTPUT=$(echo "$COST_DATA" | awk \'{print $2}\')\n'
-        '        ITER_CACHE=$(echo "$COST_DATA" | awk \'{print $3}\')\n'
-        '        ITER_COST=$(echo "$COST_DATA" | awk \'{print $4}\')\n'
+        "        ITER_INPUT=$(echo \"$COST_DATA\" | awk '{print $1}')\n"
+        "        ITER_OUTPUT=$(echo \"$COST_DATA\" | awk '{print $2}')\n"
+        "        ITER_CACHE=$(echo \"$COST_DATA\" | awk '{print $3}')\n"
+        "        ITER_COST=$(echo \"$COST_DATA\" | awk '{print $4}')\n"
         "    fi\n"
         '    rm -f "$RESULT_FILE"\n'
         "\n"
@@ -622,7 +620,7 @@ def _generate_b3(
         '        if [ "$BEFORE_HEAD" = "$AFTER_HEAD" ]; then\n'
         "            if ! git diff --quiet 2>/dev/null ||"
         " ! git diff --cached --quiet 2>/dev/null; then\n"
-        '                git add -A && git commit -m'
+        "                git add -A && git commit -m"
         ' "checkpoint: auto-commit after iteration ${ITERATION}" 2>/dev/null || true\n'
         "            fi\n"
         "        fi\n"
@@ -633,7 +631,7 @@ def _generate_b3(
         "\n"
         "    # Progress ledger with cost\n"
         '    echo "iter=${ITERATION} | tokens_in=${ITER_INPUT} tokens_out=${ITER_OUTPUT}'
-        " | cost=\\$${ITER_COST} | cumulative=\\$${CUMULATIVE_COST_USD}\""
+        ' | cost=\\$${ITER_COST} | cumulative=\\$${CUMULATIVE_COST_USD}"'
         " >> claude-progress.txt\n"
     )
 
