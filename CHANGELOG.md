@@ -2,17 +2,21 @@
 
 All notable changes to cc-rig will be documented in this file.
 
-## [1.4.1] - 2026-03-05
+## [1.4.1] - 2026-03-06
 
 ### Added
+- **Multi-worktree orchestration** — `cc-rig worktree spawn/list/status/pr/cleanup`. Launch multiple Claude sessions in parallel worktrees from the terminal. Each task gets an isolated git worktree and branch (`wt/<slug>`). State tracked in `.claude/worktrees.json`. PID-based status monitoring, PR creation via `gh`, batch cleanup. New `cc_rig/worktree/` package (state, manager, orchestrator). 92 new tests across 4 test files.
 - **`cc-rig config update`** — Re-run wizard with existing config values pre-filled, show diff, regenerate on confirmation. Supports `--quick` and `--expert` modes.
 - **`cc-rig doctor --check-compat`** — Check generated config features against installed Claude Code version. Warns about plugins, background agents, worktree isolation, and settings.local.json on older CC versions.
 - **Community preset validation** — `validate_preset()` validates schema before installation. Template presets require `project_type`; workflow presets require `agents` and `commands` as lists.
-- **47 new tests** across 4 test files: `test_config_update.py` (9), `test_compat.py` (12), `test_data_files.py` (11), `test_preset_community.py` (15).
 
 ### Changed
 - **Data extraction (M6)** — Moved `_COMMAND_DEFS` (19 commands) and `_AGENT_DEFS` (13 agents) from inline Python to `cc_rig/data/commands.json` and `cc_rig/data/agents.json`. Pure refactor, zero behavior change.
 - Added `package-data` to `pyproject.toml` to ensure JSON data files are included in wheels.
+- TUI worktree feature description expanded with usage examples and workflow context.
+- Workflow detail panels now show `parallel-worker` agent and `worktree` command for spec-driven, gtd-lite, verify-heavy.
+- Generated CLAUDE.md worktree section includes `cc-rig worktree` CLI examples.
+- `#feature-details` panel max-height bumped from 10 to 16 for longer descriptions.
 
 ---
 
