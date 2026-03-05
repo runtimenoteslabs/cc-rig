@@ -4,11 +4,23 @@ import hashlib
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from cc_rig.clean import CleanResult, _remove_empty_dirs, cleanup_files, load_manifest
 from cc_rig.generators.fileops import _BACKUP_DIR
+from cc_rig.skills.downloader import SkillInstallReport
 from cc_rig.ui.prompts import IO
 from cc_rig.wizard.generate import run_generation
 from tests.conftest import generate_project, make_io
+
+
+@pytest.fixture(autouse=True)
+def _mock_skill_downloads():
+    """Mock skill downloads to avoid network calls and ensure deterministic manifests."""
+    report = SkillInstallReport()
+    object.__setattr__(report, "_files", [])
+    with patch("cc_rig.generators.skills.download_skills", return_value=report):
+        yield
 
 
 def _make_io_with_prompts(inputs: list[str]) -> IO:
