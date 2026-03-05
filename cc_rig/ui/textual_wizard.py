@@ -189,7 +189,7 @@ _Button.-primary:focus {
     border-left: thick #10999e;
     padding: 1 2;
     min-height: 5;
-    max-height: 10;
+    max-height: 16;
     overflow-y: auto;
     margin: 1 0;
 }

@@ -293,6 +293,14 @@ def _section_worktrees(config: ProjectConfig) -> str:
         "The parallel-worker runs with `isolation: worktree` and "
         "`background: true`.\n"
         "Each worktree gets its own branch. Merge results back via PR.\n"
+        "\n"
+        "For batch orchestration from the terminal:\n"
+        "```\n"
+        'cc-rig worktree spawn "Fix auth bug" "Add rate limiting"\n'
+        "cc-rig worktree list        # check status of all worktrees\n"
+        "cc-rig worktree pr fix-auth  # push and create PR\n"
+        "cc-rig worktree cleanup --merged  # clean up finished work\n"
+        "```\n"
     )
 
 

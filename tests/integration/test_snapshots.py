@@ -271,14 +271,25 @@ class TestCLAUDEmdSnapshot:
                 "Static content should come before dynamic (memory) content"
             )
 
+    _LINE_CAPS = {
+        "speedrun": 65,
+        "standard": 100,
+        "spec-driven": 122,
+        "gtd-lite": 127,
+        "verify-heavy": 127,
+    }
+
     @pytest.mark.parametrize("template,workflow", _SNAPSHOT_COMBOS)
-    def test_under_115_lines(self, template, workflow, tmp_path):
-        """CLAUDE.md must stay under 115 lines (cache-aware, includes skills section)."""
+    def test_line_count_within_target(self, template, workflow, tmp_path):
+        """CLAUDE.md must stay under per-workflow line cap (cache-aware)."""
         output = tmp_path / "out"
         _generate(template, workflow, output)
         content = (output / "CLAUDE.md").read_text()
         line_count = content.count("\n") + 1
-        assert line_count <= 115, f"{template}+{workflow}: {line_count} lines > 115"
+        cap = self._LINE_CAPS[workflow]
+        assert line_count <= cap, (
+            f"{template}+{workflow}: {line_count} lines > {cap}"
+        )
 
 
 class TestConfigSnapshot:

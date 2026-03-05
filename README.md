@@ -360,7 +360,7 @@ Some workflows include compound features that span multiple Claude Code primitiv
 
 **GTD System** (gtd-lite). Getting Things Done for Claude Code: `/gtd-capture`, `/gtd-process`, `/daily-plan` commands, pre-created `tasks/inbox.md`, `tasks/todo.md` and `tasks/someday.md`. Based on [adagradschool's cc-gtd](https://github.com/adagradschool/cc-gtd).
 
-**Worktrees** (spec-driven, gtd-lite, verify-heavy). Parallel development using Claude Code's native git worktree support: `parallel-worker` agent and `/worktree` command.
+**Worktrees** (spec-driven, gtd-lite, verify-heavy). Parallel development using Claude Code's native git worktree support: `parallel-worker` agent and `/worktree` command. For batch orchestration, `cc-rig worktree spawn` launches multiple Claude sessions in isolated worktrees simultaneously — each gets its own branch, runs independently, and can be merged via PR when done.
 
 ### Mix and match
 
@@ -498,6 +498,12 @@ cc-rig skills catalog              Browse all available skills
 cc-rig skills add <name> [-d DIR]  Install a skill from the catalog
 cc-rig skills remove <name> [-d DIR] Remove an installed skill
 cc-rig skills install [-d DIR]     Retry failed downloads from init
+
+cc-rig worktree spawn "task1" "task2" ...  Launch Claude in parallel worktrees
+cc-rig worktree list [-d DIR]      Show all worktrees and status
+cc-rig worktree status <name>      Detailed status of one worktree
+cc-rig worktree pr <name>          Push branch and create PR from worktree
+cc-rig worktree cleanup [name] [--all] [--merged] [--force]
 
 cc-rig doctor [--fix] [--check-compat] [-d DIR]  Validate project health
 cc-rig clean [--force] [-d DIR]    Remove generated files

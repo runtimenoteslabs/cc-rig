@@ -81,35 +81,42 @@ WORKFLOW_DETAILS: dict[str, str] = {
         "Best for: Complex features, team handoffs, regulated environments\n"
         "Philosophy: Plan thoroughly before coding. Specs drive implementation.\n"
         "Includes:\n"
-        "  Agents:   code-reviewer, test-writer, explorer, architect, pm-spec, implementer\n"
-        "  Commands: fix-issue, review, test, plan, spec-create, spec-execute, assumptions\n"
+        "  Agents:   code-reviewer, test-writer, explorer, architect, pm-spec,\n"
+        "            implementer, parallel-worker (worktree isolation)\n"
+        "  Commands: fix-issue, review, test, plan, spec-create, spec-execute,\n"
+        "            assumptions, worktree\n"
         "  Hooks:    format, lint, typecheck, block-rm-rf, block-env, block-main,\n"
         "            stop-validator, push-review, commit-message\n"
         "  Plugins:  commit-commands, code-review, feature-dev, pr-review-toolkit + LSP\n"
-        "  Features: spec-workflow enabled"
+        "  Features: spec-workflow, worktrees enabled"
     ),
     "gtd-lite": (
         "Best for: Solo devs managing multiple projects, personal productivity\n"
         "Philosophy: Capture everything, process later. Never lose an idea.\n"
         "Includes:\n"
-        "  Agents:   code-reviewer, test-writer, explorer\n"
-        "  Commands: fix-issue, review, test, plan, gtd-capture, gtd-process, daily-plan\n"
-        "  Hooks:    format, lint, block-rm-rf, block-env, stop-validator, memory-precompact\n"
+        "  Agents:   code-reviewer, test-writer, explorer,\n"
+        "            parallel-worker (worktree isolation)\n"
+        "  Commands: fix-issue, review, test, plan, gtd-capture, gtd-process,\n"
+        "            daily-plan, worktree\n"
+        "  Hooks:    format, lint, block-rm-rf, block-env, stop-validator,\n"
+        "            memory-precompact\n"
         "  Plugins:  commit-commands, code-review + LSP for your language\n"
-        "  Features: memory, gtd enabled"
+        "  Features: memory, gtd, worktrees enabled"
     ),
     "verify-heavy": (
         "Best for: Production systems, security-critical code, compliance\n"
         "Philosophy: Trust nothing. Verify everything. Every change is reviewed.\n"
         "Includes:\n"
         "  Agents:   code-reviewer, test-writer, explorer, architect, pr-reviewer,\n"
-        "            security-auditor, doc-writer\n"
-        "  Commands: fix-issue, review, test, plan, security, document, assumptions\n"
+        "            security-auditor, doc-writer, parallel-worker (worktree isolation)\n"
+        "  Commands: fix-issue, review, test, plan, security, document,\n"
+        "            assumptions, worktree\n"
         "  Hooks:    format, lint, typecheck, block-rm-rf, block-env, block-main,\n"
-        "            stop-validator, push-review, subagent-review, commit-message, doc-review\n"
+        "            stop-validator, push-review, subagent-review, commit-message,\n"
+        "            doc-review\n"
         "  Plugins:  commit-commands, code-review, pr-review-toolkit,\n"
         "            security-guidance + LSP for your language\n"
-        "  Features: none enabled by default"
+        "  Features: worktrees enabled"
     ),
 }
 
@@ -279,11 +286,18 @@ FEATURE_DETAILS: list[dict[str, str]] = [
         "widget_id": "feat-worktrees",
         "label": "Worktrees - parallel branches",
         "description": (
-            "Work on multiple branches simultaneously. Claude spins up isolated\n"
-            "checkouts for independent tasks. No stashing or branch-switching.\n"
-            "Each worktree has its own working directory."
+            "Run multiple tasks at the same time without conflicts. Each task\n"
+            "gets its own isolated checkout — no stashing, no branch-switching,\n"
+            "no stepping on each other's changes.\n"
+            "\n"
+            "Inside a session, use /worktree to delegate a task to a background\n"
+            "agent. From the terminal, spawn several at once:\n"
+            "  cc-rig worktree spawn \"Add OAuth login\" \"Write API docs\"\n"
+            "Then check on them (list), create PRs (pr), and clean up when\n"
+            "merged (cleanup --merged). Great for splitting a large feature\n"
+            "into independent pieces that Claude works on in parallel."
         ),
-        "adds": "Parallel worker agent + /worktree command",
+        "adds": "Parallel worker agent + /worktree command + cc-rig worktree CLI",
     },
 ]
 

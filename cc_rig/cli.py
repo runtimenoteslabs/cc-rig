@@ -305,6 +305,55 @@ def build_parser() -> argparse.ArgumentParser:
         help="Project directory",
     )
 
+    # worktree
+    wt_parser = subparsers.add_parser(
+        "worktree",
+        help="Manage parallel worktrees",
+    )
+    wt_sub = wt_parser.add_subparsers(dest="worktree_command")
+
+    wt_spawn = wt_sub.add_parser("spawn", help="Create worktrees and launch Claude")
+    wt_spawn.add_argument(
+        "tasks",
+        nargs="+",
+        help="Task descriptions (one per worktree)",
+    )
+    wt_spawn.add_argument(
+        "-d", "--dir", default=".", help="Project directory",
+    )
+
+    wt_list = wt_sub.add_parser("list", help="Show all worktrees and status")
+    wt_list.add_argument(
+        "-d", "--dir", default=".", help="Project directory",
+    )
+
+    wt_status = wt_sub.add_parser("status", help="Detailed status of one worktree")
+    wt_status.add_argument("name", help="Worktree name")
+    wt_status.add_argument(
+        "-d", "--dir", default=".", help="Project directory",
+    )
+
+    wt_pr = wt_sub.add_parser("pr", help="Create PR from worktree branch")
+    wt_pr.add_argument("name", help="Worktree name")
+    wt_pr.add_argument(
+        "-d", "--dir", default=".", help="Project directory",
+    )
+
+    wt_cleanup = wt_sub.add_parser("cleanup", help="Remove worktree(s)")
+    wt_cleanup.add_argument("name", nargs="?", help="Worktree name (omit for --all)")
+    wt_cleanup.add_argument(
+        "--all", action="store_true", help="Clean up all worktrees",
+    )
+    wt_cleanup.add_argument(
+        "--merged", action="store_true", help="Clean up only merged worktrees",
+    )
+    wt_cleanup.add_argument(
+        "--force", action="store_true", help="Force remove even if running",
+    )
+    wt_cleanup.add_argument(
+        "-d", "--dir", default=".", help="Project directory",
+    )
+
     # clean
     clean_parser = subparsers.add_parser("clean", help="Remove generated files")
     clean_parser.add_argument(
@@ -343,6 +392,8 @@ def main(argv: list[str] | None = None) -> int:
             return _cmd_skills(args)
         if args.command == "doctor":
             return _cmd_doctor(args)
+        if args.command == "worktree":
+            return _cmd_worktree(args)
         if args.command == "clean":
             return _cmd_clean(args)
         print(f"cc-rig: '{args.command}' not yet implemented")
@@ -1082,6 +1133,173 @@ def _preset_install(args: argparse.Namespace) -> int:
 
     print(f"Installed: {dest}")
     return 0
+
+
+def _cmd_worktree(args: argparse.Namespace) -> int:
+    """Dispatch worktree subcommands."""
+    cmd = getattr(args, "worktree_command", None)
+    if cmd == "spawn":
+        return _worktree_spawn(args)
+    if cmd == "list":
+        return _worktree_list(args)
+    if cmd == "status":
+        return _worktree_status(args)
+    if cmd == "pr":
+        return _worktree_pr(args)
+    if cmd == "cleanup":
+        return _worktree_cleanup(args)
+    print("Usage: cc-rig worktree spawn|list|status|pr|cleanup")
+    return 0
+
+
+def _worktree_spawn(args: argparse.Namespace) -> int:
+    """Create worktrees and launch Claude in each."""
+    from pathlib import Path
+
+    from cc_rig.worktree.orchestrator import spawn_worktrees
+
+    project_dir = Path(args.dir).resolve()
+    created, failures = spawn_worktrees(project_dir, args.tasks)
+
+    if created:
+        print(f"\nSpawned {len(created)} worktree(s):\n")
+        for entry in created:
+            print(f"  {entry.name:<25} {entry.branch:<30} PID {entry.pid}")
+            print(f"  {'':25} {entry.task}")
+        print()
+
+    if failures:
+        print(f"\nFailed ({len(failures)}):\n")
+        for task, reason in failures:
+            print(f"  x {task}: {reason}")
+        print()
+
+    return 1 if failures and not created else 0
+
+
+def _worktree_list(args: argparse.Namespace) -> int:
+    """Show all worktrees and their status."""
+    from datetime import datetime, timezone
+    from pathlib import Path
+
+    from cc_rig.worktree.orchestrator import list_worktrees
+
+    project_dir = Path(args.dir).resolve()
+    entries = list_worktrees(project_dir)
+
+    if not entries:
+        print("No worktrees tracked.")
+        return 0
+
+    now = datetime.now(timezone.utc)
+    print(f"\n{'NAME':<22} {'BRANCH':<28} {'STATUS':<12} {'AGE':<10} TASK")
+    print("-" * 100)
+    for e in entries:
+        # Compute age
+        try:
+            created = datetime.fromisoformat(e.created_at)
+            delta = now - created
+            hours = int(delta.total_seconds() // 3600)
+            mins = int((delta.total_seconds() % 3600) // 60)
+            age = f"{hours}h{mins:02d}m" if hours else f"{mins}m"
+        except (ValueError, TypeError):
+            age = "?"
+
+        task_trunc = e.task[:35] + "..." if len(e.task) > 38 else e.task
+        print(f"  {e.name:<20} {e.branch:<28} {e.status:<12} {age:<10} {task_trunc}")
+    print()
+    return 0
+
+
+def _worktree_status(args: argparse.Namespace) -> int:
+    """Show detailed status for one worktree."""
+    from pathlib import Path
+
+    from cc_rig.worktree.manager import get_worktree_commits
+    from cc_rig.worktree.orchestrator import get_worktree_status
+
+    project_dir = Path(args.dir).resolve()
+    entry = get_worktree_status(project_dir, args.name)
+
+    if entry is None:
+        print(f"No worktree found: {args.name}")
+        return 1
+
+    print(f"\nWorktree: {entry.name}")
+    print(f"  Task:    {entry.task}")
+    print(f"  Branch:  {entry.branch}")
+    print(f"  Path:    {entry.path}")
+    print(f"  Status:  {entry.status}")
+    print(f"  PID:     {entry.pid}")
+    if entry.exit_code is not None:
+        print(f"  Exit:    {entry.exit_code}")
+    print(f"  Created: {entry.created_at}")
+
+    # Show commits on the branch
+    commits = get_worktree_commits(project_dir, entry.branch)
+    if commits:
+        print(f"\n  Commits ({len(commits)}):")
+        for c in commits:
+            print(f"    {c}")
+
+    # Show claude output tail if exists
+    output_file = Path(entry.path) / ".claude-output.json"
+    if output_file.exists():
+        print(f"\n  Output: {output_file}")
+
+    print()
+    return 0
+
+
+def _worktree_pr(args: argparse.Namespace) -> int:
+    """Create a PR from a worktree branch."""
+    from pathlib import Path
+
+    from cc_rig.worktree.orchestrator import worktree_pr
+
+    project_dir = Path(args.dir).resolve()
+    ok, result = worktree_pr(project_dir, args.name)
+
+    if ok:
+        print(f"PR created: {result}")
+        return 0
+    else:
+        print(f"Error: {result}")
+        return 1
+
+
+def _worktree_cleanup(args: argparse.Namespace) -> int:
+    """Remove worktree(s) and their branches."""
+    from pathlib import Path
+
+    from cc_rig.worktree.orchestrator import cleanup_all, cleanup_worktree
+
+    project_dir = Path(args.dir).resolve()
+    force = getattr(args, "force", False)
+
+    if getattr(args, "all", False) or getattr(args, "merged", False):
+        merged_only = getattr(args, "merged", False)
+        results = cleanup_all(project_dir, merged_only=merged_only, force=force)
+        if not results:
+            print("No worktrees to clean up.")
+            return 0
+        for name, ok, msg in results:
+            status = "ok" if ok else "FAIL"
+            print(f"  [{status}] {name}: {msg}")
+        return 0
+
+    name = getattr(args, "name", None)
+    if not name:
+        print("Specify a worktree name, or use --all / --merged.")
+        return 1
+
+    ok, msg = cleanup_worktree(project_dir, name, force=force)
+    if ok:
+        print(msg)
+        return 0
+    else:
+        print(f"Error: {msg}")
+        return 1
 
 
 def _main_entry() -> None:

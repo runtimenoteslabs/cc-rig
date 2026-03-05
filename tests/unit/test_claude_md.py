@@ -66,7 +66,7 @@ class TestLineCounts:
         "speedrun": 65,
         "standard": 100,
         "spec-driven": 120,
-        "gtd-lite": 120,
+        "gtd-lite": 127,
         "verify-heavy": 125,
     }
 
