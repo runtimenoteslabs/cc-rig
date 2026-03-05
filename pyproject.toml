@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cc-rig"
-version = "1.4.0"
+version = "1.4.1"
 description = "Project setup generator for Claude Code"
 readme = "README.md"
 license = "MIT"
@@ -34,6 +34,9 @@ cc-rig = "cc_rig.cli:_main_entry"
 
 [tool.setuptools.packages.find]
 include = ["cc_rig*"]
+
+[tool.setuptools.package-data]
+cc_rig = ["data/*.json", "presets/**/*.json"]
 
 [tool.ruff]
 target-version = "py39"

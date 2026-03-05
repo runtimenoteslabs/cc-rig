@@ -473,7 +473,7 @@ class TestInstallPreset:
         user_dir = tmp_path / "user_presets"
         monkeypatch.setattr("cc_rig.presets.manager._USER_PRESETS_DIR", user_dir)
 
-        with pytest.raises(ValueError, match="Cannot determine preset type"):
+        with pytest.raises(ValueError, match="Cannot determine type"):
             install_preset(ambiguous)
 
     def test_installed_preset_file_name_matches_name_field(self, tmp_path, monkeypatch):
@@ -482,6 +482,7 @@ class TestInstallPreset:
             "name": "special-name",
             "language": "go",
             "framework": "gin",
+            "project_type": "web",
         }
         source = tmp_path / "whatever-filename.json"
         source.write_text(json.dumps(preset_data))

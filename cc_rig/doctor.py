@@ -37,6 +37,7 @@ class DoctorResult:
 def run_doctor(
     project_dir: Path,
     fix: bool = False,
+    check_compat: bool = False,
 ) -> DoctorResult:
     """Run health checks on a cc-rig project.
 
@@ -60,6 +61,11 @@ def run_doctor(
         config = ProjectConfig.from_dict(config_data)
     except (json.JSONDecodeError, KeyError, TypeError) as exc:
         result.errors.append(f".cc-rig.json is invalid: {exc}")
+        return result
+
+    # ── Fast path: --check-compat only ────────────────────────────
+    if check_compat:
+        _check_cc_version(result, config=config)
         return result
 
     # ── Check 2: Manifest exists ──────────────────────────────────
@@ -92,7 +98,7 @@ def run_doctor(
         _check_and_fix_memory(project_dir, result, fix)
 
     # ── Check 8: Claude Code version ───────────────────────────
-    _check_cc_version(result)
+    _check_cc_version(result, config=config)
 
     # ── Check 9: LSP plugin binaries ─────────────────────────
     _check_plugin_binaries(config, result)
@@ -187,13 +193,21 @@ def _check_orphaned_files(
             result.warnings.append(f"Orphaned file (not in manifest): {rel}")
 
 
-def _check_cc_version(result: DoctorResult) -> None:
+def _check_cc_version(
+    result: DoctorResult,
+    config: ProjectConfig | None = None,
+) -> None:
     """Check Claude Code version compatibility."""
-    from cc_rig.config.cc_version import detect_cc_version
+    from cc_rig.config.cc_version import check_feature_compat, detect_cc_version
 
     cc = detect_cc_version()
     for w in cc.warnings:
         result.warnings.append(w)
+
+    # Feature compatibility checks (when config is available)
+    if config is not None and cc.version is not None:
+        for w in check_feature_compat(cc.version, config):
+            result.warnings.append(w)
 
 
 def _check_and_fix_memory(

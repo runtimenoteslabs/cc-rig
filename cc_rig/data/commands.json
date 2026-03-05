@@ -1,0 +1,97 @@
+{
+  "fix-issue": {
+    "description": "End-to-end: reproduce, diagnose, fix, test, commit",
+    "allowed_tools": "Read, Write, Edit, Bash, Glob, Grep",
+    "body": "$ARGUMENTS\n\nFollow these steps to fix the issue described above:\n\n1. **Reproduce**: Find or write a test that demonstrates the bug. Run it to confirm failure.\n2. **Diagnose**: Read the relevant code. Trace the execution path. Identify the root cause.\n3. **Fix**: Make the minimal change that fixes the root cause. Do not refactor unrelated code.\n4. **Test**: Run the failing test. Confirm it passes. Run the full test suite to check for regressions.\n5. **Commit**: Create a focused commit with a message that explains what was wrong and why the fix works."
+  },
+  "review": {
+    "description": "Multi-dimensional code review of recent changes",
+    "allowed_tools": "Read, Glob, Grep, Bash",
+    "body": "$ARGUMENTS\n\nReview the specified code or recent changes:\n\n1. Run `git diff` to see current changes (or read the specified files).\n2. Evaluate across six dimensions: correctness, security, performance, readability, testing, architecture.\n3. For each issue, state: dimension, severity (critical/warning/nit), location, and concrete fix.\n4. End with a verdict: approve, request-changes, or needs-discussion.\n5. If approved, note any optional improvements as nits."
+  },
+  "test": {
+    "description": "Generate tests for specified code with coverage awareness",
+    "allowed_tools": "Read, Write, Edit, Bash, Glob, Grep",
+    "body": "$ARGUMENTS\n\nGenerate tests for the specified code:\n\n1. Read the target code. Identify public API, edge cases, and error paths.\n2. Check existing tests to avoid duplication.\n3. Write tests covering: happy path, error cases, boundary values, integration points.\n4. Follow the project's test conventions (see agent_docs/testing.md).\n5. Run the tests to verify they pass.\n6. Report coverage of the new tests if possible."
+  },
+  "plan": {
+    "description": "Architecture-first planning with checkpoints",
+    "allowed_tools": "Read, Glob, Grep, Bash",
+    "body": "$ARGUMENTS\n\nCreate an implementation plan for the described work:\n\n1. **Understand**: Read relevant code and docs. Map the current architecture.\n2. **Design**: Propose the approach. Identify affected files and interfaces.\n3. **Break down**: Split into ordered tasks with clear checkpoints.\n4. **Risk**: Note assumptions, unknowns, and potential blockers.\n5. **Present**: Show the plan with estimated effort per task.\n\nDo not start implementing. This is a planning step only. Wait for approval before proceeding."
+  },
+  "research": {
+    "description": "Explore codebase before implementing changes",
+    "allowed_tools": "Read, Glob, Grep, Bash, Task",
+    "body": "$ARGUMENTS\n\nResearch the codebase before making changes:\n\n1. **Map**: Identify all files and modules related to the topic.\n2. **Trace**: Follow the execution path. Understand how data flows.\n3. **Conventions**: Note patterns, naming, error handling style.\n4. **Dependencies**: List what depends on the code you'll change.\n5. **Summarize**: Report your findings. Include file paths, key functions, and risks.\n\nUse subagents (Task tool with Explore type) for parallel research across different areas.\nDo not make any changes. This is research only."
+  },
+  "learn": {
+    "description": "Explain code, concept, or pattern in this project",
+    "allowed_tools": "Read, Glob, Grep",
+    "body": "$ARGUMENTS\n\nExplain the specified code, concept, or pattern:\n\n1. Find the relevant code or documentation.\n2. Explain what it does in plain language.\n3. Explain WHY it was designed this way.\n4. Show how it connects to the rest of the codebase.\n5. If applicable, note common gotchas or misunderstandings.\n\nAdjust the explanation depth to match the question. Use code examples from this project, not generic ones."
+  },
+  "assumptions": {
+    "description": "Surface hidden assumptions with confidence levels",
+    "allowed_tools": "Read, Glob, Grep",
+    "body": "$ARGUMENTS\n\nSurface your assumptions about the specified topic:\n\n1. List every assumption you are making.\n2. Rate each with a confidence level: HIGH / MEDIUM / LOW.\n3. For LOW confidence items, explain what information would resolve the uncertainty.\n4. Ask the user to confirm or correct each assumption.\n\nThis is a checkpoint. Do not proceed with implementation until assumptions are validated."
+  },
+  "remember": {
+    "description": "Capture learnings and decisions to memory files",
+    "allowed_tools": "Read, Write, Edit",
+    "body": "$ARGUMENTS\n\nSave the specified learning or decision to memory:\n\n1. Determine if this is team-relevant or personal.\n   - **Team** (architecture, patterns, gotchas, ownership): save to `memory/` files below.\n   - **Personal** (local prefs, machine-specific notes): save to auto-memory instead.\n2. Determine the category: decision, pattern, gotcha, or general.\n3. Write a one-line entry to the appropriate file:\n   - `memory/decisions.md` for architectural decisions\n   - `memory/patterns.md` for discovered patterns\n   - `memory/gotchas.md` for surprises and known issues\n   - `memory/people.md` for ownership changes\n4. Format: `[YYYY-MM-DD] Brief description`\n5. If session-log.md has >20 entries, summarize older ones.\n\nKeep entries concise. One line per learning. Team memory is git-tracked \u2014 everyone sees it."
+  },
+  "refactor": {
+    "description": "Safe refactoring: plan, apply, verify",
+    "allowed_tools": "Read, Write, Edit, Bash, Glob, Grep",
+    "body": "$ARGUMENTS\n\nRefactor the specified code safely:\n\n1. **Verify tests exist** for the code. If not, write them first.\n2. **Plan** the refactoring in small steps.\n3. **Apply** one step at a time:\n   a. Make the change.\n   b. Run tests.\n   c. Commit if green.\n4. **Verify** the final result is measurably better (fewer lines, clearer names, less coupling).\n\nNever change behavior during a refactoring commit. If tests break, revert and rethink."
+  },
+  "spec-create": {
+    "description": "Interview user and produce a specification document",
+    "allowed_tools": "Read, Write, Edit, Glob, Grep",
+    "body": "$ARGUMENTS\n\nCreate a specification through user interview:\n\n1. Ask 3-5 clarifying questions about the feature.\n2. Draft a spec with:\n   - Summary\n   - User stories (As a... I want... So that...)\n   - Acceptance criteria (Given/When/Then)\n   - Task breakdown with estimates\n   - Out of scope\n   - Open questions\n3. Save to `specs/<feature-name>.md`\n4. Review with user and iterate.\n\nBe precise about scope boundaries. Ambiguity in specs causes bugs in implementation."
+  },
+  "spec-execute": {
+    "description": "Pick a task from spec and implement with validation",
+    "allowed_tools": "Read, Write, Edit, Bash, Glob, Grep",
+    "body": "$ARGUMENTS\n\nExecute a task from an existing specification:\n\n1. Read the spec file. List available tasks.\n2. Pick the next unfinished task (or the one specified).\n3. Implement it:\n   a. Write tests based on acceptance criteria.\n   b. Implement until tests pass.\n   c. Run full test suite.\n4. Mark the task as done in the spec.\n5. Commit with a message referencing the spec.\n\nFollow the spec exactly. If the spec is wrong, update it first, then implement."
+  },
+  "techdebt": {
+    "description": "Identify and prioritize technical debt",
+    "allowed_tools": "Read, Glob, Grep, Bash",
+    "body": "$ARGUMENTS\n\nAnalyze the codebase for technical debt:\n\n1. Scan for indicators:\n   - TODO/FIXME/HACK comments\n   - Duplicated logic\n   - Dead code\n   - Missing tests for critical paths\n   - Outdated dependencies\n   - Overly complex functions (high cyclomatic complexity)\n2. Categorize each item by type.\n3. Rate impact: HIGH (blocks features), MEDIUM (slows work), LOW (cosmetic).\n4. Output a prioritized list with location and suggested fix."
+  },
+  "security": {
+    "description": "Security audit focused on OWASP top 10",
+    "allowed_tools": "Read, Glob, Grep, Bash",
+    "body": "$ARGUMENTS\n\nRun a security audit on the specified scope:\n\n1. Check for OWASP Top 10 vulnerabilities:\n   - Injection (SQL, command, template)\n   - Broken authentication\n   - Sensitive data exposure\n   - Broken access control\n   - Security misconfiguration\n   - XSS (if web)\n   - Insecure dependencies\n2. Check for hardcoded secrets or credentials.\n3. Review auth and authz boundaries.\n4. Output findings with severity, location, and recommended fix.\n\nPrioritize critical and high severity findings."
+  },
+  "document": {
+    "description": "Generate documentation for a module or API",
+    "allowed_tools": "Read, Write, Edit, Glob, Grep",
+    "body": "$ARGUMENTS\n\nDocument the specified module or API:\n\n1. Read the source code and existing docs.\n2. Identify public interfaces, parameters, return types.\n3. Write documentation with:\n   - Module overview\n   - Public API reference with type signatures\n   - Usage examples (from this project)\n   - Important caveats or side effects\n4. Update existing docs rather than creating new files.\n\nMatch the project's documentation style. Document the WHY, not just the WHAT."
+  },
+  "optimize": {
+    "description": "Performance analysis and targeted optimization",
+    "allowed_tools": "Read, Write, Edit, Bash, Glob, Grep",
+    "body": "$ARGUMENTS\n\nAnalyze and optimize the specified code:\n\n1. **Profile**: Identify the bottleneck. Do not guess.\n2. **Measure**: Establish a baseline metric.\n3. **Optimize**: Apply the minimal change that addresses the bottleneck.\n4. **Verify**: Measure again. Confirm improvement.\n5. **Test**: Run tests to ensure correctness.\n\nCommon targets: N+1 queries, unnecessary allocations, blocking I/O, missing indexes, redundant computation.\n\nPremature optimization is the root of all evil. Only optimize measured bottlenecks."
+  },
+  "gtd-capture": {
+    "description": "Quick capture an idea or task to inbox",
+    "allowed_tools": "Read, Write, Edit",
+    "body": "$ARGUMENTS\n\nCapture the described item to the GTD inbox:\n\n1. Add the item to `tasks/inbox.md` with a timestamp.\n2. Format: `- [ ] [YYYY-MM-DD] <description>`\n3. Do not process or prioritize yet. Just capture.\n\nThe inbox is for raw capture. Processing happens during `/gtd-process`."
+  },
+  "gtd-process": {
+    "description": "Process inbox items: action, defer, or delete",
+    "allowed_tools": "Read, Write, Edit",
+    "body": "$ARGUMENTS\n\nProcess unprocessed items in `tasks/inbox.md`:\n\nFor each item in the inbox:\n1. **Is it actionable?**\n   - Yes, <2 min \u2192 do it now, mark done.\n   - Yes, larger \u2192 move to `tasks/todo.md` with context.\n   - No, maybe later \u2192 move to `tasks/someday.md`.\n   - No, not needed \u2192 delete it.\n2. Add context to moved items: what is the next action?\n3. Remove processed items from inbox.\n\nGoal: empty inbox after processing."
+  },
+  "daily-plan": {
+    "description": "Morning planning: review tasks and set daily priorities",
+    "allowed_tools": "Read, Write, Edit",
+    "body": "$ARGUMENTS\n\nCreate today's plan:\n\n1. Read `tasks/todo.md` \u2014 what is in progress?\n2. Read `tasks/inbox.md` \u2014 anything urgent?\n3. Check `memory/session-log.md` \u2014 what was done yesterday?\n4. Pick 1-3 tasks for today. Be realistic.\n5. Output the daily plan:\n   - Carry-over items\n   - Today's focus (1-3 tasks)\n   - Blocked items (if any)\n\nStart with the most important task, not the easiest."
+  },
+  "worktree": {
+    "description": "Spawn a parallel worker in an isolated git worktree",
+    "allowed_tools": "Read, Bash, Task",
+    "body": "$ARGUMENTS\n\nSpawn a parallel worker for the described task:\n\n1. Create a new branch for the task.\n2. Spawn the parallel-worker agent with:\n   - `isolation: worktree`\n   - `background: true`\n3. Pass the task description to the worker.\n4. The worker will implement, test, commit, and create a PR.\n\nMonitor the worker's progress. Review the PR when it is ready.\n\nNote: This uses Claude Code's native worktree support via the Task tool."
+  }
+}

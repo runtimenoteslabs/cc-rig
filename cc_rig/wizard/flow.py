@@ -23,6 +23,7 @@ from cc_rig.presets.manager import (
     BUILTIN_WORKFLOWS,
     load_workflow,
 )
+from cc_rig.ui.descriptions import TEMPLATE_DESCRIPTIONS
 from cc_rig.ui.prompts import IO, ask_choice, ask_input, confirm
 from cc_rig.wizard.generate import run_generation
 from cc_rig.wizard.quick import run_quick
@@ -373,6 +374,112 @@ def _quick_flow_textual(
 
     final_output_dir = Path(state.get("output_dir", output_dir))
     return run_generation(config, final_output_dir, io)
+
+
+def run_update_wizard(
+    project_dir: Path,
+    io: IO | None = None,
+    expert: bool = False,
+    quick: bool = False,
+) -> int:
+    """Re-run wizard with existing config values pre-filled.
+
+    Loads .cc-rig.json, runs wizard with defaults from current config,
+    shows diff, and regenerates on confirmation.
+    """
+    io = io or IO()
+
+    config_path = project_dir / ".cc-rig.json"
+    if not config_path.exists():
+        io.say("No .cc-rig.json found. Run 'cc-rig init' first.")
+        return 1
+
+    import json as _json
+
+    try:
+        old_config = ProjectConfig.from_json(config_path.read_text())
+    except (_json.JSONDecodeError, KeyError, TypeError) as exc:
+        io.say(f"Error loading .cc-rig.json: {exc}")
+        return 1
+
+    # Check for locked config
+    old_data = _json.loads(config_path.read_text())
+    if old_data.get("locked"):
+        io.say("Config is locked. Run 'cc-rig config unlock' first.")
+        return 1
+
+    io.say(f"\nUpdating: {old_config.project_name}")
+    io.say(f"  Current: {old_config.template_preset} + {old_config.workflow_preset}")
+    io.say("")
+
+    if quick:
+        # Quick mode: just re-pick template + workflow
+        template = _ask_template(io)
+        workflow = _ask_workflow(io)
+    else:
+        # Guided: let user change template and workflow
+        io.say("Press Enter to keep current value, or select a new one.\n")
+        template = _ask_template_with_default(io, old_config.template_preset or "fastapi")
+        workflow = _ask_workflow_with_default(io, old_config.workflow or "standard")
+
+    name = old_config.project_name
+
+    try:
+        new_config = compute_defaults(
+            template,
+            workflow,
+            project_name=name,
+            output_dir=str(project_dir),
+        )
+    except (KeyError, ValueError) as exc:
+        io.say(f"Error: {exc}")
+        return 1
+
+    # Show diff
+    from cc_rig.config.manager import diff_configs
+
+    diff = diff_configs(old_config, new_config)
+    if diff:
+        io.say("\nChanges from current config:")
+        io.say(diff)
+        io.say("")
+    else:
+        io.say("\nNo changes detected.")
+        return 0
+
+    from cc_rig.ui.prompts import confirm as _confirm
+
+    if not _confirm("Regenerate?", io=io):
+        io.say("Cancelled.")
+        return 0
+
+    return run_generation(new_config, project_dir, io)
+
+
+def _ask_template_with_default(io: IO, current: str) -> str:
+    """Prompt user to select a template with a default from existing config."""
+    options = [(t, TEMPLATE_DESCRIPTIONS.get(t, t)) for t in BUILTIN_TEMPLATES]
+    return ask_choice(
+        f"Select template (current: {current}):",
+        options,
+        current,
+        io=io,
+    )
+
+
+def _ask_workflow_with_default(io: IO, current: str) -> str:
+    """Prompt user to select a workflow with a default from existing config."""
+    descriptions = {}
+    for w in BUILTIN_WORKFLOWS:
+        data = load_workflow(w)
+        descriptions[w] = data.get("description", w)
+    options = [(w, f"{w} - {descriptions[w]}") for w in BUILTIN_WORKFLOWS]
+    return ask_choice(
+        f"Select workflow (current: {current}):",
+        options,
+        current,
+        io=io,
+    )
 
 
 def _ask_template(io: IO) -> str:

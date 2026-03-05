@@ -110,6 +110,27 @@ def build_parser() -> argparse.ArgumentParser:
     )
     config_inspect.add_argument("name", help="Config name or path")
 
+    config_update = config_sub.add_parser(
+        "update",
+        help="Re-run wizard with existing config pre-filled",
+    )
+    config_update.add_argument(
+        "-d",
+        "--dir",
+        default=".",
+        help="Project directory (default: current)",
+    )
+    config_update.add_argument(
+        "--quick",
+        action="store_true",
+        help="Quick mode: just re-pick template + workflow",
+    )
+    config_update.add_argument(
+        "--expert",
+        action="store_true",
+        help="Expert mode: full customization",
+    )
+
     config_diff = config_sub.add_parser("diff", help="Diff two configs")
     config_diff.add_argument("name", help="Config name or path to diff against")
 
@@ -170,6 +191,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--fix",
         action="store_true",
         help="Auto-fix safe issues (permissions, missing memory files)",
+    )
+    doctor_parser.add_argument(
+        "--check-compat",
+        action="store_true",
+        help="Check feature compatibility with installed Claude Code version",
     )
     doctor_parser.add_argument(
         "-d",
@@ -370,6 +396,8 @@ def _cmd_config(args: argparse.Namespace) -> int:
 
     cmd = getattr(args, "config_command", None)
 
+    if cmd == "update":
+        return _config_update(args)
     if cmd == "save":
         return _config_save(args, save_config)
     if cmd == "load":
@@ -387,6 +415,20 @@ def _cmd_config(args: argparse.Namespace) -> int:
 
     # Default to list
     return _config_list(list_configs)
+
+
+def _config_update(args: argparse.Namespace) -> int:
+    """Re-run wizard with existing config pre-filled."""
+    from pathlib import Path
+
+    from cc_rig.wizard.flow import run_update_wizard
+
+    project_dir = Path(args.dir).resolve()
+    return run_update_wizard(
+        project_dir,
+        expert=getattr(args, "expert", False),
+        quick=getattr(args, "quick", False),
+    )
 
 
 def _config_save(args: argparse.Namespace, save_fn: Callable[..., Any]) -> int:
@@ -676,7 +718,8 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
     from cc_rig.doctor import run_doctor
 
     project_dir = Path(args.dir).resolve()
-    result = run_doctor(project_dir, fix=args.fix)
+    check_compat = getattr(args, "check_compat", False)
+    result = run_doctor(project_dir, fix=args.fix, check_compat=check_compat)
 
     if result.fixes:
         print("\nFixes applied:")

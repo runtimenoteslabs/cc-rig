@@ -487,6 +487,7 @@ cc-rig preset create <name>        Create preset from project config
 cc-rig preset install <path>       Install a local preset file
 
 cc-rig config save|load|list|inspect|diff|lock|unlock
+cc-rig config update [-d DIR] [--quick|--expert]  Re-run wizard on existing config
 
 cc-rig harness init [--lite|--standard|--autonomy] [-d DIR]
 cc-rig harness status [--dir DIR]  Show current harness level and progress
@@ -497,7 +498,7 @@ cc-rig skills add <name> [-d DIR]  Install a skill from the catalog
 cc-rig skills remove <name> [-d DIR] Remove an installed skill
 cc-rig skills install [-d DIR]     Retry failed downloads from init
 
-cc-rig doctor [--fix] [-d DIR]     Validate project health
+cc-rig doctor [--fix] [--check-compat] [-d DIR]  Validate project health
 cc-rig clean [--force] [-d DIR]    Remove generated files
 ```
 

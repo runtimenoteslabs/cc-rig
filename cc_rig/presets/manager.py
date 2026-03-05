@@ -252,10 +252,42 @@ def create_preset(
     return dest
 
 
+def validate_preset(data: dict[str, Any]) -> list[str]:
+    """Validate preset data. Returns list of error strings (empty = valid)."""
+    errors: list[str] = []
+    if "name" not in data:
+        errors.append("Missing required field: 'name'")
+        return errors
+
+    is_workflow = "agents" in data and "commands" in data
+    is_template = "language" in data and "framework" in data
+
+    if not is_workflow and not is_template:
+        errors.append("Cannot determine type. Need 'agents'+'commands' or 'language'+'framework'.")
+        return errors
+
+    if is_template:
+        for field in ("name", "language", "framework", "project_type"):
+            if field not in data:
+                errors.append(f"Template missing required field: '{field}'")
+
+    if is_workflow:
+        for field in ("name", "agents", "commands"):
+            if field not in data:
+                errors.append(f"Workflow missing required field: '{field}'")
+        if not isinstance(data.get("agents"), list):
+            errors.append("'agents' must be a list")
+        if not isinstance(data.get("commands"), list):
+            errors.append("'commands' must be a list")
+
+    return errors
+
+
 def install_preset(source_path: Path) -> Path:
     """Install a preset from a local file path.
 
     No URL downloads — local paths only (security).
+    Validates preset schema before installing.
 
     Returns:
         Path where the preset was installed.
@@ -263,14 +295,16 @@ def install_preset(source_path: Path) -> Path:
     if not source_path.exists():
         raise FileNotFoundError(f"Preset file not found: {source_path}")
 
-    # Validate it's valid JSON with a name
+    # Validate it's valid JSON
     try:
         data = json.loads(source_path.read_text())
     except json.JSONDecodeError as exc:
         raise ValueError(f"Invalid JSON in preset file: {exc}") from exc
 
-    if "name" not in data:
-        raise ValueError("Preset file must contain a 'name' field")
+    # Run schema validation
+    errors = validate_preset(data)
+    if errors:
+        raise ValueError(f"Invalid preset: {'; '.join(errors)}")
 
     # Determine type by contents
     if "agents" in data and "commands" in data:
