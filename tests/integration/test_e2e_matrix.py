@@ -1783,7 +1783,7 @@ class TestS13SkillPackResolution:
             tmp_path,
             "fastapi",
             "standard",
-            skill_packs=["security", "devops", "web-quality", "database-pro"],
+            skill_packs=["security", "devops", "web-quality", "code-quality", "database-pro"],
         )
         content = _read_claude_md(tmp_path)
         # Count skill mentions in the Installed Skills section

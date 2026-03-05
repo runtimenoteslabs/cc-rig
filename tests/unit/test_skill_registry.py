@@ -11,9 +11,11 @@ import pytest
 
 from cc_rig.skills.registry import (
     SKILL_CATALOG,
+    SKILL_PACKS,
     TEMPLATE_SKILLS,
     WORKFLOW_PHASES,
     WORKFLOW_SKILLS,
+    SkillPackSpec,
     SkillSpec,
     _phase_is_active,
     resolve_skills,
@@ -47,15 +49,15 @@ _VERIFY_HEAVY_CROSS_CUTTING_COUNT = 14
 
 
 # ---------------------------------------------------------------------------
-# SKILL_CATALOG completeness — 27 skills
+# SKILL_CATALOG completeness — 41 skills
 # ---------------------------------------------------------------------------
 
 
 class TestSkillCatalogCompleteness:
-    """SKILL_CATALOG must contain exactly 40 uniquely-named skills."""
+    """SKILL_CATALOG must contain exactly 41 uniquely-named skills."""
 
-    def test_catalog_has_40_skills(self):
-        assert len(SKILL_CATALOG) == 40
+    def test_catalog_has_41_skills(self):
+        assert len(SKILL_CATALOG) == 41
 
     def test_all_catalog_keys_are_skill_spec(self):
         for name, spec in SKILL_CATALOG.items():
@@ -118,6 +120,7 @@ class TestSkillCatalogCompleteness:
             "web-design-guidelines",
             "tailwind-design-system",
             # Skill pack skills
+            "desloppify",
             "supply-chain-risk-auditor",
             "variant-analysis",
             "sharp-edges",
@@ -972,6 +975,61 @@ class TestEdgeCases:
     @pytest.mark.parametrize("template", ALL_TEMPLATES)
     @pytest.mark.parametrize("workflow", ALL_WORKFLOWS)
     def test_all_combos_have_reasonable_skill_count(self, template, workflow):
-        """Every combo should produce 0–40 skills (bounded by catalog size)."""
+        """Every combo should produce 0–41 skills (bounded by catalog size)."""
         result = resolve_skills(template, workflow, ["postgres"])
-        assert 0 <= len(result) <= 40, f"{template}+{workflow}: {len(result)} skills out of range"
+        assert 0 <= len(result) <= 41, f"{template}+{workflow}: {len(result)} skills out of range"
+
+
+# ---------------------------------------------------------------------------
+# SKILL_PACKS completeness
+# ---------------------------------------------------------------------------
+
+
+class TestSkillPacksCompleteness:
+    """SKILL_PACKS must contain 5 packs with valid references."""
+
+    def test_has_5_packs(self):
+        assert len(SKILL_PACKS) == 5
+
+    def test_all_packs_are_skill_pack_spec(self):
+        for name, pack in SKILL_PACKS.items():
+            assert isinstance(pack, SkillPackSpec), f"{name!r} is not a SkillPackSpec"
+
+    def test_pack_key_matches_spec_name(self):
+        for key, pack in SKILL_PACKS.items():
+            assert key == pack.name, f"Key {key!r} does not match pack.name {pack.name!r}"
+
+    def test_all_pack_skills_reference_known_catalog_entries(self):
+        for pack_name, pack in SKILL_PACKS.items():
+            for skill_name in pack.skill_names:
+                assert skill_name in SKILL_CATALOG, (
+                    f"Pack {pack_name!r} references unknown skill {skill_name!r}"
+                )
+
+    def test_code_quality_pack_exists(self):
+        assert "code-quality" in SKILL_PACKS
+
+    def test_code_quality_pack_contains_desloppify(self):
+        pack = SKILL_PACKS["code-quality"]
+        assert pack.skill_names == ["desloppify"]
+        assert pack.suggested_templates is None
+
+    def test_code_quality_pack_label(self):
+        assert SKILL_PACKS["code-quality"].label == "Code Quality"
+
+    def test_desloppify_spec(self):
+        spec = SKILL_CATALOG["desloppify"]
+        assert spec.repo == "peteromallet/desloppify"
+        assert spec.repo_path == "docs"
+        assert spec.sdlc_phase == "review"
+        assert spec.download_mode == "skill_md_only"
+
+    def test_resolve_skills_with_code_quality_pack(self):
+        """code-quality pack adds desloppify to any template+workflow combo."""
+        result = resolve_skills("fastapi", "speedrun", packs=["code-quality"])
+        names = {s.name for s in result}
+        assert "desloppify" in names
+
+    def test_known_packs_present(self):
+        expected = {"security", "devops", "web-quality", "database-pro", "code-quality"}
+        assert set(SKILL_PACKS.keys()) == expected

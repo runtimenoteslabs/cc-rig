@@ -15,7 +15,7 @@ from cc_rig.skills.registry import (
     resolve_skills,
 )
 
-ALL_PACK_NAMES = ["security", "devops", "web-quality", "database-pro"]
+ALL_PACK_NAMES = ["security", "devops", "web-quality", "code-quality", "database-pro"]
 
 
 # ---------------------------------------------------------------------------
@@ -24,10 +24,10 @@ ALL_PACK_NAMES = ["security", "devops", "web-quality", "database-pro"]
 
 
 class TestSkillPackRegistry:
-    """SKILL_PACKS must contain all 4 packs with valid references."""
+    """SKILL_PACKS must contain all 5 packs with valid references."""
 
-    def test_has_4_packs(self):
-        assert len(SKILL_PACKS) == 4
+    def test_has_5_packs(self):
+        assert len(SKILL_PACKS) == 5
 
     @pytest.mark.parametrize("pack_name", ALL_PACK_NAMES)
     def test_pack_is_present(self, pack_name):
@@ -224,7 +224,7 @@ class TestResolveSkillsWithPacks:
         base = self._names()
         with_packs = self._names(packs=ALL_PACK_NAMES)
         added = with_packs - base
-        assert len(added) == 13  # 4 + 4 + 3 + 2
+        assert len(added) == 14  # 4 + 4 + 3 + 1 + 2
 
     def test_unknown_pack_ignored(self):
         base = self._names()

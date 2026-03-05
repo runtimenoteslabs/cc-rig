@@ -815,9 +815,9 @@ class TestSkillCountScaling:
     @pytest.mark.parametrize("template", TEMPLATES)
     @pytest.mark.parametrize("workflow", WORKFLOWS)
     def test_all_combos_have_reasonable_count(self, template, workflow):
-        """Every combo should have 0-40 skills (sanity bounds)."""
+        """Every combo should have 0-41 skills (sanity bounds)."""
         count = self._count(template, workflow)
-        assert 0 <= count <= 40, f"{template}+{workflow}: {count} skills out of range"
+        assert 0 <= count <= 41, f"{template}+{workflow}: {count} skills out of range"
 
 
 # ---------------------------------------------------------------------------

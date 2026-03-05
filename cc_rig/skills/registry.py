@@ -35,7 +35,7 @@ class SkillPackSpec:
     suggested_templates: list[str] | None = None  # None = all, list = specific
 
 
-# ── All downloadable skills (40 unique) ────────────────────────────────
+# ── All downloadable skills (41 unique) ────────────────────────────────
 
 SKILL_CATALOG: dict[str, SkillSpec] = {
     # obra/superpowers — 12 skills
@@ -355,6 +355,15 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
         description="Web performance optimization and auditing",
         download_mode="skill_md_only",
     ),
+    # peteromallet/desloppify — 1 skill
+    "desloppify": SkillSpec(
+        name="desloppify",
+        repo="peteromallet/desloppify",
+        repo_path="docs",
+        sdlc_phase="review",
+        description="Codebase quality scanner with 20 quality dimensions and anti-gaming scoring",
+        download_mode="skill_md_only",
+    ),
     # wshobson/agents — database pro pack
     "database-migrations": SkillSpec(
         name="database-migrations",
@@ -628,6 +637,13 @@ SKILL_PACKS: dict[str, SkillPackSpec] = {
             "performance",
         ],
         suggested_templates=["nextjs"],  # suggested for frontend
+    ),
+    "code-quality": SkillPackSpec(
+        name="code-quality",
+        label="Code Quality",
+        description="Desloppify codebase health scanner — 20 quality dimensions, anti-gaming",
+        skill_names=["desloppify"],
+        suggested_templates=None,  # all templates
     ),
     "database-pro": SkillPackSpec(
         name="database-pro",

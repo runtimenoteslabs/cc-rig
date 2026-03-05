@@ -116,7 +116,7 @@ your-project/
 │   ├── agents/                     # Specialized agents for different tasks
 │   ├── commands/                   # Slash commands you trigger with /
 │   ├── hooks/                      # Auto-format, lint, safety blocks
-│   └── skills/                     # Community skills auto-installed from 9 repos
+│   └── skills/                     # Community skills auto-installed from 10 repos
 ├── agent_docs/                     # Framework-specific guides for Claude
 └── memory/                         # Git-tracked team knowledge across sessions
 ```
@@ -218,6 +218,7 @@ The Claude Code skill ecosystem is huge — [skills.sh](https://skills.sh/) inde
 | Security Deep Dive | supply chain auditing, variant analysis, dangerous API detection | trailofbits/skills |
 | DevOps & IaC | Terraform, Kubernetes, monitoring, GitOps | hashicorp, ahmedasmar |
 | Web Quality | Core Web Vitals, accessibility, SEO, performance | addyosmani |
+| Code Quality | 20 quality dimensions, anti-gaming scoring, scan→plan→fix loop | peteromallet/desloppify |
 | Database Pro | migration patterns, query optimization, multi-DB support | multiple |
 
 Add skills anytime — from cc-rig or any source:
@@ -551,7 +552,7 @@ Yes. Everything is plain text. Edit whatever you want. cc-rig won't overwrite yo
 <details>
 <summary><strong>What about Claude Code plugins and skills?</strong></summary>
 
-cc-rig handles both community skills and official Anthropic plugins. For skills, cc-rig installs a starter set of community skills matched to your framework from 9 repos, with optional packs for deeper coverage. For plugins, cc-rig curates a 24-plugin official marketplace catalog across 5 categories (LSP, integration, workflow, autonomy, utility) and writes <code>enabledPlugins</code> into <code>settings.json</code> with smart defaults resolved by language, template and workflow. You can install any additional skill from <a href="https://skills.sh/">skills.sh</a> (73K+), <a href="https://github.com/ComposioHQ/awesome-claude-skills">awesome-claude-skills</a> or any GitHub repo.
+cc-rig handles both community skills and official Anthropic plugins. For skills, cc-rig installs a starter set of community skills matched to your framework from 10 repos, with optional packs for deeper coverage. For plugins, cc-rig curates a 24-plugin official marketplace catalog across 5 categories (LSP, integration, workflow, autonomy, utility) and writes <code>enabledPlugins</code> into <code>settings.json</code> with smart defaults resolved by language, template and workflow. You can install any additional skill from <a href="https://skills.sh/">skills.sh</a> (73K+), <a href="https://github.com/ComposioHQ/awesome-claude-skills">awesome-claude-skills</a> or any GitHub repo.
 </details>
 
 <details>
