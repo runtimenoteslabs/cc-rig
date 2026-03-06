@@ -14,6 +14,7 @@ from typing import Any, Optional
 
 from textual import work
 from textual.app import App, ComposeResult
+from textual.binding import Binding
 from textual.containers import Horizontal, VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import (
@@ -33,6 +34,37 @@ from cc_rig.config.schema import VALID_AGENTS, VALID_COMMANDS, VALID_HOOKS
 from cc_rig.plugins.registry import PLUGIN_CATALOG, WORKFLOW_PLUGINS
 from cc_rig.presets.manager import BUILTIN_TEMPLATES, BUILTIN_WORKFLOWS, load_workflow
 from cc_rig.ui.banner import BANNER, BANNER_COMPACT, TAGLINE
+
+
+class AutoSelectRadioSet(RadioSet):
+    """RadioSet that selects on arrow-key navigation (no extra Space needed).
+
+    Standard Textual RadioSet separates highlight (arrow keys) from selection
+    (Space/Enter). This subclass rebinds arrow keys to navigate-and-toggle,
+    matching native OS radio-button behavior (GTK, macOS, Windows).
+    Also fixes VHS demo recordings where arrow keys highlight but don't select.
+
+    Note: We add new bindings rather than overriding action_next/previous_button
+    because RadioSet._on_mount() calls action_next_button() to set the initial
+    highlight — overriding that would break the initial selection logic.
+    """
+
+    BINDINGS = [
+        Binding("down,right", "next_and_select", "Next option", show=False),
+        Binding("enter,space", "toggle_button", "Toggle", show=False),
+        Binding("up,left", "previous_and_select", "Previous option", show=False),
+    ]
+
+    def action_next_and_select(self) -> None:
+        """Navigate to the next button and select it."""
+        self.action_next_button()
+        self.action_toggle_button()
+
+    def action_previous_and_select(self) -> None:
+        """Navigate to the previous button and select it."""
+        self.action_previous_button()
+        self.action_toggle_button()
+
 
 # ── CSS ──────────────────────────────────────────────────────────────
 
@@ -321,7 +353,7 @@ class WelcomeScreen(ModalScreen[Optional[dict]]):
             yield Static(BANNER.strip(), id="banner")
             yield Static(TAGLINE, id="tagline")
             yield Label("How would you like to start?", classes="screen-title")
-            yield RadioSet(
+            yield AutoSelectRadioSet(
                 RadioButton("Fresh project - full guided setup", value=True),
                 RadioButton("Template picker - pick template + workflow"),
                 RadioButton("Load saved config - reuse a previous setup"),
@@ -443,7 +475,7 @@ class TemplateScreen(ModalScreen[Optional[dict]]):
                     label = f"{desc} (detected)"
                 selected = self._state.get("template", detected or "fastapi")
                 buttons.append(RadioButton(label, value=(t == selected)))
-            yield RadioSet(*buttons, id="template-radio")
+            yield AutoSelectRadioSet(*buttons, id="template-radio")
         yield NavBar()
         yield KeyHintsBar()
 
@@ -497,7 +529,7 @@ class WorkflowScreen(ModalScreen[Optional[dict]]):
                 label = f"{w} - {desc} ({agents} agents, {commands} cmds, {plugins} plugins)"
                 selected = self._state.get("workflow", "standard")
                 buttons.append(RadioButton(label, value=(w == selected)))
-            yield RadioSet(*buttons, id="workflow-radio")
+            yield AutoSelectRadioSet(*buttons, id="workflow-radio")
             # Show details for the selected workflow
             default_detail = WORKFLOW_DETAILS.get(self._state.get("workflow", "standard"), "")
             yield Static(default_detail, id="workflow-details")
@@ -942,7 +974,7 @@ class HarnessScreen(ModalScreen[Optional[dict]]):
                 classes="description",
             )
             prev_level = self._state.get("harness_level", "none")
-            yield RadioSet(
+            yield AutoSelectRadioSet(
                 RadioButton(
                     "None (B0) - Scaffold only, you drive",
                     value=(prev_level == "none"),
