@@ -63,8 +63,18 @@ def download_skills(
 
     Returns:
         SkillInstallReport with installed/failed lists.
+
+    Set CC_RIG_OFFLINE=1 to skip all downloads (useful for CI/demos).
     """
+    import os
+
     report = SkillInstallReport()
+
+    if os.environ.get("CC_RIG_OFFLINE"):
+        object.__setattr__(report, "_files", [])
+        for spec in specs:
+            report.failed.append((spec.name, "offline mode"))
+        return report
     # Initialize the internal files list
     object.__setattr__(report, "_files", [])
 

@@ -161,6 +161,12 @@ TabbedContent {
 #tagline {
     text-align: center;
     color: $text-muted;
+    margin-bottom: 0;
+}
+
+#repo-url {
+    text-align: center;
+    color: $text-disabled;
     margin-bottom: 1;
 }
 
@@ -352,6 +358,11 @@ class WelcomeScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Static(BANNER.strip(), id="banner")
             yield Static(TAGLINE, id="tagline")
+            yield Static(
+                "github.com/runtimenoteslabs/cc-rig",
+                id="repo-url",
+                classes="dim",
+            )
             yield Label("How would you like to start?", classes="screen-title")
             yield AutoSelectRadioSet(
                 RadioButton("Fresh project - full guided setup", value=True),
@@ -658,11 +669,24 @@ class ReviewScreen(ModalScreen[Optional[dict]]):
 class ExpertScreen(ModalScreen[Optional[dict]]):
     """Multi-select for agents, commands, and hooks — organized in tabs."""
 
-    BINDINGS = [("escape", "go_back", "Back")]
+    BINDINGS = [
+        ("escape", "go_back", "Back"),
+        ("1", "show_tab('tab-agents')", "Agents"),
+        ("2", "show_tab('tab-commands')", "Commands"),
+        ("3", "show_tab('tab-plugins')", "Plugins"),
+        ("4", "show_tab('tab-hooks')", "Hooks"),
+    ]
 
     def __init__(self, state: dict[str, Any]) -> None:
         super().__init__()
         self._state = state
+
+    def action_show_tab(self, tab_id: str) -> None:
+        tabs = self.query_one("#expert-tabs", TabbedContent)
+        tabs.active = tab_id
+        # Focus the SelectionList in the newly active tab
+        sel_id = tab_id.replace("tab-", "sel-")
+        self.set_timer(0.1, lambda: self.query_one(f"#{sel_id}", SelectionList).focus())
 
     def compose(self) -> ComposeResult:
         from cc_rig.ui.descriptions import (
