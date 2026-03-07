@@ -297,10 +297,10 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
         description="Security-focused diff review for PRs",
         download_mode="skill_md_only",
     ),
-    # ahmedasmar/devops — devops pack
+    # ahmedasmar/devops-claude-skills — devops pack
     "iac-terraform": SkillSpec(
         name="iac-terraform",
-        repo="ahmedasmar/devops",
+        repo="ahmedasmar/devops-claude-skills",
         repo_path="iac-terraform/skills",
         sdlc_phase="devops",
         description="Terraform IaC patterns and best practices",
@@ -308,7 +308,7 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
     ),
     "k8s-troubleshooter": SkillSpec(
         name="k8s-troubleshooter",
-        repo="ahmedasmar/devops",
+        repo="ahmedasmar/devops-claude-skills",
         repo_path="k8s-troubleshooter/skills",
         sdlc_phase="devops",
         description="Kubernetes debugging and troubleshooting",
@@ -316,7 +316,7 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
     ),
     "monitoring-observability": SkillSpec(
         name="monitoring-observability",
-        repo="ahmedasmar/devops",
+        repo="ahmedasmar/devops-claude-skills",
         repo_path="monitoring-observability",
         sdlc_phase="devops",
         description="Monitoring, alerting, and observability patterns",
@@ -324,7 +324,7 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
     ),
     "gitops-workflows": SkillSpec(
         name="gitops-workflows",
-        repo="ahmedasmar/devops",
+        repo="ahmedasmar/devops-claude-skills",
         repo_path="gitops-workflows",
         sdlc_phase="devops",
         description="GitOps deployment workflows and patterns",

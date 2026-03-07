@@ -587,20 +587,21 @@ cc-rig is free and open source. Claude Code itself requires an <a href="https://
 
 ### Skill Ecosystem
 
-cc-rig's starter set and optional packs draw from these repos:
+cc-rig's starter set and optional packs draw from these repos. Skills are downloaded at `init` time from the original repos — cc-rig does not bundle or redistribute them.
 
-- [obra/superpowers](https://github.com/obra/superpowers) - 14 SDLC workflow skills (planning, review, git, debugging)
-- [trailofbits/skills](https://github.com/trailofbits/skills) - 30+ security + modern dev skills
-- [anthropics/skills](https://github.com/anthropics/skills) - 16 official Anthropic skills (frontend, docs, testing)
-- [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) - Core Web Vitals, accessibility, SEO from Chrome team
+- [obra/superpowers](https://github.com/obra/superpowers) - 14 SDLC workflow skills (MIT)
+- [trailofbits/skills](https://github.com/trailofbits/skills) - 30+ security + modern dev skills (CC-BY-SA-4.0)
+- [anthropics/skills](https://github.com/anthropics/skills) - 16 official Anthropic skills (Apache 2.0)
+- [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) - Core Web Vitals, accessibility, SEO (MIT)
 - [hashicorp/agent-skills](https://github.com/hashicorp/agent-skills) - Official Terraform and Packer
-- [vercel-labs](https://github.com/vercel-labs/agent-skills) - React, Next.js and design guideline skills
-- [supabase/agent-skills](https://github.com/supabase/agent-skills) - PostgreSQL best practices
-- [planetscale/database-skills](https://github.com/planetscale/database-skills) - MySQL, PostgreSQL, Vitess
-- [akin-ozer/cc-devops-skills](https://github.com/akin-ozer/cc-devops-skills) - 31 CI/CD, IaC and monitoring skills
-- [ahmedasmar/devops-claude-skills](https://github.com/ahmedasmar/devops-claude-skills) - Kubernetes, Terraform, monitoring, GitOps
-- [agamm/claude-code-owasp](https://github.com/agamm/claude-code-owasp) - OWASP Top 10:2025 security
-- [wshobson/agents](https://github.com/wshobson/agents) - Tailwind CSS design system
+- [vercel-labs](https://github.com/vercel-labs/agent-skills) - React, Next.js and design guideline skills (MIT)
+- [supabase/agent-skills](https://github.com/supabase/agent-skills) - PostgreSQL best practices (MIT)
+- [planetscale/database-skills](https://github.com/planetscale/database-skills) - MySQL, PostgreSQL, Vitess (MIT)
+- [akin-ozer/cc-devops-skills](https://github.com/akin-ozer/cc-devops-skills) - 31 CI/CD, IaC and monitoring skills (Apache 2.0)
+- [ahmedasmar/devops-claude-skills](https://github.com/ahmedasmar/devops-claude-skills) - Kubernetes, Terraform, monitoring, GitOps (MIT)
+- [agamm/claude-code-owasp](https://github.com/agamm/claude-code-owasp) - OWASP Top 10:2025 security (MIT)
+- [wshobson/agents](https://github.com/wshobson/agents) - Tailwind CSS design system (MIT)
+- [peteromallet/desloppify](https://github.com/peteromallet/desloppify) - Code quality scoring and remediation (MIT)
 
 The broader ecosystem has thousands more. Discover skills at [skills.sh](https://skills.sh/) (73K+), [awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills), [skillsmp.com](https://skillsmp.com/) or install from any GitHub repo with `npx skills add`.
 
