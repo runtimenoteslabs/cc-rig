@@ -24,25 +24,9 @@ A properly configured Claude Code project needs `CLAUDE.md`, hooks, agents, slas
 
 **cc-rig generates all of it.** Tell it what you're building and how you like to work. It writes 30-65 native Claude Code files tuned to your framework. No runtime dependency. No lock-in. Just files that Claude Code reads on startup.
 
-```
-$ cc-rig init
-
-  ╔══════════════════════════════════════╗
-  ║           c c - r i g                ║
-  ║      AI coding agent setup           ║
-  ╚══════════════════════════════════════╝
-
-  Template:    Next.js (TypeScript)
-  Workflow:    Standard
-
-  ✓ CLAUDE.md              ✓ .claude/agents/
-  ✓ CLAUDE.local.md        ✓ .claude/commands/
-  ✓ .claude/settings.json  ✓ .claude/skills/
-  ✓ .mcp.json              ✓ agent_docs/
-  ✓ memory/
-
-  Done. Run `claude` and go.
-```
+<p align="center">
+  <img src="assets/demo-2-guided.gif" alt="cc-rig guided setup demo" width="800">
+</p>
 
 ---
 
@@ -82,6 +66,14 @@ Already have a codebase? cc-rig detects your stack from `package.json`, `go.mod`
 cd my-existing-project
 cc-rig init --migrate
 ```
+
+<details>
+<summary>See it in action</summary>
+
+<p align="center">
+  <img src="assets/demo-5-auto-detect.gif" alt="cc-rig auto-detection demo" width="800">
+</p>
+</details>
 
 ### Use a team config
 
@@ -319,6 +311,14 @@ CLAUDE.md references these via `@import` syntax, so Claude Code auto-loads them 
 
 cc-rig separates **what you're building** (template) from **how you like to work** (workflow). Pick each independently. Any combination works.
 
+<details>
+<summary>Full showcase: 16 templates × 5 workflows × harness levels</summary>
+
+<p align="center">
+  <img src="assets/demo-4-showcase.gif" alt="cc-rig full showcase demo" width="800">
+</p>
+</details>
+
 ### What you're building: Templates
 
 Templates set your language, framework, tool commands, linting and framework-specific rules:
@@ -429,6 +429,14 @@ cc-rig init --expert
 ### Autonomous mode
 
 Claude works through a task list while you're away. Add a harness to any cc-rig project:
+
+<details>
+<summary>Harness options: from scaffold to autonomous loops</summary>
+
+<p align="center">
+  <img src="assets/demo-3-harness.gif" alt="cc-rig harness showdown demo" width="800">
+</p>
+</details>
 
 ```bash
 cc-rig harness init --lite        # Task tracking + session-start summary
