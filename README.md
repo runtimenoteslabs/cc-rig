@@ -581,6 +581,28 @@ A harness that lets Claude work through a task list unattended. It uses structur
 cc-rig is free and open source. Claude Code itself requires an <a href="https://www.anthropic.com/pricing">Anthropic plan</a>. cc-rig keeps CLAUDE.md lean and prompt cache hit rates high to minimize your token costs.
 </details>
 
+<details>
+<summary><strong>Install fails with "no matching distribution found"</strong></summary>
+
+cc-rig requires Python 3.9+. Some Linux distros (e.g. Ubuntu 20.04) ship Python 3.8. Check with <code>python3 --version</code>. If you're on 3.8, install a newer Python:
+
+```bash
+sudo apt install python3.9 python3.9-venv python3.9-distutils
+python3.9 -m venv .venv && source .venv/bin/activate
+pip install cc-rig
+```
+</details>
+
+<details>
+<summary><strong>zsh: "no matches found: cc-rig[rich]"</strong></summary>
+
+zsh interprets square brackets as glob patterns. Quote the extras:
+
+```bash
+pip install "cc-rig[rich]"
+```
+</details>
+
 ---
 
 ## Community & Inspiration

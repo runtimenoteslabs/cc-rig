@@ -30,6 +30,7 @@ class FileTracker:
     def __init__(self, output_dir: Path) -> None:
         self._output_dir = output_dir.resolve()
         self._meta: dict[str, dict[str, Any]] = {}
+        self._written: set[str] = set()  # files written in this session
 
     def write_text(self, rel_path: str, content: str, *, preserve_on_clean: bool = False) -> None:
         """Write *content* to *rel_path* under the output directory.
@@ -45,7 +46,8 @@ class FileTracker:
         # Guard against path traversal via crafted rel_path values
         if not str(full.resolve()).startswith(str(self._output_dir) + "/"):
             raise ValueError(f"Path traversal detected: {rel_path}")
-        pre_existed = full.exists()
+        # Only treat as pre-existing if it existed before this generation run
+        pre_existed = full.exists() and rel_path not in self._written
         backed_up = False
 
         if pre_existed:
@@ -66,6 +68,7 @@ class FileTracker:
             meta["content_hash"] = hashlib.sha256(content.encode()).hexdigest()
 
         self._meta[rel_path] = meta
+        self._written.add(rel_path)
 
     def chmod(self, rel_path: str, mode: int) -> None:
         """Set file permissions (e.g. 0o755 for hook scripts)."""
