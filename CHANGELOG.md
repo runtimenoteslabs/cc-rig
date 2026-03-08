@@ -2,6 +2,16 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [1.4.3] - 2026-03-08
+
+### Fixed
+- **Clean leaves harness.md behind** — `FileTracker` now tracks files written in the current session so multi-pass writes (B1→B2→B3 harness appending to `agent_docs/harness.md`) are not falsely marked as pre-existing. Previously `cc-rig clean` restored the B1 backup instead of deleting the file.
+
+### Changed
+- **README FAQ** — Added troubleshooting entries for Python 3.8 on older Linux distros and zsh bracket quoting.
+
+---
+
 ## [1.4.2] - 2026-03-08
 
 ### Fixed
@@ -11,7 +21,6 @@ All notable changes to cc-rig will be documented in this file.
 - **Worktree spawn permissions** — `--dangerously-skip-permissions` is no longer unconditionally passed to spawned Claude processes. Now opt-in via `cc-rig worktree spawn --skip-permissions`.
 - **Shell injection regex** — Added newline (`\n`, `\r`) to `_SHELL_INJECTION_RE` character class, closing a bypass where multi-line command strings could inject additional shell statements.
 - **Preset name validation** — `create_preset()` and `install_preset()` now reject names containing path separators or special characters (must match `[a-z0-9][a-z0-9_-]*`).
-
 ### Changed
 - **README FAQ** — Corrected FAQ answer that incorrectly stated "There's no 'update' command." Now references `cc-rig config update`.
 - **PyPI metadata** — Added `[project.urls]` (Homepage, Repository, Changelog) and MIT license classifier to `pyproject.toml`.
