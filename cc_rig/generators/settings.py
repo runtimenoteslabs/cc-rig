@@ -12,7 +12,7 @@ from cc_rig.generators.fileops import FileTracker
 
 # Shell metacharacters that indicate injection risk in tool commands.
 # Legitimate commands (e.g. "ruff check", "npx prettier --write") never need these.
-_SHELL_INJECTION_RE = re.compile(r"[;|&`$><]|\.\./")
+_SHELL_INJECTION_RE = re.compile(r"[;|&`$><\n\r]|\.\./")
 
 
 # ── Hook metadata registry ─────────────────────────────────────────

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cc-rig"
-version = "1.4.1"
+version = "1.4.2"
 description = "Project setup generator for Claude Code"
 readme = "README.md"
 license = "MIT"
@@ -16,6 +16,7 @@ keywords = ["claude", "claude-code", "developer-tools", "scaffolding", "ai", "co
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -24,6 +25,11 @@ classifiers = [
     "Topic :: Software Development :: Code Generators",
     "Topic :: Software Development :: Build Tools",
 ]
+
+[project.urls]
+Homepage = "https://github.com/runtimenoteslabs/cc-rig"
+Repository = "https://github.com/runtimenoteslabs/cc-rig"
+Changelog = "https://github.com/runtimenoteslabs/cc-rig/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 rich = ["rich>=13.0", "textual>=0.40", "prompt_toolkit>=3.0"]

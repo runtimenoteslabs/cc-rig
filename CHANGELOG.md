@@ -2,6 +2,27 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [1.4.2] - 2026-03-08
+
+### Fixed
+- **Path traversal in skill removal** — `cc-rig skills remove` now validates the skill name against the skills directory root, preventing `../../` traversal in user-supplied names.
+- **Path traversal in skill downloads** — GitHub API filenames are validated for path separators and `..` before writing, preventing malicious repo responses from writing outside `.claude/skills/`.
+- **Path containment in FileTracker** — `write_text()` now verifies resolved paths stay within the output directory, raising `ValueError` on traversal attempts.
+- **Worktree spawn permissions** — `--dangerously-skip-permissions` is no longer unconditionally passed to spawned Claude processes. Now opt-in via `cc-rig worktree spawn --skip-permissions`.
+- **Shell injection regex** — Added newline (`\n`, `\r`) to `_SHELL_INJECTION_RE` character class, closing a bypass where multi-line command strings could inject additional shell statements.
+- **Preset name validation** — `create_preset()` and `install_preset()` now reject names containing path separators or special characters (must match `[a-z0-9][a-z0-9_-]*`).
+
+### Changed
+- **README FAQ** — Corrected FAQ answer that incorrectly stated "There's no 'update' command." Now references `cc-rig config update`.
+- **PyPI metadata** — Added `[project.urls]` (Homepage, Repository, Changelog) and MIT license classifier to `pyproject.toml`.
+- **README images** — Switched logo and demo GIFs to absolute GitHub raw URLs for PyPI rendering.
+- **Typing standardization** — Replaced `List[T]`/`Optional[T]` with lowercase generics in `cc_rig/worktree/` and `cc_rig/generators/agents.py`.
+- **Import hygiene** — Moved `import re` and `import os` from function bodies to module level in `state.py` and `downloader.py`.
+- **Error reporting** — `_download_community_skills()` now surfaces exception details in the failure report instead of silently swallowing them.
+- **Publishing docs** — Added `docs/publishing.md` with PyPI build and upload procedure.
+
+---
+
 ## [1.4.1] - 2026-03-06
 
 ### Added

@@ -61,12 +61,12 @@ def _download_community_skills(
     """Download skills, returning a report. Never raises."""
     try:
         return download_skills(specs, output_dir, tracker=tracker)
-    except Exception:
-        # Total download failure — return empty report
+    except Exception as exc:
+        # Total download failure — return empty report with error details
         report = SkillInstallReport()
         object.__setattr__(report, "_files", [])
         for spec in specs:
-            report.failed.append((spec.name, "download system failure"))
+            report.failed.append((spec.name, f"download system failure: {exc}"))
         return report
 
 

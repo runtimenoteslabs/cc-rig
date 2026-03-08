@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
 
 STATE_FILENAME = "worktrees.json"
 
@@ -21,8 +21,8 @@ class WorktreeEntry:
     path: str
     task: str
     status: str = "running"  # running, done, failed, merged, pr-created, orphaned
-    pid: Optional[int] = None
-    exit_code: Optional[int] = None
+    pid: int | None = None
+    exit_code: int | None = None
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def to_dict(self) -> dict:
@@ -37,9 +37,9 @@ class WorktreeEntry:
 class WorktreeState:
     """Container for all tracked worktrees, backed by a JSON file."""
 
-    worktrees: List[WorktreeEntry] = field(default_factory=list)
+    worktrees: list[WorktreeEntry] = field(default_factory=list)
 
-    def get(self, name: str) -> Optional[WorktreeEntry]:
+    def get(self, name: str) -> WorktreeEntry | None:
         """Look up a worktree by name."""
         for wt in self.worktrees:
             if wt.name == name:
@@ -100,7 +100,7 @@ def is_pid_alive(pid: int) -> bool:
         return False
 
 
-def get_exit_code(pid: int) -> Optional[int]:
+def get_exit_code(pid: int) -> int | None:
     """Try to reap a finished child process and get its exit code.
 
     Returns None if the process is still running or not a child.
@@ -160,8 +160,6 @@ def slugify(text: str) -> str:
     >>> slugify("  Add rate-limiting! ")
     'add-rate-limiting'
     """
-    import re
-
     slug = text.lower().strip()
     slug = re.sub(r"[^a-z0-9]+", "-", slug)
     slug = slug.strip("-")

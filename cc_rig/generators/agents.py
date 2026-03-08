@@ -6,7 +6,6 @@ import json
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from cc_rig.config.project import ProjectConfig
 from cc_rig.generators.fileops import FileTracker
@@ -23,12 +22,12 @@ class AgentDef:
     tools: str
     body: str
     # Optional CC frontmatter (omitted from YAML when None)
-    permission_mode: Optional[str] = None  # "plan", "dontAsk", etc.
-    max_turns: Optional[int] = None  # e.g. 15
-    background: Optional[bool] = None  # True for parallel workers
-    isolation: Optional[str] = None  # "worktree"
-    agent_memory: Optional[str] = None  # "user", "project", "local"
-    disallowed_tools: Optional[str] = None  # comma-separated
+    permission_mode: str | None = None  # "plan", "dontAsk", etc.
+    max_turns: int | None = None  # e.g. 15
+    background: bool | None = None  # True for parallel workers
+    isolation: str | None = None  # "worktree"
+    agent_memory: str | None = None  # "user", "project", "local"
+    disallowed_tools: str | None = None  # comma-separated
 
 
 # ── Agent definitions (loaded from JSON) ──────────────────────────

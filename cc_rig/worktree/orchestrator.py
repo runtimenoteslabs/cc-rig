@@ -5,7 +5,6 @@ from __future__ import annotations
 import shutil
 import subprocess
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 from cc_rig.worktree import manager as _mgr
 from cc_rig.worktree.state import (
@@ -18,7 +17,7 @@ from cc_rig.worktree.state import (
 )
 
 
-def _find_claude_cli() -> Optional[str]:
+def _find_claude_cli() -> str | None:
     """Find the claude CLI executable."""
     return shutil.which("claude")
 
@@ -27,18 +26,21 @@ def _launch_claude(
     task: str,
     worktree_path: Path,
     output_file: Path,
+    skip_permissions: bool = False,
 ) -> subprocess.Popen:
     """Launch a claude process in the worktree directory.
 
     Returns the Popen object.
     """
+    cmd = [
+        "claude",
+        "-p", task,
+        "--output-format", "json",
+    ]
+    if skip_permissions:
+        cmd.append("--dangerously-skip-permissions")
     return subprocess.Popen(
-        [
-            "claude",
-            "-p", task,
-            "--output-format", "json",
-            "--dangerously-skip-permissions",
-        ],
+        cmd,
         cwd=worktree_path,
         stdout=output_file.open("w"),
         stderr=subprocess.STDOUT,
@@ -47,8 +49,9 @@ def _launch_claude(
 
 def spawn_worktrees(
     project_dir: Path,
-    tasks: List[str],
-) -> Tuple[List[WorktreeEntry], List[Tuple[str, str]]]:
+    tasks: list[str],
+    skip_permissions: bool = False,
+) -> tuple[list[WorktreeEntry], list[tuple[str, str]]]:
     """Create worktrees and launch Claude for each task.
 
     Returns (created_entries, failures) where failures is [(task, reason)].
@@ -61,8 +64,8 @@ def spawn_worktrees(
         return [], [(t, "claude CLI not found") for t in tasks]
 
     state = load_state(project_dir)
-    created: List[WorktreeEntry] = []
-    failures: List[Tuple[str, str]] = []
+    created: list[WorktreeEntry] = []
+    failures: list[tuple[str, str]] = []
 
     for task in tasks:
         name = slugify(task)
@@ -85,7 +88,9 @@ def spawn_worktrees(
 
         # Launch claude
         try:
-            proc = _launch_claude(task, worktree_path, output_file)
+            proc = _launch_claude(
+                task, worktree_path, output_file, skip_permissions=skip_permissions
+            )
         except OSError as exc:
             failures.append((task, f"Failed to launch claude: {exc}"))
             continue
@@ -105,7 +110,7 @@ def spawn_worktrees(
     return created, failures
 
 
-def list_worktrees(project_dir: Path) -> List[WorktreeEntry]:
+def list_worktrees(project_dir: Path) -> list[WorktreeEntry]:
     """List all tracked worktrees with refreshed status."""
     state = load_state(project_dir)
     refresh_all(state)
@@ -116,7 +121,7 @@ def list_worktrees(project_dir: Path) -> List[WorktreeEntry]:
 def get_worktree_status(
     project_dir: Path,
     name: str,
-) -> Optional[WorktreeEntry]:
+) -> WorktreeEntry | None:
     """Get detailed status for a single worktree."""
     state = load_state(project_dir)
     entry = state.get(name)
@@ -131,7 +136,7 @@ def get_worktree_status(
 def worktree_pr(
     project_dir: Path,
     name: str,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """Push the worktree branch and create a PR.
 
     Returns (success, url_or_error).
@@ -172,7 +177,7 @@ def cleanup_worktree(
     project_dir: Path,
     name: str,
     force: bool = False,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """Remove a single worktree and its branch.
 
     Returns (success, message).
@@ -202,14 +207,14 @@ def cleanup_all(
     project_dir: Path,
     merged_only: bool = False,
     force: bool = False,
-) -> List[Tuple[str, bool, str]]:
+) -> list[tuple[str, bool, str]]:
     """Clean up all (or merged-only) worktrees.
 
     Returns list of (name, success, message).
     """
     state = load_state(project_dir)
     refresh_all(state)
-    results: List[Tuple[str, bool, str]] = []
+    results: list[tuple[str, bool, str]] = []
 
     for entry in list(state.worktrees):
         if merged_only and entry.status != "merged":

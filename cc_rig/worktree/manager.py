@@ -5,10 +5,9 @@ from __future__ import annotations
 import shutil
 import subprocess
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 
-def _run_git(args: List[str], cwd: Optional[Path] = None) -> subprocess.CompletedProcess:
+def _run_git(args: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess:
     """Run a git command and return the result."""
     return subprocess.run(
         ["git"] + args,
@@ -28,7 +27,7 @@ def create_worktree(
     project_dir: Path,
     name: str,
     branch: str,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """Create a git worktree with a new branch.
 
     Returns (success, message).
@@ -57,7 +56,7 @@ def remove_worktree(
     name: str,
     branch: str,
     force: bool = False,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """Remove a git worktree and optionally its branch.
 
     Returns (success, message).
@@ -85,7 +84,7 @@ def remove_worktree(
     return True, f"Removed worktree and branch: {name}"
 
 
-def list_worktree_branches(project_dir: Path) -> List[str]:
+def list_worktree_branches(project_dir: Path) -> list[str]:
     """List all git worktree paths currently registered."""
     result = _run_git(["worktree", "list", "--porcelain"], cwd=project_dir)
     if result.returncode != 0:
@@ -101,7 +100,7 @@ def get_worktree_commits(
     project_dir: Path,
     branch: str,
     max_count: int = 10,
-) -> List[str]:
+) -> list[str]:
     """Get oneline log of commits on a branch since it diverged from HEAD.
 
     Returns list of "hash subject" strings.
@@ -127,7 +126,7 @@ def get_worktree_commits(
     return result.stdout.strip().splitlines() if result.returncode == 0 else []
 
 
-def push_branch(project_dir: Path, branch: str) -> Tuple[bool, str]:
+def push_branch(project_dir: Path, branch: str) -> tuple[bool, str]:
     """Push a branch to the remote. Returns (success, message)."""
     result = _run_git(
         ["push", "-u", "origin", branch],
@@ -143,7 +142,7 @@ def create_pr(
     branch: str,
     title: str,
     body: str,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """Create a GitHub PR using `gh`. Returns (success, url_or_error)."""
     if not shutil.which("gh"):
         return False, "gh CLI not found. Install it from https://cli.github.com/"

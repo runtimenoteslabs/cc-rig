@@ -321,6 +321,12 @@ def build_parser() -> argparse.ArgumentParser:
     wt_spawn.add_argument(
         "-d", "--dir", default=".", help="Project directory",
     )
+    wt_spawn.add_argument(
+        "--skip-permissions",
+        action="store_true",
+        default=False,
+        help="Pass --dangerously-skip-permissions to claude (use with caution)",
+    )
 
     wt_list = wt_sub.add_parser("list", help="Show all worktrees and status")
     wt_list.add_argument(
@@ -983,7 +989,15 @@ def _skills_remove(args: argparse.Namespace) -> int:
 
     project_dir = Path(args.dir).resolve()
     name = args.name
-    skill_dir = project_dir / ".claude" / "skills" / name
+    skills_root = project_dir / ".claude" / "skills"
+    skill_dir = skills_root / name
+
+    # Guard against path traversal via crafted skill names (e.g. "../../etc")
+    resolved_skill = skill_dir.resolve()
+    resolved_root = skills_root.resolve()
+    if not str(resolved_skill).startswith(str(resolved_root) + "/"):
+        print("Invalid skill name")
+        return 1
 
     if not skill_dir.is_dir():
         print(f"Skill '{name}' is not installed.")
@@ -1159,7 +1173,8 @@ def _worktree_spawn(args: argparse.Namespace) -> int:
     from cc_rig.worktree.orchestrator import spawn_worktrees
 
     project_dir = Path(args.dir).resolve()
-    created, failures = spawn_worktrees(project_dir, args.tasks)
+    skip_permissions = getattr(args, "skip_permissions", False)
+    created, failures = spawn_worktrees(project_dir, args.tasks, skip_permissions=skip_permissions)
 
     if created:
         print(f"\nSpawned {len(created)} worktree(s):\n")

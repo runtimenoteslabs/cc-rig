@@ -42,6 +42,9 @@ class FileTracker:
         edited since generation.
         """
         full = self._output_dir / rel_path
+        # Guard against path traversal via crafted rel_path values
+        if not str(full.resolve()).startswith(str(self._output_dir) + "/"):
+            raise ValueError(f"Path traversal detected: {rel_path}")
         pre_existed = full.exists()
         backed_up = False
 

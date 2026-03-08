@@ -560,7 +560,7 @@ Yes. `cc-rig init --migrate` scans your repo, detects your stack and proposes wh
 <details>
 <summary><strong>Can I edit the generated files?</strong></summary>
 
-Yes. Everything is plain text. Edit whatever you want. cc-rig won't overwrite your changes. There's no "update" command. Generate once, own forever. For personal preferences, use `CLAUDE.local.md` (not git-tracked) to avoid conflicts with team config.
+Yes. Everything is plain text. Edit whatever you want. cc-rig won't overwrite your changes. Generate once, own forever. To re-run the wizard with your existing choices pre-filled, use `cc-rig config update` — it shows what changed and regenerates on confirmation. For personal preferences, use `CLAUDE.local.md` (not git-tracked) to avoid conflicts with team config.
 </details>
 
 <details>

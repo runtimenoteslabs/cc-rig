@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 from pathlib import Path
 from typing import Any
@@ -213,6 +214,11 @@ def create_preset(
     Returns:
         Path where the preset was saved.
     """
+    if not re.match(r"^[a-z0-9][a-z0-9_-]*$", name):
+        raise ValueError(
+            f"Invalid preset name {name!r}. "
+            "Use lowercase letters, digits, hyphens and underscores only."
+        )
     data = json.loads(config_path.read_text())
 
     if preset_type == "template":
@@ -300,6 +306,14 @@ def install_preset(source_path: Path) -> Path:
         data = json.loads(source_path.read_text())
     except json.JSONDecodeError as exc:
         raise ValueError(f"Invalid JSON in preset file: {exc}") from exc
+
+    # Validate name format
+    preset_name = data.get("name", "")
+    if not re.match(r"^[a-z0-9][a-z0-9_-]*$", preset_name):
+        raise ValueError(
+            f"Invalid preset name {preset_name!r}. "
+            "Use lowercase letters, digits, hyphens and underscores only."
+        )
 
     # Run schema validation
     errors = validate_preset(data)

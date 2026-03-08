@@ -7,6 +7,7 @@ On failure: skip and record in report. Offline fallback handled by caller.
 from __future__ import annotations
 
 import json
+import os
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
@@ -66,8 +67,6 @@ def download_skills(
 
     Set CC_RIG_OFFLINE=1 to skip all downloads (useful for CI/demos).
     """
-    import os
-
     report = SkillInstallReport()
 
     if os.environ.get("CC_RIG_OFFLINE"):
@@ -135,6 +134,9 @@ def _download_full_tree(
         if entry["type"] != "file":
             continue
         filename = entry["name"]
+        # Guard against path traversal via malicious API responses
+        if "/" in filename or "\\" in filename or ".." in filename:
+            continue
         url = _RAW_URL.format(
             repo=spec.repo,
             path=f"{spec.repo_path}/{filename}",
