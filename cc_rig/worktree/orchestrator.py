@@ -34,8 +34,10 @@ def _launch_claude(
     """
     cmd = [
         "claude",
-        "-p", task,
-        "--output-format", "json",
+        "-p",
+        task,
+        "--output-format",
+        "json",
     ]
     if skip_permissions:
         cmd.append("--dangerously-skip-permissions")
@@ -147,9 +149,7 @@ def worktree_pr(
         return False, f"No worktree found: {name}"
 
     if entry.status == "running":
-        return False, (
-            f"Worktree '{name}' is still running — wait for it to finish"
-        )
+        return False, (f"Worktree '{name}' is still running — wait for it to finish")
 
     # Push the branch
     ok, msg = _mgr.push_branch(project_dir, entry.branch)
@@ -157,13 +157,12 @@ def worktree_pr(
         return False, msg
 
     # Create the PR
-    body = (
-        f"## Task\n\n{entry.task}\n\n"
-        f"---\n"
-        f"Created by `cc-rig worktree spawn`"
-    )
+    body = f"## Task\n\n{entry.task}\n\n---\nCreated by `cc-rig worktree spawn`"
     ok, result = _mgr.create_pr(
-        project_dir, entry.branch, entry.task, body,
+        project_dir,
+        entry.branch,
+        entry.task,
+        body,
     )
     if not ok:
         return False, result
@@ -188,12 +187,13 @@ def cleanup_worktree(
         return False, f"No worktree found: {name}"
 
     if entry.status == "running" and not force:
-        return False, (
-            f"Worktree '{name}' is still running — use --force or wait"
-        )
+        return False, (f"Worktree '{name}' is still running — use --force or wait")
 
     ok, msg = _mgr.remove_worktree(
-        project_dir, name, entry.branch, force=force,
+        project_dir,
+        name,
+        entry.branch,
+        force=force,
     )
     if not ok:
         return False, msg
@@ -224,7 +224,10 @@ def cleanup_all(
             continue
 
         ok, msg = _mgr.remove_worktree(
-            project_dir, entry.name, entry.branch, force=force,
+            project_dir,
+            entry.name,
+            entry.branch,
+            force=force,
         )
         if ok:
             state.remove(entry.name)

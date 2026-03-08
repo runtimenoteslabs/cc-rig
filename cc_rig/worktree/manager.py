@@ -92,7 +92,7 @@ def list_worktree_branches(project_dir: Path) -> list[str]:
     paths = []
     for line in result.stdout.splitlines():
         if line.startswith("worktree "):
-            paths.append(line[len("worktree "):])
+            paths.append(line[len("worktree ") :])
     return paths
 
 
@@ -149,10 +149,15 @@ def create_pr(
 
     result = subprocess.run(
         [
-            "gh", "pr", "create",
-            "--head", branch,
-            "--title", title,
-            "--body", body,
+            "gh",
+            "pr",
+            "create",
+            "--head",
+            branch,
+            "--title",
+            title,
+            "--body",
+            body,
         ],
         cwd=project_dir,
         capture_output=True,

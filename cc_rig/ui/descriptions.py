@@ -292,7 +292,7 @@ FEATURE_DETAILS: list[dict[str, str]] = [
             "\n"
             "Inside a session, use /worktree to delegate a task to a background\n"
             "agent. From the terminal, spawn several at once:\n"
-            "  cc-rig worktree spawn \"Add OAuth login\" \"Write API docs\"\n"
+            '  cc-rig worktree spawn "Add OAuth login" "Write API docs"\n'
             "Then check on them (list), create PRs (pr), and clean up when\n"
             "merged (cleanup --merged). Great for splitting a large feature\n"
             "into independent pieces that Claude works on in parallel."

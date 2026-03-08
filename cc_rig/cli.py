@@ -319,7 +319,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Task descriptions (one per worktree)",
     )
     wt_spawn.add_argument(
-        "-d", "--dir", default=".", help="Project directory",
+        "-d",
+        "--dir",
+        default=".",
+        help="Project directory",
     )
     wt_spawn.add_argument(
         "--skip-permissions",
@@ -330,34 +333,52 @@ def build_parser() -> argparse.ArgumentParser:
 
     wt_list = wt_sub.add_parser("list", help="Show all worktrees and status")
     wt_list.add_argument(
-        "-d", "--dir", default=".", help="Project directory",
+        "-d",
+        "--dir",
+        default=".",
+        help="Project directory",
     )
 
     wt_status = wt_sub.add_parser("status", help="Detailed status of one worktree")
     wt_status.add_argument("name", help="Worktree name")
     wt_status.add_argument(
-        "-d", "--dir", default=".", help="Project directory",
+        "-d",
+        "--dir",
+        default=".",
+        help="Project directory",
     )
 
     wt_pr = wt_sub.add_parser("pr", help="Create PR from worktree branch")
     wt_pr.add_argument("name", help="Worktree name")
     wt_pr.add_argument(
-        "-d", "--dir", default=".", help="Project directory",
+        "-d",
+        "--dir",
+        default=".",
+        help="Project directory",
     )
 
     wt_cleanup = wt_sub.add_parser("cleanup", help="Remove worktree(s)")
     wt_cleanup.add_argument("name", nargs="?", help="Worktree name (omit for --all)")
     wt_cleanup.add_argument(
-        "--all", action="store_true", help="Clean up all worktrees",
+        "--all",
+        action="store_true",
+        help="Clean up all worktrees",
     )
     wt_cleanup.add_argument(
-        "--merged", action="store_true", help="Clean up only merged worktrees",
+        "--merged",
+        action="store_true",
+        help="Clean up only merged worktrees",
     )
     wt_cleanup.add_argument(
-        "--force", action="store_true", help="Force remove even if running",
+        "--force",
+        action="store_true",
+        help="Force remove even if running",
     )
     wt_cleanup.add_argument(
-        "-d", "--dir", default=".", help="Project directory",
+        "-d",
+        "--dir",
+        default=".",
+        help="Project directory",
     )
 
     # clean
