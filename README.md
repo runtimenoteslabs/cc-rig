@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="cc-rig" src="assets/cc-rig-logo.png" width="200">
+  <img alt="cc-rig" src="https://raw.githubusercontent.com/runtimenoteslabs/cc-rig/main/assets/cc-rig-logo.png" width="200">
 </p>
 
 <h3 align="center">Set up Claude Code the right way - in under a minute.</h3>
@@ -25,7 +25,7 @@ A properly configured Claude Code project needs `CLAUDE.md`, hooks, agents, slas
 **cc-rig generates all of it.** Tell it what you're building and how you like to work. It writes 30-65 native Claude Code files tuned to your framework. No runtime dependency. No lock-in. Just files that Claude Code reads on startup.
 
 <p align="center">
-  <img src="assets/demo-2-guided.gif" alt="cc-rig guided setup demo" width="800">
+  <img src="https://raw.githubusercontent.com/runtimenoteslabs/cc-rig/main/assets/demo-2-guided.gif" alt="cc-rig guided setup demo" width="800">
 </p>
 
 ---
@@ -71,7 +71,7 @@ cc-rig init --migrate
 <summary>See it in action</summary>
 
 <p align="center">
-  <img src="assets/demo-5-auto-detect.gif" alt="cc-rig auto-detection demo" width="800">
+  <img src="https://raw.githubusercontent.com/runtimenoteslabs/cc-rig/main/assets/demo-5-auto-detect.gif" alt="cc-rig auto-detection demo" width="800">
 </p>
 </details>
 
@@ -315,7 +315,7 @@ cc-rig separates **what you're building** (template) from **how you like to work
 <summary>Full showcase: 16 templates × 5 workflows × harness levels</summary>
 
 <p align="center">
-  <img src="assets/demo-4-showcase.gif" alt="cc-rig full showcase demo" width="800">
+  <img src="https://raw.githubusercontent.com/runtimenoteslabs/cc-rig/main/assets/demo-4-showcase.gif" alt="cc-rig full showcase demo" width="800">
 </p>
 </details>
 
@@ -434,7 +434,7 @@ Claude works through a task list while you're away. Add a harness to any cc-rig 
 <summary>Harness options: from scaffold to autonomous loops</summary>
 
 <p align="center">
-  <img src="assets/demo-3-harness.gif" alt="cc-rig harness showdown demo" width="800">
+  <img src="https://raw.githubusercontent.com/runtimenoteslabs/cc-rig/main/assets/demo-3-harness.gif" alt="cc-rig harness showdown demo" width="800">
 </p>
 </details>
 
