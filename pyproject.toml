@@ -24,6 +24,7 @@ classifiers = [
     "Topic :: Software Development :: Code Generators",
     "Topic :: Software Development :: Build Tools",
 ]
+dependencies = ["rich>=13.0", "textual>=0.40", "prompt_toolkit>=3.0"]
 
 [project.urls]
 Homepage = "https://github.com/runtimenoteslabs/cc-rig"
