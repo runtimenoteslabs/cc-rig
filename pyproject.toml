@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cc-rig"
-version = "1.4.3"
+version = "1.4.4"
 description = "Project setup generator for Claude Code"
 readme = "README.md"
 license = "MIT"
@@ -30,8 +30,10 @@ Homepage = "https://github.com/runtimenoteslabs/cc-rig"
 Repository = "https://github.com/runtimenoteslabs/cc-rig"
 Changelog = "https://github.com/runtimenoteslabs/cc-rig/blob/main/CHANGELOG.md"
 
+dependencies = ["rich>=13.0", "textual>=0.40", "prompt_toolkit>=3.0"]
+
 [project.optional-dependencies]
-rich = ["rich>=13.0", "textual>=0.40", "prompt_toolkit>=3.0"]
+rich = []  # included by default now — kept for backwards compatibility
 dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "pytest-xdist>=3.0", "ruff>=0.4"]
 
 [project.scripts]

@@ -92,3 +92,30 @@ TUI_BACKEND = _detect_backend()
 HAS_RICH = _has_rich()
 HAS_TEXTUAL = _has_textual()
 HAS_PROMPT_TOOLKIT = _has_prompt_toolkit()
+
+
+def should_use_textual(io: object = None) -> bool:
+    """Check if we should use the Textual TUI.
+
+    Returns True when:
+      - textual is importable
+      - stdout is a TTY
+      - io is not a test-injected IO object
+
+    This function lives here (not in textual_wizard.py) so it can be
+    imported without triggering textual's top-level imports.
+    """
+    if not HAS_TEXTUAL:
+        return False
+
+    if not hasattr(sys.stdout, "isatty") or not sys.stdout.isatty():
+        return False
+
+    # Don't use Textual if io has been injected (test mode)
+    if io is not None:
+        from cc_rig.ui.prompts import IO
+
+        if isinstance(io, IO) and io._input is not input:
+            return False
+
+    return True

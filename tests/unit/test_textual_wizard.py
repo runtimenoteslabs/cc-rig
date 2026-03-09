@@ -37,8 +37,8 @@ from cc_rig.ui.textual_wizard import (  # noqa: E402
     WelcomeScreen,
     WizardApp,
     WorkflowScreen,
-    should_use_textual,
 )
+from cc_rig.ui.tui import should_use_textual
 
 
 def _make_state(**overrides):

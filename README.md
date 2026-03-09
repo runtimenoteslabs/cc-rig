@@ -33,11 +33,19 @@ A properly configured Claude Code project needs `CLAUDE.md`, hooks, agents, slas
 ## Install
 
 ```bash
+python3 -m venv ~/.cc-rig
+source ~/.cc-rig/bin/activate
 pip install cc-rig
 ```
 
-- Python 3.9+. Zero external dependencies. Standard library only.
-- Optional: `pip install cc-rig[rich]` for full-screen TUI wizard (arrow keys, radio buttons, checkboxes), colors, tables and progress bars. Auto-detected, falls back to stdlib ANSI if not installed.
+Python 3.9+. Includes the full-screen TUI wizard with arrow keys, radio buttons, checkboxes, colors, tables and progress bars.
+
+> **Already have a venv?** Just `pip install cc-rig` inside it. The venv step above is for first-time setup — without it, macOS and Linux block global pip installs.
+>
+> **Prefer pipx?** `pipx install cc-rig` works too — no venv needed.
+>
+> **Next session?** Remember to `source ~/.cc-rig/bin/activate` before running `cc-rig`.
+
 - Works best with Claude Code v2.1.50+. Older versions or missing installs get a warning, but cc-rig generates everything anyway.
 
 ---
@@ -590,16 +598,6 @@ cc-rig requires Python 3.9+. Some Linux distros (e.g. Ubuntu 20.04) ship Python 
 sudo apt install python3.9 python3.9-venv python3.9-distutils
 python3.9 -m venv .venv && source .venv/bin/activate
 pip install cc-rig
-```
-</details>
-
-<details>
-<summary><strong>zsh: "no matches found: cc-rig[rich]"</strong></summary>
-
-zsh interprets square brackets as glob patterns. Quote the extras:
-
-```bash
-pip install "cc-rig[rich]"
 ```
 </details>
 

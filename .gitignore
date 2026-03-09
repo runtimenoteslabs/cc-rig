@@ -21,3 +21,5 @@ htmlcov/
 memory/
 ref/
 tmp/
+settings.local.json
+.pypirc

@@ -70,7 +70,7 @@ def run_wizard(args: argparse.Namespace, io: IO | None = None) -> int:
     # Interactive flows: confirm output directory when not explicitly set.
     # Skip this when the Textual TUI will handle it (output dir shown in ConfirmScreen).
     if not output_arg and not in_place:
-        from cc_rig.ui.textual_wizard import should_use_textual
+        from cc_rig.ui.tui import should_use_textual
 
         if not should_use_textual(io):
             output_dir = _confirm_output_dir(output_dir, io)
@@ -199,7 +199,7 @@ def _quick_flow(
     io: IO,
 ) -> int:
     """Quick picker: template + workflow, then generate."""
-    from cc_rig.ui.textual_wizard import should_use_textual
+    from cc_rig.ui.tui import should_use_textual
 
     if should_use_textual(io):
         return _quick_flow_textual(name, output_dir, io)
@@ -225,7 +225,7 @@ def _guided_flow(
 
     Uses Textual TUI when available, otherwise falls back to StepRunner.
     """
-    from cc_rig.ui.textual_wizard import should_use_textual
+    from cc_rig.ui.tui import should_use_textual
 
     if should_use_textual(io):
         return _guided_flow_textual(name, output_dir, io, expert=expert)

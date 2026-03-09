@@ -131,6 +131,26 @@ TabbedContent {
     min-height: 20;
 }
 
+Tab {
+    color: #aabbcc;
+    text-style: bold;
+    padding: 0 3;
+}
+
+Tab:hover {
+    color: #5eeaef;
+}
+
+Tab.-active {
+    color: #5eeaef;
+    text-style: bold underline;
+}
+
+Underline > .underline--bar {
+    color: #0d7377;
+    background: $surface;
+}
+
 #workflow-details {
     border: solid #0d7377;
     border-left: thick #10999e;
@@ -719,7 +739,7 @@ class ExpertScreen(ModalScreen[Optional[dict]]):
         with VerticalScroll(id="body"):
             yield Label("Expert customization", classes="screen-title")
             yield Label(
-                "Select agents, commands, plugins and hooks for your project.",
+                "Select agents, commands, plugins and hooks. Press 1-4 or click tabs to switch.",
                 classes="description",
             )
 
@@ -1489,34 +1509,3 @@ class QuickWizardApp(WizardApp):
 
     def __init__(self, initial_state: dict[str, Any] | None = None) -> None:
         super().__init__(initial_state=initial_state, screens=_QUICK_SCREENS)
-
-
-# ── Detection helper ─────────────────────────────────────────────────
-
-
-def should_use_textual(io: Any = None) -> bool:
-    """Check if we should use the Textual TUI.
-
-    Returns True when:
-      - textual is importable
-      - stdout is a TTY
-      - io is not a test-injected IO object
-    """
-    import sys
-
-    from cc_rig.ui.tui import HAS_TEXTUAL
-
-    if not HAS_TEXTUAL:
-        return False
-
-    if not hasattr(sys.stdout, "isatty") or not sys.stdout.isatty():
-        return False
-
-    # Don't use Textual if io has been injected (test mode)
-    if io is not None:
-        from cc_rig.ui.prompts import IO
-
-        if isinstance(io, IO) and io._input is not input:
-            return False
-
-    return True
