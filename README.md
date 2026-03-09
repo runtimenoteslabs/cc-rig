@@ -14,15 +14,15 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.9+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.9+">
-  <img src="https://img.shields.io/badge/dependencies-zero-22c55e?style=flat-square" alt="Zero Dependencies">
   <img src="https://img.shields.io/badge/license-MIT-f59e0b?style=flat-square" alt="MIT License">
+  <a href="https://pypi.org/project/cc-rig/"><img src="https://img.shields.io/pypi/v/cc-rig?style=flat-square&color=22c55e" alt="PyPI"></a>
 </p>
 
 ---
 
-A properly configured Claude Code project needs `CLAUDE.md`, hooks, agents, slash commands, skills, permissions, MCP servers and memory files. Each has specific formats, frontmatter and cross-references. That takes hours of manual work and most people skip it.
+Most Claude Code projects run on a CLAUDE.md and not much else. The rest of the configuration surface — agents, hooks, skills, plugins, memory, permissions — goes unused because the knowledge to set it up is scattered across docs, blog posts and community repos. The community has built ways to discover what's available. The gap is resolution: figuring out which options matter for your stack and how they should work together.
 
-**cc-rig generates all of it.** Tell it what you're building and how you like to work. It writes 30-65 native Claude Code files tuned to your framework. No runtime dependency. No lock-in. Just files that Claude Code reads on startup.
+**cc-rig resolves it.** Tell it what you're building and how you like to work. It writes 30-65 native Claude Code files tuned to your framework. No lock-in. Just files that Claude Code reads on startup.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/runtimenoteslabs/cc-rig/main/assets/demo-2-guided.gif" alt="cc-rig guided setup demo" width="800">
@@ -54,7 +54,7 @@ Python 3.9+. Includes the full-screen TUI wizard with arrow keys, radio buttons,
 
 ### Start a new project
 
-The interactive wizard walks you through it. With Textual installed, you get a full-screen TUI with arrow-key navigation, radio buttons and checkboxes. Without it, you get numbered CLI prompts.
+The interactive wizard walks you through it. You get a full-screen TUI with arrow-key navigation, radio buttons and checkboxes.
 
 ```bash
 cc-rig init
@@ -655,7 +655,7 @@ pytest tests/
 ruff check cc_rig/
 ```
 
-Zero runtime dependencies. Stdlib only. `pytest` and `ruff` are dev-only.
+`pytest` and `ruff` are dev-only.
 
 ---
 

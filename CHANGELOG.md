@@ -2,6 +2,20 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [1.4.4] - 2026-03-09
+
+### Fixed
+- **Textual import crash** — `cc-rig init` crashed with `ModuleNotFoundError: No module named 'textual'` when textual wasn't installed. Moved `should_use_textual()` from `textual_wizard.py` (which imports textual at module level) to `tui.py` (which guards optional imports with try/except). The stdlib fallback now works correctly.
+
+### Changed
+- **TUI deps are now default** — `rich`, `textual` and `prompt_toolkit` moved from optional `[rich]` extra to default dependencies. `pip install cc-rig` gives the full TUI experience. The `[rich]` extra is kept empty for backwards compatibility.
+- **Expert screen tab styling** — Tab headers now use bright colors (cyan active, grey-blue inactive) instead of the default Textual styling that was nearly invisible on dark backgrounds. Added "Press 1-4 or click tabs to switch" hint.
+- **Install instructions** — README now shows venv creation + activation + pip install as a 3-step block. Added troubleshooting tips for PEP 668 errors and pipx alternative. Removed zsh bracket quoting FAQ (no longer needed since `[rich]` extra is gone).
+- **README opening** — Rewritten from feature list to problem framing ("Most Claude Code projects run on a CLAUDE.md and not much else"). Aligns with blog post tone.
+- **README badges** — Replaced "zero dependencies" badge with live PyPI version badge.
+
+---
+
 ## [1.4.3] - 2026-03-08
 
 ### Fixed
