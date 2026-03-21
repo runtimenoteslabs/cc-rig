@@ -865,17 +865,25 @@ class FeaturesScreen(ModalScreen[Optional[dict]]):
                 if key in recommended:
                     label += f"  [included with {workflow}]"
                     yield Checkbox(
-                        label, value=True, disabled=True, id=detail["widget_id"],
+                        label,
+                        value=True,
+                        disabled=True,
+                        id=detail["widget_id"],
                     )
                 elif key in conflicts:
                     label += f"  [not available with {workflow}]"
                     yield Checkbox(
-                        label, value=False, disabled=True, id=detail["widget_id"],
+                        label,
+                        value=False,
+                        disabled=True,
+                        id=detail["widget_id"],
                     )
                 else:
                     current_val = getattr(features, key, False) if features else False
                     yield Checkbox(
-                        label, value=current_val, id=detail["widget_id"],
+                        label,
+                        value=current_val,
+                        id=detail["widget_id"],
                     )
 
             # Detail panel — updates on focus/change
@@ -977,7 +985,8 @@ class SkillPacksScreen(ModalScreen[Optional[dict]]):
             for pack_name, pack in SKILL_PACKS.items():
                 n_skills = len(pack.skill_names)
                 overlap, total, is_comprehensive = compute_pack_overlap(
-                    workflow, pack_name,
+                    workflow,
+                    pack_name,
                 )
                 label = f"{pack.label} ({n_skills} skills) - {pack.description}"
 
