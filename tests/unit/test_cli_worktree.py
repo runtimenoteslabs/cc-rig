@@ -17,9 +17,7 @@ class TestWorktreeArgParsing:
 
     def test_spawn_multiple_tasks(self):
         parser = build_parser()
-        args = parser.parse_args([
-            "worktree", "spawn", "Fix auth bug", "Add rate limiting"
-        ])
+        args = parser.parse_args(["worktree", "spawn", "Fix auth bug", "Add rate limiting"])
         assert args.tasks == ["Fix auth bug", "Add rate limiting"]
 
     def test_spawn_with_dir(self):
@@ -78,14 +76,16 @@ class TestWorktreeDispatch:
     def test_spawn_dispatch(self, tmp_path):
         with patch("cc_rig.worktree.orchestrator.spawn_worktrees") as mock_spawn:
             from cc_rig.worktree.state import WorktreeEntry
+
             entry = WorktreeEntry(
-                name="fix-bug", branch="wt/fix-bug",
-                path=str(tmp_path), task="Fix bug", pid=123,
+                name="fix-bug",
+                branch="wt/fix-bug",
+                path=str(tmp_path),
+                task="Fix bug",
+                pid=123,
             )
             mock_spawn.return_value = ([entry], [])
-            rc = main([
-                "worktree", "spawn", "-d", str(tmp_path), "Fix bug"
-            ])
+            rc = main(["worktree", "spawn", "-d", str(tmp_path), "Fix bug"])
             assert rc == 0
             mock_spawn.assert_called_once()
 
@@ -100,14 +100,15 @@ class TestWorktreeDispatch:
             assert rc == 1
 
     def test_pr_dispatch(self, tmp_path):
-        with patch("cc_rig.worktree.orchestrator.worktree_pr",
-                   return_value=(True, "https://github.com/x/pull/1")):
+        with patch(
+            "cc_rig.worktree.orchestrator.worktree_pr",
+            return_value=(True, "https://github.com/x/pull/1"),
+        ):
             rc = main(["worktree", "pr", "-d", str(tmp_path), "fix-bug"])
             assert rc == 0
 
     def test_cleanup_dispatch(self, tmp_path):
-        with patch("cc_rig.worktree.orchestrator.cleanup_worktree",
-                   return_value=(True, "Removed")):
+        with patch("cc_rig.worktree.orchestrator.cleanup_worktree", return_value=(True, "Removed")):
             rc = main(["worktree", "cleanup", "-d", str(tmp_path), "fix-bug"])
             assert rc == 0
 
@@ -119,21 +120,21 @@ class TestWorktreeDispatch:
     def test_spawn_all_failures(self, tmp_path):
         with patch("cc_rig.worktree.orchestrator.spawn_worktrees") as mock_spawn:
             mock_spawn.return_value = ([], [("Fix bug", "not a git repo")])
-            rc = main([
-                "worktree", "spawn", "-d", str(tmp_path), "Fix bug"
-            ])
+            rc = main(["worktree", "spawn", "-d", str(tmp_path), "Fix bug"])
             assert rc == 1
 
     def test_spawn_partial_success(self, tmp_path):
         """When some succeed and some fail, return 0."""
         with patch("cc_rig.worktree.orchestrator.spawn_worktrees") as mock_spawn:
             from cc_rig.worktree.state import WorktreeEntry
+
             entry = WorktreeEntry(
-                name="ok", branch="wt/ok",
-                path=str(tmp_path), task="Ok task", pid=1,
+                name="ok",
+                branch="wt/ok",
+                path=str(tmp_path),
+                task="Ok task",
+                pid=1,
             )
             mock_spawn.return_value = ([entry], [("bad", "error")])
-            rc = main([
-                "worktree", "spawn", "-d", str(tmp_path), "Ok task", "bad"
-            ])
+            rc = main(["worktree", "spawn", "-d", str(tmp_path), "Ok task", "bad"])
             assert rc == 0

@@ -22,6 +22,7 @@ class SkillSpec:
     description: str
     download_mode: str = "skill_md_only"  # "skill_md_only" or "full_tree"
     companion_files: list[str] = field(default_factory=list)
+    branch: str = "main"  # Git branch for raw content URLs
 
 
 @dataclass
@@ -35,7 +36,7 @@ class SkillPackSpec:
     suggested_templates: list[str] | None = None  # None = all, list = specific
 
 
-# ── All downloadable skills (41 unique) ────────────────────────────────
+# ── All downloadable skills (55 unique) ────────────────────────────────
 
 SKILL_CATALOG: dict[str, SkillSpec] = {
     # obra/superpowers — 12 skills
@@ -262,6 +263,112 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
         sdlc_phase="coding",
         description="Tailwind CSS v4 design system",
         download_mode="skill_md_only",
+    ),
+    # ── garrytan/gstack — 6 process skills ─────────────────────────────
+    "plan-ceo-review": SkillSpec(
+        name="plan-ceo-review",
+        repo="garrytan/gstack",
+        repo_path="plan-ceo-review",
+        sdlc_phase="planning",
+        description="Founder/CEO product review with 9 prime directives",
+    ),
+    "plan-eng-review": SkillSpec(
+        name="plan-eng-review",
+        repo="garrytan/gstack",
+        repo_path="plan-eng-review",
+        sdlc_phase="planning",
+        description="Engineering architecture lock, data flow, edge cases",
+    ),
+    "plan-design-review": SkillSpec(
+        name="plan-design-review",
+        repo="garrytan/gstack",
+        repo_path="plan-design-review",
+        sdlc_phase="review",
+        description="80-item design audit, AI slop detection",
+    ),
+    "gstack-review": SkillSpec(
+        name="gstack-review",
+        repo="garrytan/gstack",
+        repo_path="review",
+        sdlc_phase="review",
+        description="Two-pass staff engineer review (critical + informational)",
+        download_mode="full_tree",
+    ),
+    "ship": SkillSpec(
+        name="ship",
+        repo="garrytan/gstack",
+        repo_path="ship",
+        sdlc_phase="devops",
+        description="8-step release pipeline with preflight checks",
+    ),
+    "document-release": SkillSpec(
+        name="document-release",
+        repo="garrytan/gstack",
+        repo_path="document-release",
+        sdlc_phase="devops",
+        description="Post-launch documentation update",
+    ),
+    # mattpocock/skills — 7 process skills
+    "grill-me": SkillSpec(
+        name="grill-me",
+        repo="mattpocock/skills",
+        repo_path="grill-me",
+        sdlc_phase="planning",
+        description="Exhaustive requirements interview",
+    ),
+    "write-a-prd": SkillSpec(
+        name="write-a-prd",
+        repo="mattpocock/skills",
+        repo_path="write-a-prd",
+        sdlc_phase="planning",
+        description="PRD creation through interview and codebase exploration",
+    ),
+    "prd-to-issues": SkillSpec(
+        name="prd-to-issues",
+        repo="mattpocock/skills",
+        repo_path="prd-to-issues",
+        sdlc_phase="planning",
+        description="PRD to vertical slice GitHub issues",
+    ),
+    "mp-tdd": SkillSpec(
+        name="mp-tdd",
+        repo="mattpocock/skills",
+        repo_path="tdd",
+        sdlc_phase="testing",
+        description="Red-green-refactor with vertical slicing",
+        download_mode="full_tree",
+    ),
+    "improve-codebase-architecture": SkillSpec(
+        name="improve-codebase-architecture",
+        repo="mattpocock/skills",
+        repo_path="improve-codebase-architecture",
+        sdlc_phase="coding",
+        description="Module deepening refactors",
+        download_mode="full_tree",
+    ),
+    "triage-issue": SkillSpec(
+        name="triage-issue",
+        repo="mattpocock/skills",
+        repo_path="triage-issue",
+        sdlc_phase="coding",
+        description="Bug investigation and root cause analysis",
+    ),
+    "design-an-interface": SkillSpec(
+        name="design-an-interface",
+        repo="mattpocock/skills",
+        repo_path="design-an-interface",
+        sdlc_phase="coding",
+        description="Interface design using Ousterhout deep modules",
+    ),
+    # OthmanAdi/planning-with-files — 1 process skill
+    "planning-with-files": SkillSpec(
+        name="planning-with-files",
+        repo="OthmanAdi/planning-with-files",
+        repo_path="skills/planning-with-files",
+        sdlc_phase="planning",
+        description="Persistent task tracking with task_plan.md, findings.md, progress.md",
+        download_mode="full_tree",
+        branch="master",
     ),
     # ── Skill pack skills ──────────────────────────────────────────────
     # trailofbits/skills — security pack
@@ -542,15 +649,84 @@ _VERIFY_HEAVY_SKILLS = [
 WORKFLOW_SKILLS: dict[str, list[str]] = {
     "speedrun": [],
     "standard": _STANDARD_SKILLS,
+    "gstack": _STANDARD_SKILLS,
+    "aihero": _SPEC_DRIVEN_SKILLS,
     "spec-driven": _SPEC_DRIVEN_SKILLS,
-    "gtd-lite": _SPEC_DRIVEN_SKILLS,  # same as spec-driven
+    "superpowers": _VERIFY_HEAVY_SKILLS,
+    "gtd": _SPEC_DRIVEN_SKILLS,
+    # Backward compat aliases
+    "gtd-lite": _SPEC_DRIVEN_SKILLS,
     "verify-heavy": _VERIFY_HEAVY_SKILLS,
+}
+
+
+# ── Workflow → process skill names (curated community skills) ────────
+# Process skills define the workflow process itself (e.g., plan/review/ship).
+# These are ADDITIONAL to WORKFLOW_SKILLS (cross-cutting security/review skills).
+
+WORKFLOW_PROCESS_SKILLS: dict[str, list[str]] = {
+    "speedrun": [],
+    "standard": [],
+    "gstack": [
+        "plan-ceo-review",
+        "plan-eng-review",
+        "plan-design-review",
+        "gstack-review",
+        "ship",
+        "document-release",
+    ],
+    "aihero": [
+        "grill-me",
+        "write-a-prd",
+        "prd-to-issues",
+        "mp-tdd",
+        "improve-codebase-architecture",
+        "triage-issue",
+        "design-an-interface",
+    ],
+    "spec-driven": [
+        "write-a-prd",
+        "prd-to-issues",
+        "writing-plans",
+        "executing-plans",
+    ],
+    "superpowers": [
+        "brainstorming",
+        "writing-plans",
+        "executing-plans",
+        "test-driven-development",
+        "systematic-debugging",
+        "requesting-code-review",
+        "receiving-code-review",
+        "verification-before-completion",
+        "subagent-driven-development",
+        "using-git-worktrees",
+        "finishing-a-development-branch",
+    ],
+    "gtd": [
+        "planning-with-files",
+        "writing-plans",
+        "executing-plans",
+    ],
+    # Backward compat aliases
+    "gtd-lite": [],
+    "verify-heavy": [],
 }
 
 
 # ── Phase gating per workflow ──────────────────────────────────────────
 # Same logic as the old skill_phases from workflow JSONs.
 # Values: True, False, "bundled_only", "if_applicable"
+
+_ALL_PHASES_ON = {
+    "coding": True,
+    "testing": True,
+    "review": True,
+    "security": True,
+    "database": "if_applicable",
+    "devops": True,
+    "planning": True,
+}
 
 WORKFLOW_PHASES: dict[str, dict[str, Any]] = {
     "speedrun": {
@@ -571,7 +747,7 @@ WORKFLOW_PHASES: dict[str, dict[str, Any]] = {
         "devops": True,
         "planning": False,
     },
-    "spec-driven": {
+    "gstack": {
         "coding": True,
         "testing": True,
         "review": True,
@@ -580,24 +756,13 @@ WORKFLOW_PHASES: dict[str, dict[str, Any]] = {
         "devops": True,
         "planning": True,
     },
-    "gtd-lite": {
-        "coding": True,
-        "testing": True,
-        "review": True,
-        "security": True,
-        "database": "if_applicable",
-        "devops": True,
-        "planning": True,
-    },
-    "verify-heavy": {
-        "coding": True,
-        "testing": True,
-        "review": True,
-        "security": True,
-        "database": "if_applicable",
-        "devops": True,
-        "planning": True,
-    },
+    "aihero": dict(_ALL_PHASES_ON),
+    "spec-driven": dict(_ALL_PHASES_ON),
+    "superpowers": dict(_ALL_PHASES_ON),
+    "gtd": dict(_ALL_PHASES_ON),
+    # Backward compat aliases
+    "gtd-lite": dict(_ALL_PHASES_ON),
+    "verify-heavy": dict(_ALL_PHASES_ON),
 }
 
 # ── Optional skill packs ──────────────────────────────────────────────
@@ -659,6 +824,31 @@ SKILL_PACKS: dict[str, SkillPackSpec] = {
 
 # DB services that trigger "if_applicable" database phase.
 _DB_SERVICES = {"postgres", "mysql", "sqlite"}
+
+
+def compute_pack_overlap(
+    workflow: str,
+    pack_name: str,
+) -> tuple:
+    """Compute pack overlap with workflow skills.
+
+    Returns:
+        (direct_overlap_count, total_pack_skills, workflow_is_comprehensive)
+    """
+    pack = SKILL_PACKS.get(pack_name)
+    if not pack:
+        return (0, 0, False)
+
+    all_workflow_skills: set = set(WORKFLOW_SKILLS.get(workflow, []))
+    all_workflow_skills.update(WORKFLOW_PROCESS_SKILLS.get(workflow, []))
+
+    total = len(pack.skill_names)
+    overlap = sum(1 for s in pack.skill_names if s in all_workflow_skills)
+
+    # "Comprehensive" = workflow has 8+ total skills (process + cross-cutting)
+    is_comprehensive = len(all_workflow_skills) >= 8
+
+    return (overlap, total, is_comprehensive)
 
 
 def _phase_is_active(

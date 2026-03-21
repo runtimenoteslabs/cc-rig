@@ -17,7 +17,7 @@ from cc_rig.generators.fileops import FileTracker
 from cc_rig.skills.registry import SkillSpec
 
 # GitHub raw content URL pattern
-_RAW_URL = "https://raw.githubusercontent.com/{repo}/main/{path}"
+_RAW_URL = "https://raw.githubusercontent.com/{repo}/{branch}/{path}"
 
 # GitHub Contents API URL pattern (for directory listing)
 _API_URL = "https://api.github.com/repos/{repo}/contents/{path}"
@@ -99,7 +99,7 @@ def _download_skill_md_only(
     timeout: int,
 ) -> list[str]:
     """Download just SKILL.md via raw.githubusercontent.com."""
-    url = _RAW_URL.format(repo=spec.repo, path=f"{spec.repo_path}/SKILL.md")
+    url = _RAW_URL.format(repo=spec.repo, branch=spec.branch, path=f"{spec.repo_path}/SKILL.md")
     content = _fetch_text(url, timeout)
 
     rel = f".claude/skills/{spec.name}/SKILL.md"
@@ -129,35 +129,86 @@ def _download_full_tree(
         # Fallback: just download SKILL.md
         return _download_skill_md_only(spec, output_dir, tracker, timeout)
 
-    # Download each file in the directory
-    for entry in entries:
-        if entry["type"] != "file":
-            continue
-        filename = entry["name"]
-        # Guard against path traversal via malicious API responses
-        if "/" in filename or "\\" in filename or ".." in filename:
-            continue
-        url = _RAW_URL.format(
-            repo=spec.repo,
-            path=f"{spec.repo_path}/{filename}",
-        )
-        try:
-            content = _fetch_text(url, timeout)
-            rel = f".claude/skills/{spec.name}/{filename}"
-            if tracker is not None:
-                tracker.write_text(rel, content)
-            else:
-                path = output_dir / rel
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(content)
-            files_written.append(rel)
-        except Exception:
-            # Skip individual file failures in full tree mode
-            # but SKILL.md is required
-            if filename == "SKILL.md":
-                raise
+    # Download files recursively (handles subdirectories like scripts/, templates/)
+    _download_tree_entries(
+        entries=entries,
+        spec=spec,
+        repo_prefix=spec.repo_path,
+        install_prefix=f".claude/skills/{spec.name}",
+        output_dir=output_dir,
+        tracker=tracker,
+        timeout=timeout,
+        files_written=files_written,
+        depth=0,
+    )
 
     return files_written
+
+
+def _download_tree_entries(
+    entries: list[dict],
+    spec: SkillSpec,
+    repo_prefix: str,
+    install_prefix: str,
+    output_dir: Path,
+    tracker: FileTracker | None,
+    timeout: int,
+    files_written: list[str],
+    depth: int,
+) -> None:
+    """Recursively download files from a directory listing.
+
+    Args:
+        entries: GitHub Contents API directory listing.
+        spec: Skill spec (for repo/branch info).
+        repo_prefix: Current repo path prefix (e.g. "skills/planning-with-files").
+        install_prefix: Current install path prefix (e.g. ".claude/skills/planning-with-files").
+        depth: Recursion depth (capped at 3 to prevent runaway).
+    """
+    for entry in entries:
+        name = entry.get("name", "")
+        # Guard against path traversal
+        if "/" in name or "\\" in name or ".." in name:
+            continue
+
+        if entry["type"] == "file":
+            url = _RAW_URL.format(
+                repo=spec.repo,
+                branch=spec.branch,
+                path=f"{repo_prefix}/{name}",
+            )
+            try:
+                content = _fetch_text(url, timeout)
+                rel = f"{install_prefix}/{name}"
+                if tracker is not None:
+                    tracker.write_text(rel, content)
+                else:
+                    path = output_dir / rel
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(content)
+                files_written.append(rel)
+            except Exception:
+                # SKILL.md at root is required
+                if name == "SKILL.md" and depth == 0:
+                    raise
+
+        elif entry["type"] == "dir" and depth < 3:
+            # Recurse into subdirectories (capped at depth 3)
+            try:
+                sub_entries = _list_directory(spec.repo, f"{repo_prefix}/{name}", timeout)
+                _download_tree_entries(
+                    entries=sub_entries,
+                    spec=spec,
+                    repo_prefix=f"{repo_prefix}/{name}",
+                    install_prefix=f"{install_prefix}/{name}",
+                    output_dir=output_dir,
+                    tracker=tracker,
+                    timeout=timeout,
+                    files_written=files_written,
+                    depth=depth + 1,
+                )
+            except Exception:
+                pass  # Skip failed subdirectory listings
 
 
 def _fetch_text(url: str, timeout: int) -> str:

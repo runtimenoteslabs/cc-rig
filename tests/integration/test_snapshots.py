@@ -274,9 +274,13 @@ class TestCLAUDEmdSnapshot:
     _LINE_CAPS = {
         "speedrun": 65,
         "standard": 100,
-        "spec-driven": 122,
-        "gtd-lite": 127,
-        "verify-heavy": 127,
+        "spec-driven": 140,
+        "gtd-lite": 145,
+        "gtd": 145,
+        "verify-heavy": 145,
+        "superpowers": 145,
+        "gstack": 125,
+        "aihero": 140,
     }
 
     @pytest.mark.parametrize("template,workflow", _SNAPSHOT_COMBOS)
@@ -287,9 +291,7 @@ class TestCLAUDEmdSnapshot:
         content = (output / "CLAUDE.md").read_text()
         line_count = content.count("\n") + 1
         cap = self._LINE_CAPS[workflow]
-        assert line_count <= cap, (
-            f"{template}+{workflow}: {line_count} lines > {cap}"
-        )
+        assert line_count <= cap, f"{template}+{workflow}: {line_count} lines > {cap}"
 
 
 class TestConfigSnapshot:

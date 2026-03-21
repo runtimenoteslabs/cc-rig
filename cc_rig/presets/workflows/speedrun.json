@@ -1,6 +1,10 @@
 {
   "name": "speedrun",
+  "version": 2,
   "description": "Minimal. Get moving fast.",
+  "source": "cc-rig",
+  "source_url": "",
+  "process_skills": [],
   "agents": [
     "code-reviewer",
     "test-writer",

@@ -103,6 +103,10 @@ def run_doctor(
     # ── Check 9: LSP plugin binaries ─────────────────────────
     _check_plugin_binaries(config, result)
 
+    # ── Check 10: Process skills installed ──────────────────
+    if config.process_skills:
+        _check_process_skills(config, project_dir, result)
+
     return result
 
 
@@ -237,3 +241,15 @@ def _check_plugin_binaries(config: ProjectConfig, result: DoctorResult) -> None:
                     f"Plugin {plugin.name!r} requires {plugin.requires_binary!r} "
                     f"but it was not found on PATH. LSP features may not activate."
                 )
+
+
+def _check_process_skills(config: ProjectConfig, output_dir: Path, result: DoctorResult) -> None:
+    """Check that process skills are installed for the workflow."""
+    for skill_name in config.process_skills:
+        skill_dir = output_dir / ".claude" / "skills" / skill_name
+        skill_md = skill_dir / "SKILL.md"
+        if not skill_md.exists():
+            result.warnings.append(
+                f"Process skill {skill_name!r} (workflow={config.workflow}) "
+                f"not found at {skill_md}. Run cc-rig init to install."
+            )

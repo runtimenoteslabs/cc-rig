@@ -83,9 +83,7 @@ class TestRemoveWorktree:
         assert "--force" in first_call[0][0]
 
     def test_git_worktree_remove_failure(self, mock_run, tmp_path):
-        mock_run.return_value = subprocess.CompletedProcess(
-            [], 1, stdout="", stderr="is locked"
-        )
+        mock_run.return_value = subprocess.CompletedProcess([], 1, stdout="", stderr="is locked")
         wt_path = tmp_path / ".claude" / "worktrees" / "fix-bug"
         wt_path.mkdir(parents=True)
 
@@ -120,10 +118,11 @@ class TestRemoveWorktree:
 class TestListWorktreeBranches:
     def test_parses_porcelain_output(self, mock_run, tmp_path):
         mock_run.return_value = subprocess.CompletedProcess(
-            [], 0,
+            [],
+            0,
             stdout="worktree /home/user/project\nHEAD abc123\nbranch refs/heads/main\n\n"
-                   "worktree /home/user/project/.claude/worktrees/fix-bug\nHEAD def456\n"
-                   "branch refs/heads/wt/fix-bug\n",
+            "worktree /home/user/project/.claude/worktrees/fix-bug\nHEAD def456\n"
+            "branch refs/heads/wt/fix-bug\n",
             stderr="",
         )
         paths = list_worktree_branches(tmp_path)

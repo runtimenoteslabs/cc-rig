@@ -973,7 +973,7 @@ class TestS11Rerun:
         config_new = compute_defaults("fastapi", "verify-heavy", project_name="rerun-proj")
         manifest_new = generate_all(config_new, self.root)
 
-        assert manifest_new["workflow_preset"] == "verify-heavy"
+        assert manifest_new["workflow_preset"] == "superpowers"  # alias resolved
         _assert_manifest_consistent(self.root)
 
 
@@ -1053,7 +1053,15 @@ TEMPLATES = [
     "phoenix",
     "go-std",
 ]
-WORKFLOWS = ["speedrun", "standard", "spec-driven", "gtd-lite", "verify-heavy"]
+WORKFLOWS = [
+    "speedrun",
+    "standard",
+    "gstack",
+    "aihero",
+    "spec-driven",
+    "superpowers",
+    "gtd",
+]
 
 
 @pytest.mark.parametrize("template", TEMPLATES)
@@ -1661,6 +1669,128 @@ class TestS22GenericStandardB0:
     def test_no_duplicates(self):
         _assert_no_duplicates(self.root, ".claude/commands")
         _assert_no_duplicates(self.root, ".claude/agents")
+
+
+# ── S24: Gstack + FastAPI + B0 ────────────────────────────────────────
+
+
+class TestS24GstackFastapiB0:
+    """Gstack workflow — process skills with Garry Tan attribution."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.root = tmp_path
+        self.config, self.manifest = _generate(tmp_path, "fastapi", "gstack")
+
+    def test_claude_md_has_process_skills_section(self):
+        content = _read_claude_md(self.root)
+        assert "## Process Skills" in content
+
+    def test_claude_md_has_gstack_attribution(self):
+        content = _read_claude_md(self.root)
+        assert "garrytan/gstack" in content
+
+    def test_process_skills_on_config(self):
+        assert len(self.config.process_skills) == 6
+        assert "plan-ceo-review" in self.config.process_skills
+        assert "ship" in self.config.process_skills
+
+    def test_workflow_source(self):
+        assert self.config.workflow_source == "garrytan/gstack"
+
+    def test_features(self):
+        assert self.config.features.memory is True
+        assert self.config.features.worktrees is True
+        assert self.config.features.spec_workflow is False
+
+    def test_hooks_executable(self):
+        _assert_hooks_executable(self.root)
+
+    def test_manifest_consistent(self):
+        _assert_manifest_consistent(self.root)
+
+    def test_no_duplicates(self):
+        _assert_no_duplicates(self.root, ".claude/commands")
+        _assert_no_duplicates(self.root, ".claude/agents")
+
+
+# ── S25: Aihero + Generic + B0 ──────────────────────────────────────
+
+
+class TestS25AiheroGenericB0:
+    """Aihero workflow — PRD-driven skills, generic stack."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.root = tmp_path
+        self.config, self.manifest = _generate(tmp_path, "generic", "aihero")
+
+    def test_claude_md_has_process_skills_section(self):
+        content = _read_claude_md(self.root)
+        assert "## Process Skills" in content
+
+    def test_claude_md_has_mattpocock_attribution(self):
+        content = _read_claude_md(self.root)
+        assert "mattpocock/skills" in content
+
+    def test_process_skills_on_config(self):
+        assert len(self.config.process_skills) == 7
+        assert "write-a-prd" in self.config.process_skills
+        assert "mp-tdd" in self.config.process_skills
+
+    def test_workflow_source(self):
+        assert self.config.workflow_source == "mattpocock/skills"
+
+    def test_features(self):
+        assert self.config.features.memory is True
+        assert self.config.features.spec_workflow is True
+        assert self.config.features.worktrees is True
+
+    def test_hooks_executable(self):
+        _assert_hooks_executable(self.root)
+
+    def test_manifest_consistent(self):
+        _assert_manifest_consistent(self.root)
+
+
+# ── S26: Superpowers + Django + B0 ──────────────────────────────────
+
+
+class TestS26SuperpowersDjangoB0:
+    """Superpowers workflow — full obra skill suite."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.root = tmp_path
+        self.config, self.manifest = _generate(tmp_path, "django", "superpowers")
+
+    def test_claude_md_has_process_skills_section(self):
+        content = _read_claude_md(self.root)
+        assert "## Process Skills" in content
+
+    def test_claude_md_has_obra_attribution(self):
+        content = _read_claude_md(self.root)
+        assert "obra/superpowers" in content
+
+    def test_process_skills_on_config(self):
+        assert len(self.config.process_skills) == 11
+
+    def test_has_all_agents(self):
+        """Superpowers should have the most agents."""
+        assert len(self.config.agents) >= 12
+
+    def test_verify_heavy_alias_produces_same(self, tmp_path):
+        """verify-heavy alias should produce same workflow as superpowers."""
+        alias_root = tmp_path / "alias"
+        alias_config, _ = _generate(alias_root, "django", "verify-heavy")
+        assert alias_config.workflow == self.config.workflow
+        assert alias_config.process_skills == self.config.process_skills
+
+    def test_hooks_executable(self):
+        _assert_hooks_executable(self.root)
+
+    def test_manifest_consistent(self):
+        _assert_manifest_consistent(self.root)
 
 
 # ── S13: Skill Pack Resolution ────────────────────────────────────────

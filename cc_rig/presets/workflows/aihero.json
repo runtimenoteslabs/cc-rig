@@ -1,0 +1,56 @@
+{
+  "name": "aihero",
+  "version": 2,
+  "description": "Matt Pocock's PRD-driven, TDD, architecture skills.",
+  "source": "mattpocock/skills",
+  "source_url": "https://github.com/mattpocock/skills",
+  "process_skills": [
+    "grill-me",
+    "write-a-prd",
+    "prd-to-issues",
+    "mp-tdd",
+    "improve-codebase-architecture",
+    "triage-issue",
+    "design-an-interface"
+  ],
+  "agents": [
+    "code-reviewer",
+    "test-writer",
+    "explorer",
+    "architect",
+    "implementer",
+    "pm-spec"
+  ],
+  "commands": [
+    "fix-issue",
+    "review",
+    "test",
+    "plan",
+    "research",
+    "learn",
+    "assumptions",
+    "remember",
+    "refactor",
+    "spec-create",
+    "spec-execute"
+  ],
+  "hooks": [
+    "format",
+    "lint",
+    "typecheck",
+    "block-rm-rf",
+    "block-env",
+    "block-main",
+    "session-context",
+    "stop-validator",
+    "memory-precompact",
+    "push-review"
+  ],
+  "features": {
+    "memory": true,
+    "spec_workflow": true,
+    "gtd": false,
+    "worktrees": true
+  },
+  "permission_mode": "permissive"
+}

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from cc_rig.config.project import ProjectConfig
 from cc_rig.generators.fileops import FileTracker
-from cc_rig.skills.registry import resolve_skills
+from cc_rig.skills.registry import SKILL_CATALOG, resolve_skills
 from cc_rig.templates import get_framework_content
 
 
@@ -40,6 +40,10 @@ def generate_claude_md(
     # ── Section 3.5: Workflow Principles (STATIC, non-speedrun) ──
     if config.workflow != "speedrun":
         sections.append(_section_workflow_principles())
+
+    # ── Section 3.6: Process Skills (STATIC, if community workflow) ──
+    if config.process_skills:
+        sections.append(_section_process_skills(config))
 
     # ── Section 4: Framework Rules (STATIC) ────────────────────────
     sections.append(_section_framework_rules(config))
@@ -178,6 +182,39 @@ def _section_workflow_principles() -> str:
         "continuity. Use `/remember` for team knowledge — "
         "decisions, patterns, and gotchas.\n"
     )
+
+
+def _section_process_skills(config: ProjectConfig) -> str:
+    """Generate process skills section with source attribution."""
+    source = config.workflow_source or "community"
+    url = config.workflow_source_url or ""
+
+    lines = [f"## Process Skills ({config.workflow})", ""]
+
+    # Attribution
+    if url:
+        lines.append(f"This project uses the **{config.workflow}** workflow ({source}).")
+    else:
+        lines.append(f"This project uses the **{config.workflow}** workflow.")
+    lines.append("")
+
+    # Skill list
+    lines.append("Installed process skills:")
+    for skill_name in config.process_skills:
+        spec = SKILL_CATALOG.get(skill_name)
+        desc = spec.description if spec else ""
+        lines.append(f"- `/{skill_name}` -- {desc}")
+    lines.append("")
+
+    # Workflow-specific notes
+    if config.workflow == "gstack":
+        lines.append(
+            "For the full gstack suite (browser-based QA, retros), "
+            "see https://github.com/garrytan/gstack"
+        )
+        lines.append("")
+
+    return "\n".join(lines)
 
 
 def _section_framework_rules(config: ProjectConfig) -> str:

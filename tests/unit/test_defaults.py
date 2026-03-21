@@ -53,15 +53,15 @@ class TestAgentCounts:
             counts[wf] = len(base_agents)
         assert counts["speedrun"] < counts["standard"]
         assert counts["standard"] <= counts["spec-driven"]
-        assert counts["standard"] <= counts["verify-heavy"]
+        assert counts["standard"] <= counts["superpowers"]
 
     def test_speedrun_has_minimum_agents(self):
         config = compute_defaults("fastapi", "speedrun", project_name="test")
         base_agents = [a for a in config.agents if a != "parallel-worker"]
         assert len(base_agents) >= 3
 
-    def test_verify_heavy_has_most_agents(self):
-        config = compute_defaults("fastapi", "verify-heavy", project_name="test")
+    def test_superpowers_has_most_agents(self):
+        config = compute_defaults("fastapi", "superpowers", project_name="test")
         base_agents = [a for a in config.agents if a != "parallel-worker"]
         assert len(base_agents) >= 10
 

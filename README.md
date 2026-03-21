@@ -20,7 +20,7 @@
 
 ---
 
-Most Claude Code projects run on a CLAUDE.md and not much else. The rest of the configuration surface — agents, hooks, skills, plugins, memory, permissions — goes unused because the knowledge to set it up is scattered across docs, blog posts and community repos. The community has built ways to discover what's available. The gap is resolution: figuring out which options matter for your stack and how they should work together.
+Most Claude Code projects run on a CLAUDE.md and not much else. The rest of the configuration surface (agents, hooks, skills, plugins, memory, permissions) goes unused because the knowledge to set it up is scattered across docs, blog posts and community repos. The community has built ways to discover what's available. The gap is resolution: figuring out which options matter for your stack and how they should work together.
 
 **cc-rig resolves it.** Tell it what you're building and how you like to work. It writes 30-65 native Claude Code files tuned to your framework. No lock-in. Just files that Claude Code reads on startup.
 
@@ -40,9 +40,9 @@ pip install cc-rig
 
 Python 3.9+. Includes the full-screen TUI wizard with arrow keys, radio buttons, checkboxes, colors, tables and progress bars.
 
-> **Already have a venv?** Just `pip install cc-rig` inside it. The venv step above is for first-time setup — without it, macOS and Linux block global pip installs.
+> **Already have a venv?** Just `pip install cc-rig` inside it. The venv step above is for first-time setup. Without it, macOS and Linux block global pip installs.
 >
-> **Prefer pipx?** `pipx install cc-rig` works too — no venv needed.
+> **Prefer pipx?** `pipx install cc-rig` works too. No venv needed.
 >
 > **Next session?** Remember to `source ~/.cc-rig/bin/activate` before running `cc-rig`.
 
@@ -63,7 +63,7 @@ cc-rig init
 Or skip the wizard and specify everything directly:
 
 ```bash
-cc-rig init --template fastapi --workflow standard --name my-api
+cc-rig init --workflow gstack --template fastapi --name my-api
 ```
 
 ### Set up an existing project
@@ -133,25 +133,25 @@ A companion `CLAUDE.local.md` is generated for personal preferences (not git-tra
 
 ### Agents
 
-Isolated Claude instances in `.claude/agents/`, each with its own system prompt, model assignment and tool restrictions in YAML frontmatter. cc-rig emits up to 10 of Claude Code's 14 supported frontmatter fields — beyond the basics (name, description, model, tools), agents get optional fields like `background`, `isolation`, `permissionMode`, `maxTurns` and `memory` where appropriate. This means generated agents work out of the box with Claude Code's parallel execution features like `/simplify` and `/batch`.
+Isolated Claude instances in `.claude/agents/`, each with its own system prompt, model assignment and tool restrictions in YAML frontmatter. cc-rig emits up to 10 of Claude Code's 14 supported frontmatter fields. Beyond the basics (name, description, model, tools), agents get optional fields like `background`, `isolation`, `permissionMode`, `maxTurns` and `memory` where appropriate. This means generated agents work out of the box with Claude Code's parallel execution features like `/simplify` and `/batch`.
 
 | Agent | Role | Model | Advanced fields |
 |-------|------|-------|-----------------|
 | `code-reviewer` | 6-aspect code review | Sonnet | `memory: project` |
 | `architect` | System design, ADRs | Opus* | `memory: project` |
-| `test-writer` | Test generation with coverage awareness | Sonnet | — |
+| `test-writer` | Test generation with coverage awareness | Sonnet | - |
 | `explorer` | Fast codebase scanning | Haiku | `permissionMode: plan`, `maxTurns: 15` |
-| `refactorer` | Safe refactoring with test verification | Sonnet | — |
-| `pr-reviewer` | Pull request review | Opus* | — |
+| `refactorer` | Safe refactoring with test verification | Sonnet | - |
+| `pr-reviewer` | Pull request review | Opus* | - |
 | `security-auditor` | OWASP-aware security review | Opus* | `memory: project` |
-| `implementer` | Feature implementation from specs | Sonnet | — |
-| `doc-writer` | Documentation generation | Sonnet | — |
-| `pm-spec` | Specification creation from requirements | Opus* | — |
-| `techdebt-hunter` | Technical debt identification | Sonnet | — |
-| `db-reader` | Database schema and query analysis | Sonnet | — |
+| `implementer` | Feature implementation from specs | Sonnet | - |
+| `doc-writer` | Documentation generation | Sonnet | - |
+| `pm-spec` | Specification creation from requirements | Opus* | - |
+| `techdebt-hunter` | Technical debt identification | Sonnet | - |
+| `db-reader` | Database schema and query analysis | Sonnet | - |
 | `parallel-worker` | Background work in isolated git worktrees | Sonnet | `background: true`, `isolation: worktree` |
 
-*\*Opus on Max/Enterprise plans, Sonnet on Pro/Team. cc-rig auto-resolves model assignments based on your Claude plan tier — no manual config needed.*
+*\*Opus on Max/Enterprise plans, Sonnet on Pro/Team. cc-rig auto-resolves model assignments based on your Claude plan tier. No manual config needed.*
 
 Your workflow preset determines which agents are included, from 3 for quick prototyping to 13 for full production rigor.
 
@@ -204,11 +204,15 @@ Up to 14 hooks from your workflow preset, plus up to 3 more from the harness lev
 
 Auto-invoked behaviors in `.claude/skills/`. Claude loads them when the task matches. No manual trigger needed.
 
-The Claude Code skill ecosystem is huge — [skills.sh](https://skills.sh/) indexes 73K+, repos like [obra/superpowers](https://github.com/obra/superpowers), [trailofbits/skills](https://github.com/trailofbits/skills) and [anthropics/skills](https://github.com/anthropics/skills) offer high-quality options across every SDLC phase. cc-rig gives you a smart starting set and makes it easy to add more.
+The Claude Code skill ecosystem is huge. [skills.sh](https://skills.sh/) indexes 73K+, repos like [obra/superpowers](https://github.com/obra/superpowers), [trailofbits/skills](https://github.com/trailofbits/skills) and [anthropics/skills](https://github.com/anthropics/skills) offer high-quality options across every SDLC phase. cc-rig gives you a smart starting set and makes it easy to add more.
+
+**Process skills** (installed per workflow):
+- Community workflows install their original skills with full attribution. gstack installs 6 skills from garrytan/gstack, aihero installs 7 from mattpocock/skills, superpowers installs 11 from obra/superpowers, gtd installs planning-with-files from OthmanAdi.
+- 55 skills in the catalog from 11 repos.
 
 **Starter set** (auto-installed at `init`):
 - **Framework-matched**: Python projects get `modern-python` and `property-based-testing`, Next.js gets `vercel-react-best-practices` and `next-best-practices`, Go/Rust get `static-analysis`
-- **Cross-cutting**: code review, security basics, TDD, debugging — scaled by workflow level (0 for speedrun, up to 14 for verify-heavy)
+- **Cross-cutting**: code review, security basics, TDD, debugging. Scaled by workflow level (0 for speedrun, up to 14 for superpowers)
 - **`project-patterns`** stub for your team's custom conventions
 
 **Optional skill packs** (select during wizard or add later):
@@ -221,7 +225,7 @@ The Claude Code skill ecosystem is huge — [skills.sh](https://skills.sh/) inde
 | Code Quality | 20 quality dimensions, anti-gaming scoring, scan→plan→fix loop | peteromallet/desloppify |
 | Database Pro | migration patterns, query optimization, multi-DB support | multiple |
 
-Add skills anytime — from cc-rig or any source:
+Add skills anytime, from cc-rig or any source:
 
 ```bash
 cc-rig skills list                    # Show what's installed
@@ -235,7 +239,7 @@ Browse the full ecosystem: [skills.sh](https://skills.sh/) · [awesome-claude-sk
 
 ### Plugins
 
-cc-rig also curates 24 official Anthropic marketplace plugins and writes them into `settings.json` as `enabledPlugins`. Plugins are self-contained extensions that Claude Code installs and manages natively — no manual MCP setup or binary downloads.
+cc-rig also curates 24 official Anthropic marketplace plugins and writes them into `settings.json` as `enabledPlugins`. Plugins are self-contained extensions that Claude Code installs and manages natively. No manual MCP setup or binary downloads.
 
 Five categories:
 
@@ -247,14 +251,14 @@ Five categories:
 | **Autonomy** | 1 | ralph-loop (official Anthropic autonomous iteration loop) |
 | **Utility** | 1 | hookify (visual hook builder) |
 
-Smart defaults resolve plugins by language (LSP), template (integrations) and workflow (workflow plugins). The github plugin replaces the GitHub MCP server — self-contained, auto-start, no token config needed. Expert mode offers a multi-select from the full catalog.
+Smart defaults resolve plugins by language (LSP), template (integrations) and workflow (workflow plugins). The github plugin replaces the GitHub MCP server: self-contained, auto-start, no token config needed. Expert mode offers a multi-select from the full catalog.
 
 ### Memory
 
 Two complementary memory systems:
 
-- **Auto-memory** (`~/.claude/projects/`) — personal, per-machine notes managed automatically by Claude Code. Always on. Use for personal preferences and local context.
-- **Team memory** (`memory/`) — git-tracked shared knowledge that travels with the repo. Use for decisions, patterns, gotchas and conventions that every contributor should know.
+- **Auto-memory** (`~/.claude/projects/`): personal, per-machine notes managed automatically by Claude Code. Always on. Use for personal preferences and local context.
+- **Team memory** (`memory/`): git-tracked shared knowledge that travels with the repo. Use for decisions, patterns, gotchas and conventions that every contributor should know.
 
 cc-rig generates the team memory layer:
 
@@ -317,70 +321,78 @@ CLAUDE.md references these via `@import` syntax, so Claude Code auto-loads them 
 
 ## Define Your Stack and Process
 
-cc-rig separates **what you're building** (template) from **how you like to work** (workflow). Pick each independently. Any combination works.
+cc-rig is **workflow-first**. You pick how you like to work, then optionally pick your stack. Any combination works.
 
 <details>
-<summary>Full showcase: 16 templates × 5 workflows × harness levels</summary>
+<summary>Full showcase: 16 templates x 7 workflows x harness levels</summary>
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/runtimenoteslabs/cc-rig/main/assets/demo-4-showcase.gif" alt="cc-rig full showcase demo" width="800">
 </p>
 </details>
 
-### What you're building: Templates
+### How you like to work: Workflows
 
-Templates set your language, framework, tool commands, linting and framework-specific rules:
+Workflow is the primary axis. It determines your agents, commands, hooks, process skills, and features.
+
+| Workflow | Source | Best for |
+|----------|--------|----------|
+| **speedrun** | cc-rig | Side projects, prototypes. 3 agents, 6 commands. No memory. Just code fast. |
+| **standard** | cc-rig | Most projects. 5 agents, 9 commands. Memory, safety hooks, code review. |
+| **gstack** | [garrytan/gstack](https://github.com/garrytan/gstack) | Garry Tan's cognitive gears. Plan, review, ship. 6 process skills installed. |
+| **aihero** | [mattpocock/skills](https://github.com/mattpocock/skills) | Matt Pocock's PRD-driven flow. Grill-me, TDD, architecture. 7 process skills. |
+| **spec-driven** | cc-rig + community | Teams that plan first. Spec create/execute, PM and implementer agents. |
+| **superpowers** | [obra/superpowers](https://github.com/obra/superpowers) | Full SDLC suite. 11 process skills covering planning through branch cleanup. |
+| **gtd** | [OthmanAdi](https://github.com/OthmanAdi/planning-with-files) + cc-rig | Persistent task tracking. planning-with-files, daily plans, worktrees. |
+
+Community workflows install their original process skills with full attribution. For example, gstack installs `/plan-ceo-review`, `/plan-eng-review`, `/gstack-review`, `/ship`, `/document-release` directly from garrytan/gstack.
+
+Backward-compatible aliases: `verify-heavy` resolves to `superpowers`, `gtd-lite` resolves to `gtd`.
+
+### What you're building: Stack (optional)
+
+Stack is secondary enrichment. It adds framework-specific tool commands, agent docs, and rules. The default is Generic (no stack-specific content).
 
 | Template | Stack | Highlights |
 |----------|-------|-----------|
-| `generic` | Language-agnostic | DevOps, monorepos, docs, infra — no framework assumptions |
+| `generic` | No specific stack | Just the workflow. No framework assumptions. |
 | `fastapi` | Python + FastAPI | Async patterns, Pydantic, pytest, ruff |
 | `django` | Python + Django | Fat models, ORM patterns, manage.py test |
 | `flask` | Python + Flask | Blueprints, extensions, pytest, ruff |
 | `nextjs` | TypeScript + Next.js | App Router, RSC patterns, Tailwind |
-| `gin` | Go + Gin | Handler→Service→Repository, golangci-lint |
+| `express` | TypeScript + Express | Middleware patterns, Router, Jest, ESLint |
+| `gin` | Go + Gin | Handler, Service, Repository, golangci-lint |
 | `echo` | Go + Echo | Echo conventions, go test |
 | `go-std` | Go (stdlib) | Idiomatic Go, no framework, go test, golangci-lint |
 | `rust-cli` | Rust + Clap | CLI patterns, cargo test, clippy |
 | `rust-web` | Rust + Axum | Async extractors, tower middleware, cargo test |
 | `rails` | Ruby + Rails | MVC, ActiveRecord, minitest, rubocop |
-| `laravel` | PHP + Laravel | MVC, Eloquent, Artisan, PHPUnit, PHP-CS-Fixer |
-| `express` | Node.js + Express | Middleware patterns, Router, Jest, ESLint |
-| `phoenix` | Elixir + Phoenix | LiveView, Ecto, ExUnit, Credo |
 | `spring` | Java + Spring Boot | DI, JPA, JUnit 5, Checkstyle/Spotless |
-| `dotnet` | C# + ASP.NET Core | DI, EF Core, xUnit, dotnet format |
-
-### How you like to work: Workflows
-
-| Workflow | Best for |
-|----------|----------|
-| **speedrun** | Side projects, prototypes, hacking. 3 agents, 6 commands, 6 hooks. No memory. Just code fast. |
-| **standard** | Most projects. 5 agents, 9 commands, 10 hooks. Memory, safety hooks, code review, architecture. |
-| **spec-driven** | Teams that plan first. 9 agents, 13 commands, 11 hooks. Spec create/execute, PM and implementer agents. |
-| **gtd-lite** | Task-oriented developers. 8 agents, 13 commands, 11 hooks. GTD capture/process, daily planning. |
-| **verify-heavy** | Production systems. 13 agents, 19 commands, 14 hooks. Security auditor, PR reviewer, every quality gate. |
+| `dotnet` | .NET + ASP.NET Core | DI, EF Core, xUnit, dotnet format |
+| `laravel` | PHP + Laravel | MVC, Eloquent, Artisan, PHPUnit, PHP-CS-Fixer |
+| `phoenix` | Elixir + Phoenix | LiveView, Ecto, ExUnit, Credo |
 
 ### Add-ons
 
 Some workflows include compound features that span multiple Claude Code primitives:
 
-**Spec Workflow** (spec-driven, verify-heavy). Plan-first development: `/spec-create` and `/spec-execute` commands, `pm-spec` and `implementer` agents, `specs/TEMPLATE.md` starter file. Based on [Pimzino's spec workflow](https://github.com/Pimzino/claude-code-spec-workflow).
+**Spec Workflow** (spec-driven, aihero, superpowers). Plan-first development: `/spec-create` and `/spec-execute` commands, `pm-spec` and `implementer` agents, `specs/TEMPLATE.md` starter file. Based on [Pimzino's spec workflow](https://github.com/Pimzino/claude-code-spec-workflow).
 
-**GTD System** (gtd-lite). Getting Things Done for Claude Code: `/gtd-capture`, `/gtd-process`, `/daily-plan` commands, pre-created `tasks/inbox.md`, `tasks/todo.md` and `tasks/someday.md`. Based on [adagradschool's cc-gtd](https://github.com/adagradschool/cc-gtd).
+**GTD System** (gtd). Getting Things Done for Claude Code: `/gtd-capture`, `/gtd-process`, `/daily-plan` commands, pre-created `tasks/inbox.md`, `tasks/todo.md` and `tasks/someday.md`. Based on [adagradschool's cc-gtd](https://github.com/adagradschool/cc-gtd).
 
-**Worktrees** (spec-driven, gtd-lite, verify-heavy). Parallel development using Claude Code's native git worktree support: `parallel-worker` agent and `/worktree` command. For batch orchestration, `cc-rig worktree spawn` launches multiple Claude sessions in isolated worktrees simultaneously — each gets its own branch, runs independently, and can be merged via PR when done.
+**Worktrees** (gstack, aihero, spec-driven, superpowers, gtd). Parallel development using Claude Code's native git worktree support: `parallel-worker` agent and `/worktree` command. For batch orchestration, `cc-rig worktree spawn` launches multiple Claude sessions in isolated worktrees simultaneously. Each gets its own branch, runs independently, and can be merged via PR when done.
 
 ### Mix and match
 
 ```bash
-# Next.js prototype - move fast
-cc-rig init --template nextjs --workflow speedrun
+# Just the gstack workflow, no specific stack
+cc-rig init --workflow gstack
 
-# FastAPI production API - maximum rigor
-cc-rig init --template fastapi --workflow verify-heavy
+# FastAPI with superpowers - maximum rigor
+cc-rig init --template fastapi --workflow superpowers
 
-# Go microservice - task-driven workflow
-cc-rig init --template gin --workflow gtd-lite
+# Go microservice with GTD task tracking
+cc-rig init --template gin --workflow gtd
 ```
 
 ---
@@ -452,7 +464,7 @@ cc-rig harness init               # + enforcement gates (lint blocks commits) + 
 cc-rig harness init --autonomy    # + loop script, 5-step PROMPT.md, progress ledger
 ```
 
-Each level builds on the previous. Or pick individual features à la carte — the wizard's "Custom" option lets you enable any combination of task tracking, budget awareness, verification gates and autonomy loop independently. A 6th option enables the **ralph-loop plugin** — Anthropic's official autonomous iteration loop plugin — as an alternative to cc-rig's generated `loop.sh`.
+Each level builds on the previous. Or pick individual features: the wizard's "Custom" option lets you enable any combination of task tracking, budget awareness, verification gates and autonomy loop independently. A 6th option enables the **ralph-loop plugin**, Anthropic's official autonomous iteration loop plugin, as an alternative to cc-rig's generated `loop.sh`.
 
 The standard level generates `init-sh.sh` (wraps your test/lint/format commands) and a commit-gate hook that structurally blocks commits when lint fails. The autonomy level generates `loop.sh` and `PROMPT.md` (5-step workflow: assess, advance, tidy, verify, record), an external bash loop that feeds tasks to Claude one at a time, each with fresh context. Based on the [Ralph Wiggum technique](https://github.com/ghuntley/how-to-ralph-wiggum) by Geoffrey Huntley.
 
@@ -543,11 +555,13 @@ cc-rig's defaults encode seven workflow principles distilled from how the Claude
 
 Each workflow preset dials these principles up or down:
 
-- **speedrun** — Minimal: just code fast. Verification hooks present but no process enforcement.
-- **standard** — Core principles active. Plan, verify, remember, refactor.
-- **spec-driven** — Plan-first emphasis. Specs before implementation.
-- **gtd-lite** — Task management emphasis. Capture, process, plan.
-- **verify-heavy** — All seven principles at maximum. Every quality gate active.
+- **speedrun**: Minimal. Just code fast. Verification hooks present but no process enforcement.
+- **standard**: Core principles active. Plan, verify, remember, refactor.
+- **gstack**: Garry Tan's cognitive gears. Structured plan/review/ship cycle with 6 process skills.
+- **aihero**: Matt Pocock's PRD-driven flow. Requirements interview, TDD, architecture.
+- **spec-driven**: Plan-first emphasis. Specs before implementation.
+- **superpowers**: Full SDLC coverage. 11 process skills from obra/superpowers. Every quality gate active.
+- **gtd**: Task management emphasis. Persistent tracking with planning-with-files.
 
 ---
 
@@ -568,7 +582,7 @@ Yes. `cc-rig init --migrate` scans your repo, detects your stack and proposes wh
 <details>
 <summary><strong>Can I edit the generated files?</strong></summary>
 
-Yes. Everything is plain text. Edit whatever you want. cc-rig won't overwrite your changes. Generate once, own forever. To re-run the wizard with your existing choices pre-filled, use `cc-rig config update` — it shows what changed and regenerates on confirmation. For personal preferences, use `CLAUDE.local.md` (not git-tracked) to avoid conflicts with team config.
+Yes. Everything is plain text. Edit whatever you want. cc-rig won't overwrite your changes. Generate once, own forever. To re-run the wizard with your existing choices pre-filled, use `cc-rig config update`. It shows what changed and regenerates on confirmation. For personal preferences, use `CLAUDE.local.md` (not git-tracked) to avoid conflicts with team config.
 </details>
 
 <details>
@@ -607,7 +621,7 @@ pip install cc-rig
 
 ### Skill Ecosystem
 
-cc-rig's starter set and optional packs draw from these repos. Skills are downloaded at `init` time from the original repos — cc-rig does not bundle or redistribute them.
+cc-rig's starter set and optional packs draw from these repos. Skills are downloaded at `init` time from the original repos. cc-rig does not bundle or redistribute them.
 
 - [obra/superpowers](https://github.com/obra/superpowers) - 14 SDLC workflow skills (MIT)
 - [trailofbits/skills](https://github.com/trailofbits/skills) - 30+ security + modern dev skills (CC-BY-SA-4.0)

@@ -2,60 +2,85 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [2.0.0] - 2026-03-22
+
+### Added
+- **Workflow-first pivot** - Workflow is now the primary axis. The wizard asks "how do you work?" before "what are you building?". Stack (template) is secondary, optional enrichment.
+- **7 workflows** (was 5) - Added **gstack** (Garry Tan's cognitive gears), **aihero** (Matt Pocock's PRD-driven flow), **superpowers** (obra's full SDLC suite), and **gtd** (persistent task tracking with planning-with-files). Backward-compatible aliases: `verify-heavy` resolves to `superpowers`, `gtd-lite` resolves to `gtd`.
+- **Process skills** - New concept: workflow-specific community skills that define the development process. Each community workflow installs its original skills with full attribution (e.g., gstack installs `/plan-ceo-review`, `/plan-eng-review`, `/gstack-review`, `/ship`, `/document-release` from garrytan/gstack). 14 new process skills from 3 repos. Skill catalog grows from 41 to 55.
+- **CLAUDE.md process skills section** - Generated CLAUDE.md includes a dedicated "Process Skills" section with skill descriptions, workflow chain, and source attribution link.
+- **Workflow preset v2 format** - Presets now include `version`, `process_skills`, `source`, and `source_url` fields. v1 presets handled gracefully (defaults apply).
+- **3 new skill repos** - garrytan/gstack (6 skills), mattpocock/skills (7 skills), OthmanAdi/planning-with-files (1 skill). Downloader now supports per-skill branch override and recursive subdirectory downloads.
+- **3 new E2E scenarios** - Gstack+FastAPI, Aihero+Generic, Superpowers+Django validated end-to-end.
+- **`test_process_skills.py`** - Dedicated test suite (8 test classes) covering process skill resolution, workflow attribution, alias resolution, and CLAUDE.md integration.
+
+### Changed
+- **Wizard order** - Workflow screen now appears before Stack (Template) screen in both guided and quick flows. Stack defaults to Generic when no framework is detected.
+- **Template picker UX** - Generic template relabeled from "DevOps, monorepos, docs, infra" to "No specific stack, just the workflow". Generic is now the default selection. Framework templates use `Language / Framework` labels for visual grouping.
+- **Features screen** - Workflow-recommended features are now locked on (disabled checkbox, labeled "[included with workflow]"). Conflicting features are locked off (labeled "[not available with workflow]"). Only freely toggleable features remain interactive.
+- **Skill packs screen** - Now workflow-aware. Shows overlap labels ("fully covered by your workflow", "N/M covered", "your workflow is comprehensive, this adds depth") instead of blind template-based recommendations.
+- **`compute_defaults()`** - Reads `process_skills`, `source`, and `source_url` from workflow presets. Populates `ProjectConfig.process_skills`, `workflow_source`, `workflow_source_url`.
+- **`ProjectConfig`** - Three new fields: `process_skills: list[str]`, `workflow_source: str`, `workflow_source_url: str`. Full serialization support.
+- **Validator** - New `_check_process_skills()` validates process skill names exist in catalog.
+- **Doctor** - New health check verifies process skill files are installed.
+- **Display** - Summary output shows process skill count and source attribution.
+
+---
+
 ## [1.4.4] - 2026-03-09
 
 ### Fixed
-- **Textual import crash** — `cc-rig init` crashed with `ModuleNotFoundError: No module named 'textual'` when textual wasn't installed. Moved `should_use_textual()` from `textual_wizard.py` (which imports textual at module level) to `tui.py` (which guards optional imports with try/except). The stdlib fallback now works correctly.
+- **Textual import crash** - `cc-rig init` crashed with `ModuleNotFoundError: No module named 'textual'` when textual wasn't installed. Moved `should_use_textual()` from `textual_wizard.py` (which imports textual at module level) to `tui.py` (which guards optional imports with try/except). The stdlib fallback now works correctly.
 
 ### Changed
-- **TUI deps are now default** — `rich`, `textual` and `prompt_toolkit` moved from optional `[rich]` extra to default dependencies. `pip install cc-rig` gives the full TUI experience. The `[rich]` extra is kept empty for backwards compatibility.
-- **Expert screen tab styling** — Tab headers now use bright colors (cyan active, grey-blue inactive) instead of the default Textual styling that was nearly invisible on dark backgrounds. Added "Press 1-4 or click tabs to switch" hint.
-- **Install instructions** — README now shows venv creation + activation + pip install as a 3-step block. Added troubleshooting tips for PEP 668 errors and pipx alternative. Removed zsh bracket quoting FAQ (no longer needed since `[rich]` extra is gone).
-- **README opening** — Rewritten from feature list to problem framing ("Most Claude Code projects run on a CLAUDE.md and not much else"). Aligns with blog post tone.
-- **README badges** — Replaced "zero dependencies" badge with live PyPI version badge.
+- **TUI deps are now default** - `rich`, `textual` and `prompt_toolkit` moved from optional `[rich]` extra to default dependencies. `pip install cc-rig` gives the full TUI experience. The `[rich]` extra is kept empty for backwards compatibility.
+- **Expert screen tab styling** - Tab headers now use bright colors (cyan active, grey-blue inactive) instead of the default Textual styling that was nearly invisible on dark backgrounds. Added "Press 1-4 or click tabs to switch" hint.
+- **Install instructions** - README now shows venv creation + activation + pip install as a 3-step block. Added troubleshooting tips for PEP 668 errors and pipx alternative. Removed zsh bracket quoting FAQ (no longer needed since `[rich]` extra is gone).
+- **README opening** - Rewritten from feature list to problem framing ("Most Claude Code projects run on a CLAUDE.md and not much else"). Aligns with blog post tone.
+- **README badges** - Replaced "zero dependencies" badge with live PyPI version badge.
 
 ---
 
 ## [1.4.3] - 2026-03-08
 
 ### Fixed
-- **Clean leaves harness.md behind** — `FileTracker` now tracks files written in the current session so multi-pass writes (B1→B2→B3 harness appending to `agent_docs/harness.md`) are not falsely marked as pre-existing. Previously `cc-rig clean` restored the B1 backup instead of deleting the file.
+- **Clean leaves harness.md behind** - `FileTracker` now tracks files written in the current session so multi-pass writes (B1→B2→B3 harness appending to `agent_docs/harness.md`) are not falsely marked as pre-existing. Previously `cc-rig clean` restored the B1 backup instead of deleting the file.
 
 ### Changed
-- **README FAQ** — Added troubleshooting entries for Python 3.8 on older Linux distros and zsh bracket quoting.
+- **README FAQ** - Added troubleshooting entries for Python 3.8 on older Linux distros and zsh bracket quoting.
 
 ---
 
 ## [1.4.2] - 2026-03-08
 
 ### Fixed
-- **Path traversal in skill removal** — `cc-rig skills remove` now validates the skill name against the skills directory root, preventing `../../` traversal in user-supplied names.
-- **Path traversal in skill downloads** — GitHub API filenames are validated for path separators and `..` before writing, preventing malicious repo responses from writing outside `.claude/skills/`.
-- **Path containment in FileTracker** — `write_text()` now verifies resolved paths stay within the output directory, raising `ValueError` on traversal attempts.
-- **Worktree spawn permissions** — `--dangerously-skip-permissions` is no longer unconditionally passed to spawned Claude processes. Now opt-in via `cc-rig worktree spawn --skip-permissions`.
-- **Shell injection regex** — Added newline (`\n`, `\r`) to `_SHELL_INJECTION_RE` character class, closing a bypass where multi-line command strings could inject additional shell statements.
-- **Preset name validation** — `create_preset()` and `install_preset()` now reject names containing path separators or special characters (must match `[a-z0-9][a-z0-9_-]*`).
+- **Path traversal in skill removal** - `cc-rig skills remove` now validates the skill name against the skills directory root, preventing `../../` traversal in user-supplied names.
+- **Path traversal in skill downloads** - GitHub API filenames are validated for path separators and `..` before writing, preventing malicious repo responses from writing outside `.claude/skills/`.
+- **Path containment in FileTracker** - `write_text()` now verifies resolved paths stay within the output directory, raising `ValueError` on traversal attempts.
+- **Worktree spawn permissions** - `--dangerously-skip-permissions` is no longer unconditionally passed to spawned Claude processes. Now opt-in via `cc-rig worktree spawn --skip-permissions`.
+- **Shell injection regex** - Added newline (`\n`, `\r`) to `_SHELL_INJECTION_RE` character class, closing a bypass where multi-line command strings could inject additional shell statements.
+- **Preset name validation** - `create_preset()` and `install_preset()` now reject names containing path separators or special characters (must match `[a-z0-9][a-z0-9_-]*`).
 ### Changed
-- **README FAQ** — Corrected FAQ answer that incorrectly stated "There's no 'update' command." Now references `cc-rig config update`.
-- **PyPI metadata** — Added `[project.urls]` (Homepage, Repository, Changelog) and MIT license classifier to `pyproject.toml`.
-- **README images** — Switched logo and demo GIFs to absolute GitHub raw URLs for PyPI rendering.
-- **Typing standardization** — Replaced `List[T]`/`Optional[T]` with lowercase generics in `cc_rig/worktree/` and `cc_rig/generators/agents.py`.
-- **Import hygiene** — Moved `import re` and `import os` from function bodies to module level in `state.py` and `downloader.py`.
-- **Error reporting** — `_download_community_skills()` now surfaces exception details in the failure report instead of silently swallowing them.
-- **Publishing docs** — Added `docs/publishing.md` with PyPI build and upload procedure.
+- **README FAQ** - Corrected FAQ answer that incorrectly stated "There's no 'update' command." Now references `cc-rig config update`.
+- **PyPI metadata** - Added `[project.urls]` (Homepage, Repository, Changelog) and MIT license classifier to `pyproject.toml`.
+- **README images** - Switched logo and demo GIFs to absolute GitHub raw URLs for PyPI rendering.
+- **Typing standardization** - Replaced `List[T]`/`Optional[T]` with lowercase generics in `cc_rig/worktree/` and `cc_rig/generators/agents.py`.
+- **Import hygiene** - Moved `import re` and `import os` from function bodies to module level in `state.py` and `downloader.py`.
+- **Error reporting** - `_download_community_skills()` now surfaces exception details in the failure report instead of silently swallowing them.
+- **Publishing docs** - Added `docs/publishing.md` with PyPI build and upload procedure.
 
 ---
 
 ## [1.4.1] - 2026-03-06
 
 ### Added
-- **Multi-worktree orchestration** — `cc-rig worktree spawn/list/status/pr/cleanup`. Launch multiple Claude sessions in parallel worktrees from the terminal. Each task gets an isolated git worktree and branch (`wt/<slug>`). State tracked in `.claude/worktrees.json`. PID-based status monitoring, PR creation via `gh`, batch cleanup. New `cc_rig/worktree/` package (state, manager, orchestrator). 92 new tests across 4 test files.
-- **`cc-rig config update`** — Re-run wizard with existing config values pre-filled, show diff, regenerate on confirmation. Supports `--quick` and `--expert` modes.
-- **`cc-rig doctor --check-compat`** — Check generated config features against installed Claude Code version. Warns about plugins, background agents, worktree isolation, and settings.local.json on older CC versions.
-- **Community preset validation** — `validate_preset()` validates schema before installation. Template presets require `project_type`; workflow presets require `agents` and `commands` as lists.
+- **Multi-worktree orchestration** - `cc-rig worktree spawn/list/status/pr/cleanup`. Launch multiple Claude sessions in parallel worktrees from the terminal. Each task gets an isolated git worktree and branch (`wt/<slug>`). State tracked in `.claude/worktrees.json`. PID-based status monitoring, PR creation via `gh`, batch cleanup. New `cc_rig/worktree/` package (state, manager, orchestrator). 92 new tests across 4 test files.
+- **`cc-rig config update`** - Re-run wizard with existing config values pre-filled, show diff, regenerate on confirmation. Supports `--quick` and `--expert` modes.
+- **`cc-rig doctor --check-compat`** - Check generated config features against installed Claude Code version. Warns about plugins, background agents, worktree isolation, and settings.local.json on older CC versions.
+- **Community preset validation** - `validate_preset()` validates schema before installation. Template presets require `project_type`; workflow presets require `agents` and `commands` as lists.
 
 ### Changed
-- **Data extraction (M6)** — Moved `_COMMAND_DEFS` (19 commands) and `_AGENT_DEFS` (13 agents) from inline Python to `cc_rig/data/commands.json` and `cc_rig/data/agents.json`. Pure refactor, zero behavior change.
+- **Data extraction (M6)** - Moved `_COMMAND_DEFS` (19 commands) and `_AGENT_DEFS` (13 agents) from inline Python to `cc_rig/data/commands.json` and `cc_rig/data/agents.json`. Pure refactor, zero behavior change.
 - Added `package-data` to `pyproject.toml` to ensure JSON data files are included in wheels.
 - TUI worktree feature description expanded with usage examples and workflow context.
 - Workflow detail panels now show `parallel-worker` agent and `worktree` command for spec-driven, gtd-lite, verify-heavy.
@@ -67,13 +92,13 @@ All notable changes to cc-rig will be documented in this file.
 ## [1.4.0] - 2026-03-05
 
 ### Added
-- **Official Claude Code Plugin Integration** — cc-rig now curates official Anthropic marketplace plugins alongside skills, hooks, agents, commands, and MCPs.
+- **Official Claude Code Plugin Integration** - cc-rig now curates official Anthropic marketplace plugins alongside skills, hooks, agents, commands, and MCPs.
   - New `cc_rig/plugins/` module with 24-plugin catalog across 5 categories: LSP (7), integration (10), workflow (5), autonomy (1), utility (1).
   - `PluginRecommendation` dataclass on `ProjectConfig` with full serialization support.
   - Smart defaults: `compute_defaults()` resolves plugins by language (LSP), template (integrations), and workflow (workflow plugins). GitHub MCP replaced by github plugin (self-contained, auto-start).
-  - `enabledPlugins` section in generated `settings.json` — format: `"name@marketplace": true`.
-  - **Ralph-loop plugin** — official Anthropic autonomous loop as alternative to cc-rig's loop.sh. Harness picker shows 6th option. Custom-style B1/B2 feature confirms (task_tracking, budget_awareness, verification_gates). Mutual exclusion with `autonomy_loop`.
-  - Expert mode plugins category — multi-select from full catalog (TUI tab + CLI).
+  - `enabledPlugins` section in generated `settings.json` - format: `"name@marketplace": true`.
+  - **Ralph-loop plugin** - official Anthropic autonomous loop as alternative to cc-rig's loop.sh. Harness picker shows 6th option. Custom-style B1/B2 feature confirms (task_tracking, budget_awareness, verification_gates). Mutual exclusion with `autonomy_loop`.
+  - Expert mode plugins category - multi-select from full catalog (TUI tab + CLI).
   - TUI: Plugins tab in ExpertScreen, ralph-loop RadioButton in HarnessScreen with detail panel.
   - Doctor check: LSP binary PATH detection (warning if binary not found).
   - Schema validation: plugin category values, ralph-loop + autonomy_loop mutual exclusion.
@@ -89,7 +114,7 @@ All notable changes to cc-rig will be documented in this file.
 ## [1.3.2] - 2026-03-04
 
 ### Added
-- **Generation log**: `cc-rig init` now saves output to `.claude/cc-rig-init.log` — file list, validation results, next steps. Symlink at project root for discoverability. ANSI codes stripped. Log saved on both success and validation failure. Not tracked in manifest (preserved by `cc-rig clean`).
+- **Generation log**: `cc-rig init` now saves output to `.claude/cc-rig-init.log` - file list, validation results, next steps. Symlink at project root for discoverability. ANSI codes stripped. Log saved on both success and validation failure. Not tracked in manifest (preserved by `cc-rig clean`).
 
 ---
 
@@ -97,7 +122,7 @@ All notable changes to cc-rig will be documented in this file.
 
 ### Added
 - **V2 Runtime: Budget Enforcement + Cost Tracking** (Path A + Path B)
-  - `budget-reminder.sh` (Stop hook) now parses JSONL session logs via inline Python heredoc — shows actual session tokens + estimated cost with model-aware pricing (Opus/Sonnet/Haiku auto-detected from session log). Project-scoped JSONL lookup (not global). Graceful degradation: no python3 or no JSONL → shows "unavailable", never blocks.
+  - `budget-reminder.sh` (Stop hook) now parses JSONL session logs via inline Python heredoc - shows actual session tokens + estimated cost with model-aware pricing (Opus/Sonnet/Haiku auto-detected from session log). Project-scoped JSONL lookup (not global). Graceful degradation: no python3 or no JSONL → shows "unavailable", never blocks.
   - `loop.sh` (B3 autonomy) enhanced with: `--output-format json` for cost capture, model-aware pricing, budget tracking accumulators including cache tokens, budget enforcement (breaks loop on exceed, warns at threshold), checkpoint auto-commit (when Claude doesn't commit), progress ledger with cost per iteration, `cleanup()` trap with cost summary on exit.
   - loop.sh refactored from single string into 12 named parts for maintainability.
   - 14 new tests: 4 for budget-reminder (session cost parsing, graceful degradation, estimated cost display, session tokens display), 8 for loop.sh (output-format json, budget enforcement, budget tracking, auto-checkpoint, cost summary, progress logging, cleanup trap, bash syntax), 2 E2E (S02/S07 `--output-format json` assertions).
@@ -109,12 +134,12 @@ All notable changes to cc-rig will be documented in this file.
 - loop.sh budget enforcement: cache tokens now included in total (were 80%+ of usage but ignored).
 - loop.sh cost accumulation: replaced fragile triple-escaped bash interpolation with `sys.argv` passing.
 - loop.sh cost summary: shows "unavailable" instead of misleading "$0" when python3 absent.
-- `.claude/settings.local.json` generation — personal permission overrides file (`preserve_on_clean=True`)
+- `.claude/settings.local.json` generation - personal permission overrides file (`preserve_on_clean=True`)
 - 66 new tests across 4 test files:
-  - `test_memory_content.py` (18 tests) — memory file content, anti-ballooning rules, MEMORY-README
-  - `test_workflow_diff.py` (17 tests) — cross-workflow comparison (speedrun vs standard vs verify-heavy vs spec-driven vs gtd-lite)
-  - `test_command_frontmatter.py` (18 tests) — YAML frontmatter parsing, `$ARGUMENTS` validation, `_COMMAND_DEFS` consistency
-  - `test_permission_modes.py` (13 tests) — default vs permissive mode comparison, allow/deny lists
+  - `test_memory_content.py` (18 tests) - memory file content, anti-ballooning rules, MEMORY-README
+  - `test_workflow_diff.py` (17 tests) - cross-workflow comparison (speedrun vs standard vs verify-heavy vs spec-driven vs gtd-lite)
+  - `test_command_frontmatter.py` (18 tests) - YAML frontmatter parsing, `$ARGUMENTS` validation, `_COMMAND_DEFS` consistency
+  - `test_permission_modes.py` (13 tests) - default vs permissive mode comparison, allow/deny lists
 - 12 tests (10 unit + 1 integration + 1 E2E) for settings.local.json
 
 ### Changed
@@ -124,7 +149,7 @@ All notable changes to cc-rig will be documented in this file.
 
 ### Fixed
 - Version bump: `pyproject.toml` and `__init__.py` synced from 1.0.0 to 1.3.0
-- Removed `memory-stop` prompt hook — Claude wraps JSON in markdown, causing validation failure every session exit. Auto-memory already handles learning persistence.
+- Removed `memory-stop` prompt hook - Claude wraps JSON in markdown, causing validation failure every session exit. Auto-memory already handles learning persistence.
 - Fixed `ruff format` issues in `textual_wizard.py` and `generate.py` (CI was failing)
 - CI verified green on Python 3.9, 3.10, 3.11, 3.12
 
@@ -135,11 +160,11 @@ All notable changes to cc-rig will be documented in this file.
 ### Added
 
 **Generic Template**
-- `generic` — Language-agnostic template for DevOps, monorepos, docs, infra projects
+- `generic` - Language-agnostic template for DevOps, monorepos, docs, infra projects
 - First-class option on template picker (first in list), no framework or tool commands
 - Uses excellent language-agnostic content from existing `generic.py` template module
 - Default MCPs: GitHub only (no database assumption)
-- Never auto-detected — user-selected only
+- Never auto-detected - user-selected only
 
 **À La Carte Harness**
 - Custom harness level: pick individual features without B0→B1→B2→B3 tier progression
@@ -167,10 +192,10 @@ All notable changes to cc-rig will be documented in this file.
 ### Added
 
 **4 New Framework Templates**
-- `laravel` — PHP + Laravel: MVC, Eloquent ORM, Artisan, PHPUnit, PHP-CS-Fixer
-- `express` — Node.js + Express: middleware patterns, Router, Jest, ESLint, PM2 deployment
-- `phoenix` — Elixir + Phoenix: LiveView, Ecto, ExUnit, Credo, mix release
-- `go-std` — Go standard library: idiomatic Go patterns, go test, golangci-lint, no framework coupling
+- `laravel` - PHP + Laravel: MVC, Eloquent ORM, Artisan, PHPUnit, PHP-CS-Fixer
+- `express` - Node.js + Express: middleware patterns, Router, Jest, ESLint, PM2 deployment
+- `phoenix` - Elixir + Phoenix: LiveView, Ecto, ExUnit, Credo, mix release
+- `go-std` - Go standard library: idiomatic Go patterns, go test, golangci-lint, no framework coupling
 
 **Total**: 15 templates × 5 workflows = 75 valid combinations.
 
@@ -236,7 +261,7 @@ All notable changes to cc-rig will be documented in this file.
 - Up to 12 agent definitions with role-specific prompts and tool restrictions
 - Up to 16 slash commands with YAML frontmatter
 - 4 bundled skills (TDD, systematic-debug, project-patterns, deployment-checklist)
-- 4 agent docs (architecture, conventions, testing, deployment) — framework-specific
+- 4 agent docs (architecture, conventions, testing, deployment) - framework-specific
 - 5-file memory system with anti-ballooning rules
 - MCP server configuration
 - Hook shell scripts (format, lint, typecheck, safety guards)
