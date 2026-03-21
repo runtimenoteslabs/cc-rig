@@ -60,6 +60,7 @@ def validate_output(
     _check_command_files(output_dir, config, result)
     _check_memory_files(output_dir, config, result)
     _check_claude_local(output_dir, result)
+    _check_process_skills(config, result)
     if manifest:
         _check_manifest(output_dir, manifest, result)
 
@@ -448,5 +449,20 @@ def _check_manifest(
                     f"File not in manifest: {f}",
                     "warning",
                     file=f,
+                )
+            )
+
+
+def _check_process_skills(config: ProjectConfig, result: ValidationResult) -> None:
+    """V17: Validate process skill names exist in the skill catalog."""
+    from cc_rig.skills.registry import SKILL_CATALOG
+
+    for skill_name in config.process_skills:
+        if skill_name not in SKILL_CATALOG:
+            result.issues.append(
+                ValidationIssue(
+                    "V17",
+                    f"Process skill {skill_name!r} not found in SKILL_CATALOG",
+                    "error",
                 )
             )

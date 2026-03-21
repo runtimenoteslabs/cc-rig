@@ -1,0 +1,56 @@
+{
+  "name": "gtd",
+  "version": 2,
+  "description": "Task-focused. Persistent tracking + GTD system + daily planning.",
+  "source": "OthmanAdi/planning-with-files + obra/superpowers",
+  "source_url": "https://github.com/OthmanAdi/planning-with-files",
+  "process_skills": [
+    "planning-with-files",
+    "writing-plans",
+    "executing-plans"
+  ],
+  "agents": [
+    "code-reviewer",
+    "test-writer",
+    "explorer",
+    "architect",
+    "refactorer",
+    "pr-reviewer",
+    "implementer",
+    "parallel-worker"
+  ],
+  "commands": [
+    "fix-issue",
+    "review",
+    "test",
+    "plan",
+    "research",
+    "learn",
+    "assumptions",
+    "remember",
+    "refactor",
+    "gtd-capture",
+    "gtd-process",
+    "daily-plan",
+    "worktree"
+  ],
+  "hooks": [
+    "format",
+    "lint",
+    "typecheck",
+    "block-rm-rf",
+    "block-env",
+    "block-main",
+    "session-context",
+    "stop-validator",
+    "memory-precompact",
+    "push-review"
+  ],
+  "features": {
+    "memory": true,
+    "spec_workflow": false,
+    "gtd": true,
+    "worktrees": true
+  },
+  "permission_mode": "permissive"
+}

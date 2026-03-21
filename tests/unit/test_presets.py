@@ -122,7 +122,7 @@ class TestWorkflowOrdering:
             data = load_workflow(name)
             counts[name] = len(data["agents"])
         assert counts["speedrun"] < counts["standard"]
-        assert counts["standard"] < counts["verify-heavy"]
+        assert counts["standard"] < counts["superpowers"]
 
     def test_speedrun_is_minimal(self):
         data = load_workflow("speedrun")
@@ -130,12 +130,20 @@ class TestWorkflowOrdering:
         assert len(data["commands"]) >= 5
         assert data["features"]["memory"] is False
 
-    def test_verify_heavy_is_maximal(self):
-        data = load_workflow("verify-heavy")
+    def test_superpowers_is_maximal(self):
+        data = load_workflow("superpowers")
         assert len(data["agents"]) >= 10
         assert data["features"]["memory"] is True
         assert data["features"]["spec_workflow"] is True
         assert data["features"]["worktrees"] is True
+
+    def test_verify_heavy_alias_resolves(self):
+        data = load_workflow("verify-heavy")
+        assert data["name"] == "superpowers"
+
+    def test_gtd_lite_alias_resolves(self):
+        data = load_workflow("gtd-lite")
+        assert data["name"] == "gtd"
 
 
 class TestListPresets:

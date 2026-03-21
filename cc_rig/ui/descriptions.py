@@ -77,9 +77,42 @@ WORKFLOW_DETAILS: dict[str, str] = {
         "  Plugins:  commit-commands, code-review + LSP for your language\n"
         "  Features: none enabled by default"
     ),
+    "gstack": (
+        "Best for: Startup teams, product-focused development\n"
+        "Philosophy: Garry Tan's cognitive gears. Plan, Review, Ship.\n"
+        "Source: garrytan/gstack (github.com/garrytan/gstack)\n"
+        "Process skills:\n"
+        "  /plan-ceo-review, /plan-eng-review, /plan-design-review,\n"
+        "  /gstack-review, /ship, /document-release\n"
+        "Includes:\n"
+        "  Agents:   code-reviewer, test-writer, explorer, architect, pr-reviewer\n"
+        "  Commands: fix-issue, review, test, plan, research, remember, refactor\n"
+        "  Hooks:    format, lint, typecheck, block-rm-rf, block-env, block-main,\n"
+        "            stop-validator, memory-precompact, push-review\n"
+        "  Plugins:  commit-commands, code-review, pr-review-toolkit + LSP\n"
+        "  Features: memory, worktrees enabled"
+    ),
+    "aihero": (
+        "Best for: PRD-driven development, greenfield projects, TDD workflows\n"
+        "Philosophy: Matt Pocock's skill-driven development. PRD first, then code.\n"
+        "Source: mattpocock/skills (github.com/mattpocock/skills)\n"
+        "Process skills:\n"
+        "  /grill-me, /write-a-prd, /prd-to-issues, /mp-tdd,\n"
+        "  /improve-codebase-architecture, /triage-issue, /design-an-interface\n"
+        "Includes:\n"
+        "  Agents:   code-reviewer, test-writer, explorer, architect, implementer, pm-spec\n"
+        "  Commands: fix-issue, review, test, plan, spec-create, spec-execute, remember\n"
+        "  Hooks:    format, lint, typecheck, block-rm-rf, block-env, block-main,\n"
+        "            stop-validator, memory-precompact, push-review\n"
+        "  Plugins:  commit-commands, code-review, feature-dev, pr-review-toolkit + LSP\n"
+        "  Features: memory, spec-workflow, worktrees enabled"
+    ),
     "spec-driven": (
         "Best for: Complex features, team handoffs, regulated environments\n"
         "Philosophy: Plan thoroughly before coding. Specs drive implementation.\n"
+        "Source: cc-rig + mattpocock/skills + obra/superpowers\n"
+        "Process skills:\n"
+        "  /write-a-prd, /prd-to-issues, /writing-plans, /executing-plans\n"
         "Includes:\n"
         "  Agents:   code-reviewer, test-writer, explorer, architect, pm-spec,\n"
         "            implementer, parallel-worker (worktree isolation)\n"
@@ -90,33 +123,40 @@ WORKFLOW_DETAILS: dict[str, str] = {
         "  Plugins:  commit-commands, code-review, feature-dev, pr-review-toolkit + LSP\n"
         "  Features: spec-workflow, worktrees enabled"
     ),
-    "gtd-lite": (
-        "Best for: Solo devs managing multiple projects, personal productivity\n"
-        "Philosophy: Capture everything, process later. Never lose an idea.\n"
+    "superpowers": (
+        "Best for: Production systems, security-critical code, maximum rigor\n"
+        "Philosophy: Full SDLC skill suite. Every phase covered by community skills.\n"
+        "Source: obra/superpowers (github.com/obra/superpowers)\n"
+        "Process skills:\n"
+        "  /brainstorming, /writing-plans, /executing-plans,\n"
+        "  /test-driven-development, /systematic-debugging,\n"
+        "  /requesting-code-review, /receiving-code-review,\n"
+        "  /verification-before-completion, /subagent-driven-development\n"
         "Includes:\n"
-        "  Agents:   code-reviewer, test-writer, explorer,\n"
-        "            parallel-worker (worktree isolation)\n"
-        "  Commands: fix-issue, review, test, plan, gtd-capture, gtd-process,\n"
-        "            daily-plan, worktree\n"
-        "  Hooks:    format, lint, block-rm-rf, block-env, stop-validator,\n"
-        "            memory-precompact\n"
-        "  Plugins:  commit-commands, code-review + LSP for your language\n"
-        "  Features: memory, gtd, worktrees enabled"
-    ),
-    "verify-heavy": (
-        "Best for: Production systems, security-critical code, compliance\n"
-        "Philosophy: Trust nothing. Verify everything. Every change is reviewed.\n"
-        "Includes:\n"
-        "  Agents:   code-reviewer, test-writer, explorer, architect, pr-reviewer,\n"
-        "            security-auditor, doc-writer, parallel-worker (worktree isolation)\n"
-        "  Commands: fix-issue, review, test, plan, security, document,\n"
-        "            assumptions, worktree\n"
+        "  Agents:   all 12 core agents + parallel-worker\n"
+        "  Commands: all 19 commands\n"
         "  Hooks:    format, lint, typecheck, block-rm-rf, block-env, block-main,\n"
         "            stop-validator, push-review, subagent-review, commit-message,\n"
         "            doc-review\n"
         "  Plugins:  commit-commands, code-review, pr-review-toolkit,\n"
         "            security-guidance + LSP for your language\n"
-        "  Features: worktrees enabled"
+        "  Features: spec-workflow, worktrees enabled"
+    ),
+    "gtd": (
+        "Best for: Solo devs managing multiple projects, personal productivity\n"
+        "Philosophy: Capture everything, process later. Persistent tracking files.\n"
+        "Source: OthmanAdi/planning-with-files + obra/superpowers\n"
+        "Process skills:\n"
+        "  /planning-with-files, /writing-plans, /executing-plans\n"
+        "Includes:\n"
+        "  Agents:   code-reviewer, test-writer, explorer, architect,\n"
+        "            parallel-worker (worktree isolation)\n"
+        "  Commands: fix-issue, review, test, plan, gtd-capture, gtd-process,\n"
+        "            daily-plan, worktree\n"
+        "  Hooks:    format, lint, typecheck, block-rm-rf, block-env, block-main,\n"
+        "            stop-validator, memory-precompact, push-review\n"
+        "  Plugins:  commit-commands, code-review + LSP for your language\n"
+        "  Features: memory, gtd, worktrees enabled"
     ),
 }
 
@@ -225,22 +265,22 @@ HARNESS_DETAILS: dict[str, str] = {
 # ── Template descriptions ────────────────────────────────────────────
 
 TEMPLATE_DESCRIPTIONS: dict[str, str] = {
-    "generic": "Generic - Language-agnostic project (DevOps, monorepos, docs, infra)",
+    "generic": "No specific stack, just the workflow",
     "fastapi": "Python / FastAPI - Modern async API framework",
     "django": "Python / Django - Batteries-included web framework",
     "flask": "Python / Flask - Lightweight WSGI micro-framework",
     "nextjs": "TypeScript / Next.js - Full-stack React framework",
+    "express": "TypeScript / Express - Minimal Node.js web framework",
     "gin": "Go / Gin - High-performance HTTP web framework",
     "echo": "Go / Echo - Minimalist web framework",
+    "go-std": "Go / stdlib - HTTP server using net/http",
     "rust-cli": "Rust / Clap - Command-line application toolkit",
     "rust-web": "Rust / Axum - Async web framework with tower middleware",
     "rails": "Ruby / Rails - Full-stack MVC web framework",
-    "spring": "Java / Spring Boot - Enterprise web framework with dependency injection",
-    "dotnet": "C# / ASP.NET Core - Cross-platform web framework with async support",
+    "spring": "Java / Spring Boot - Enterprise web framework",
+    "dotnet": ".NET / ASP.NET Core - Cross-platform web framework",
     "laravel": "PHP / Laravel - Full-stack web framework with Eloquent ORM",
-    "express": "TypeScript / Express - Minimal and flexible Node.js web framework",
     "phoenix": "Elixir / Phoenix - Real-time web framework with LiveView",
-    "go-std": "Go / stdlib - HTTP server using net/http without frameworks",
 }
 
 
@@ -305,7 +345,28 @@ FEATURE_DETAILS: list[dict[str, str]] = [
 WORKFLOW_FEATURE_DEFAULTS: dict[str, set[str]] = {
     "speedrun": set(),
     "standard": {"memory"},
+    "gstack": {"memory", "worktrees"},
+    "aihero": {"memory", "spec_workflow", "worktrees"},
     "spec-driven": {"memory", "spec_workflow", "worktrees"},
+    "superpowers": {"memory", "spec_workflow", "worktrees"},
+    "gtd": {"memory", "gtd", "worktrees"},
+    # Backward compat aliases
     "gtd-lite": {"memory", "gtd", "worktrees"},
     "verify-heavy": {"memory", "spec_workflow", "worktrees"},
+}
+
+# Features incompatible with specific workflows.
+# Workflows with process_skills that cover planning/review should not
+# allow adding conflicting features on top.
+WORKFLOW_FEATURE_CONFLICTS: dict[str, set[str]] = {
+    "speedrun": set(),
+    "standard": set(),
+    "gstack": {"spec_workflow", "gtd"},  # own plan/review/ship process
+    "aihero": {"gtd"},  # PRD-driven process, gtd conflicts
+    "spec-driven": {"gtd"},  # uses spec_workflow, gtd conflicts
+    "superpowers": {"gtd"},  # full SDLC coverage, gtd conflicts
+    "gtd": {"spec_workflow"},  # uses gtd, spec conflicts
+    # Backward compat aliases
+    "gtd-lite": {"spec_workflow"},
+    "verify-heavy": {"gtd"},
 }

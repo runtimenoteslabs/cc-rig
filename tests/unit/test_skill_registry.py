@@ -18,6 +18,7 @@ from cc_rig.skills.registry import (
     SkillPackSpec,
     SkillSpec,
     _phase_is_active,
+    compute_pack_overlap,
     resolve_skills,
 )
 
@@ -40,7 +41,18 @@ ALL_TEMPLATES = [
     "phoenix",
     "go-std",
 ]
-ALL_WORKFLOWS = ["speedrun", "standard", "spec-driven", "gtd-lite", "verify-heavy"]
+ALL_WORKFLOWS = [
+    "speedrun",
+    "standard",
+    "gstack",
+    "aihero",
+    "spec-driven",
+    "superpowers",
+    "gtd",
+    # Backward compat aliases
+    "gtd-lite",
+    "verify-heavy",
+]
 
 # Expected cross-cutting skill counts per workflow
 _STANDARD_CROSS_CUTTING_COUNT = 5
@@ -57,7 +69,7 @@ class TestSkillCatalogCompleteness:
     """SKILL_CATALOG must contain exactly 41 uniquely-named skills."""
 
     def test_catalog_has_41_skills(self):
-        assert len(SKILL_CATALOG) == 41
+        assert len(SKILL_CATALOG) == 55
 
     def test_all_catalog_keys_are_skill_spec(self):
         for name, spec in SKILL_CATALOG.items():
@@ -252,7 +264,7 @@ class TestWorkflowSkillsCompleteness:
     """WORKFLOW_SKILLS must have entries for all 5 workflows."""
 
     def test_has_all_5_workflows(self):
-        assert len(WORKFLOW_SKILLS) == 5
+        assert len(WORKFLOW_SKILLS) == 9
 
     @pytest.mark.parametrize("workflow", ALL_WORKFLOWS)
     def test_workflow_is_present(self, workflow):
@@ -348,12 +360,12 @@ class TestWorkflowSkillsCompleteness:
 
 
 class TestWorkflowPhasesCompleteness:
-    """WORKFLOW_PHASES must have entries for all 5 workflows."""
+    """WORKFLOW_PHASES must have entries for all workflows (including aliases)."""
 
     _EXPECTED_PHASES = {"coding", "testing", "review", "security", "database", "devops", "planning"}
 
-    def test_has_all_5_workflows(self):
-        assert len(WORKFLOW_PHASES) == 5
+    def test_has_all_workflows(self):
+        assert len(WORKFLOW_PHASES) == 9
 
     @pytest.mark.parametrize("workflow", ALL_WORKFLOWS)
     def test_workflow_is_present(self, workflow):
@@ -1033,3 +1045,103 @@ class TestSkillPacksCompleteness:
     def test_known_packs_present(self):
         expected = {"security", "devops", "web-quality", "database-pro", "code-quality"}
         assert set(SKILL_PACKS.keys()) == expected
+
+
+class TestComputePackOverlap:
+    """compute_pack_overlap() returns correct overlap info per workflow."""
+
+    def test_speedrun_no_overlap(self):
+        """Speedrun has no skills, so no overlap with any pack."""
+        for pack_name in SKILL_PACKS:
+            overlap, total, comprehensive = compute_pack_overlap("speedrun", pack_name)
+            assert overlap == 0
+            assert total > 0
+            assert comprehensive is False
+
+    def test_superpowers_is_comprehensive(self):
+        """Superpowers has 11+ process skills, so is_comprehensive should be True."""
+        _, _, comprehensive = compute_pack_overlap("superpowers", "security")
+        assert comprehensive is True
+
+    def test_standard_not_comprehensive(self):
+        """Standard has 5 cross-cutting skills, not comprehensive."""
+        _, _, comprehensive = compute_pack_overlap("standard", "security")
+        assert comprehensive is False
+
+    def test_unknown_pack_returns_zeros(self):
+        overlap, total, comprehensive = compute_pack_overlap("standard", "nonexistent")
+        assert overlap == 0
+        assert total == 0
+        assert comprehensive is False
+
+    def test_overlap_count_never_exceeds_total(self):
+        for workflow in WORKFLOW_SKILLS:
+            for pack_name in SKILL_PACKS:
+                overlap, total, _ = compute_pack_overlap(workflow, pack_name)
+                assert overlap <= total
+
+
+class TestTemplateDescriptions:
+    """TEMPLATE_DESCRIPTIONS must align with workflow-first UX."""
+
+    def test_generic_has_no_infra_label(self):
+        from cc_rig.ui.descriptions import TEMPLATE_DESCRIPTIONS
+
+        desc = TEMPLATE_DESCRIPTIONS["generic"]
+        assert "DevOps" not in desc
+        assert "monorepo" not in desc.lower()
+        assert "infra" not in desc.lower()
+
+    def test_generic_signals_workflow_only(self):
+        from cc_rig.ui.descriptions import TEMPLATE_DESCRIPTIONS
+
+        desc = TEMPLATE_DESCRIPTIONS["generic"]
+        assert "workflow" in desc.lower()
+
+    def test_framework_templates_have_language_prefix(self):
+        from cc_rig.ui.descriptions import TEMPLATE_DESCRIPTIONS
+
+        for key, desc in TEMPLATE_DESCRIPTIONS.items():
+            if key == "generic":
+                continue
+            assert " / " in desc, f"{key!r} description missing Language / Framework format"
+
+
+class TestWorkflowFeatureConflicts:
+    """WORKFLOW_FEATURE_CONFLICTS must be consistent with defaults."""
+
+    def test_no_overlap_between_defaults_and_conflicts(self):
+        """A feature cannot be both recommended and conflicted for the same workflow."""
+        from cc_rig.ui.descriptions import (
+            WORKFLOW_FEATURE_CONFLICTS,
+            WORKFLOW_FEATURE_DEFAULTS,
+        )
+
+        for workflow in WORKFLOW_FEATURE_DEFAULTS:
+            recommended = WORKFLOW_FEATURE_DEFAULTS[workflow]
+            conflicts = WORKFLOW_FEATURE_CONFLICTS.get(workflow, set())
+            overlap = recommended & conflicts
+            assert not overlap, (
+                f"{workflow}: {overlap} is both recommended and conflicted"
+            )
+
+    def test_gstack_conflicts_spec_and_gtd(self):
+        from cc_rig.ui.descriptions import WORKFLOW_FEATURE_CONFLICTS
+
+        assert WORKFLOW_FEATURE_CONFLICTS["gstack"] == {"spec_workflow", "gtd"}
+
+    def test_speedrun_no_conflicts(self):
+        from cc_rig.ui.descriptions import WORKFLOW_FEATURE_CONFLICTS
+
+        assert WORKFLOW_FEATURE_CONFLICTS["speedrun"] == set()
+
+    def test_all_workflows_have_conflict_entry(self):
+        from cc_rig.ui.descriptions import (
+            WORKFLOW_FEATURE_CONFLICTS,
+            WORKFLOW_FEATURE_DEFAULTS,
+        )
+
+        for workflow in WORKFLOW_FEATURE_DEFAULTS:
+            assert workflow in WORKFLOW_FEATURE_CONFLICTS, (
+                f"{workflow} missing from WORKFLOW_FEATURE_CONFLICTS"
+            )

@@ -41,8 +41,10 @@ class TestSpawnWorktrees:
         assert "Not a git repository" in failures[0][1]
 
     def test_claude_not_found(self, tmp_path):
-        with patch(f"{_M}.check_git_repo", return_value=True), \
-             patch(f"{_O}._find_claude_cli", return_value=None):
+        with (
+            patch(f"{_M}.check_git_repo", return_value=True),
+            patch(f"{_O}._find_claude_cli", return_value=None),
+        ):
             created, failures = spawn_worktrees(tmp_path, ["Fix bug"])
             assert created == []
             assert "claude CLI not found" in failures[0][1]
@@ -51,16 +53,18 @@ class TestSpawnWorktrees:
         mock_proc = MagicMock()
         mock_proc.pid = 12345
 
-        with patch(f"{_M}.check_git_repo", return_value=True), \
-             patch(f"{_O}._find_claude_cli", return_value="/usr/bin/claude"), \
-             patch(f"{_M}.create_worktree") as mock_create, \
-             patch(f"{_O}._launch_claude", return_value=mock_proc):
-
+        with (
+            patch(f"{_M}.check_git_repo", return_value=True),
+            patch(f"{_O}._find_claude_cli", return_value="/usr/bin/claude"),
+            patch(f"{_M}.create_worktree") as mock_create,
+            patch(f"{_O}._launch_claude", return_value=mock_proc),
+        ):
             wt_path = git_project / ".claude" / "worktrees" / "fix-bug"
             mock_create.return_value = (True, str(wt_path))
 
             created, failures = spawn_worktrees(
-                git_project, ["Fix bug"],
+                git_project,
+                ["Fix bug"],
             )
             assert len(created) == 1
             assert created[0].name == "fix-bug"
@@ -75,10 +79,12 @@ class TestSpawnWorktrees:
         mock_proc = MagicMock()
         mock_proc.pid = 100
 
-        with patch(f"{_M}.check_git_repo", return_value=True), \
-             patch(f"{_O}._find_claude_cli", return_value="/usr/bin/claude"), \
-             patch(f"{_M}.create_worktree") as mock_create, \
-             patch(f"{_O}._launch_claude", return_value=mock_proc):
+        with (
+            patch(f"{_M}.check_git_repo", return_value=True),
+            patch(f"{_O}._find_claude_cli", return_value="/usr/bin/claude"),
+            patch(f"{_M}.create_worktree") as mock_create,
+            patch(f"{_O}._launch_claude", return_value=mock_proc),
+        ):
 
             def create_side_effect(project_dir, name, branch):
                 path = project_dir / ".claude" / "worktrees" / name
@@ -87,7 +93,8 @@ class TestSpawnWorktrees:
             mock_create.side_effect = create_side_effect
 
             created, failures = spawn_worktrees(
-                git_project, ["Fix bug", "Add feature"],
+                git_project,
+                ["Fix bug", "Add feature"],
             )
             assert len(created) == 2
             assert failures == []
@@ -95,28 +102,39 @@ class TestSpawnWorktrees:
     def test_spawn_duplicate_running(self, git_project):
         # Pre-populate state with a running worktree
         state = WorktreeState()
-        state.add(WorktreeEntry(
-            name="fix-bug", branch="wt/fix-bug", path="/x", task="old",
-            status="running", pid=99999,
-        ))
+        state.add(
+            WorktreeEntry(
+                name="fix-bug",
+                branch="wt/fix-bug",
+                path="/x",
+                task="old",
+                status="running",
+                pid=99999,
+            )
+        )
         save_state(git_project, state)
 
-        with patch(f"{_M}.check_git_repo", return_value=True), \
-             patch(f"{_O}._find_claude_cli", return_value="/usr/bin/claude"):
+        with (
+            patch(f"{_M}.check_git_repo", return_value=True),
+            patch(f"{_O}._find_claude_cli", return_value="/usr/bin/claude"),
+        ):
             created, failures = spawn_worktrees(
-                git_project, ["Fix bug"],
+                git_project,
+                ["Fix bug"],
             )
             assert created == []
             assert len(failures) == 1
             assert "already running" in failures[0][1]
 
     def test_spawn_git_failure(self, git_project):
-        with patch(f"{_M}.check_git_repo", return_value=True), \
-             patch(f"{_O}._find_claude_cli", return_value="/usr/bin/claude"), \
-             patch(f"{_M}.create_worktree",
-                   return_value=(False, "branch exists")):
+        with (
+            patch(f"{_M}.check_git_repo", return_value=True),
+            patch(f"{_O}._find_claude_cli", return_value="/usr/bin/claude"),
+            patch(f"{_M}.create_worktree", return_value=(False, "branch exists")),
+        ):
             created, failures = spawn_worktrees(
-                git_project, ["Fix bug"],
+                git_project,
+                ["Fix bug"],
             )
             assert created == []
             assert "branch exists" in failures[0][1]
@@ -129,10 +147,15 @@ class TestListWorktrees:
 
     def test_returns_entries(self, git_project):
         state = WorktreeState()
-        state.add(WorktreeEntry(
-            name="a", branch="wt/a", path="/a", task="task a",
-            status="done",
-        ))
+        state.add(
+            WorktreeEntry(
+                name="a",
+                branch="wt/a",
+                path="/a",
+                task="task a",
+                status="done",
+            )
+        )
         save_state(git_project, state)
 
         entries = list_worktrees(git_project)
@@ -143,10 +166,15 @@ class TestListWorktrees:
 class TestGetWorktreeStatus:
     def test_found(self, git_project):
         state = WorktreeState()
-        state.add(WorktreeEntry(
-            name="x", branch="wt/x", path="/x", task="do x",
-            status="done",
-        ))
+        state.add(
+            WorktreeEntry(
+                name="x",
+                branch="wt/x",
+                path="/x",
+                task="do x",
+                status="done",
+            )
+        )
         save_state(git_project, state)
 
         entry = get_worktree_status(git_project, "x")
@@ -165,10 +193,15 @@ class TestWorktreePR:
 
     def test_still_running(self, git_project):
         state = WorktreeState()
-        state.add(WorktreeEntry(
-            name="x", branch="wt/x", path="/x", task="t",
-            status="running",
-        ))
+        state.add(
+            WorktreeEntry(
+                name="x",
+                branch="wt/x",
+                path="/x",
+                task="t",
+                status="running",
+            )
+        )
         save_state(git_project, state)
 
         ok, msg = worktree_pr(git_project, "x")
@@ -177,15 +210,21 @@ class TestWorktreePR:
 
     def test_success(self, git_project):
         state = WorktreeState()
-        state.add(WorktreeEntry(
-            name="x", branch="wt/x", path="/x", task="Fix login",
-            status="done",
-        ))
+        state.add(
+            WorktreeEntry(
+                name="x",
+                branch="wt/x",
+                path="/x",
+                task="Fix login",
+                status="done",
+            )
+        )
         save_state(git_project, state)
 
-        with patch(f"{_M}.push_branch", return_value=(True, "ok")), \
-             patch(f"{_M}.create_pr",
-                   return_value=(True, "https://github.com/u/r/pull/1")):
+        with (
+            patch(f"{_M}.push_branch", return_value=(True, "ok")),
+            patch(f"{_M}.create_pr", return_value=(True, "https://github.com/u/r/pull/1")),
+        ):
             ok, url = worktree_pr(git_project, "x")
             assert ok is True
             assert "pull/1" in url
@@ -196,14 +235,18 @@ class TestWorktreePR:
 
     def test_push_failure(self, git_project):
         state = WorktreeState()
-        state.add(WorktreeEntry(
-            name="x", branch="wt/x", path="/x", task="t",
-            status="done",
-        ))
+        state.add(
+            WorktreeEntry(
+                name="x",
+                branch="wt/x",
+                path="/x",
+                task="t",
+                status="done",
+            )
+        )
         save_state(git_project, state)
 
-        with patch(f"{_M}.push_branch",
-                   return_value=(False, "auth error")):
+        with patch(f"{_M}.push_branch", return_value=(False, "auth error")):
             ok, msg = worktree_pr(git_project, "x")
             assert ok is False
             assert "auth error" in msg
@@ -216,10 +259,15 @@ class TestCleanupWorktree:
 
     def test_still_running_no_force(self, git_project):
         state = WorktreeState()
-        state.add(WorktreeEntry(
-            name="x", branch="wt/x", path="/x", task="t",
-            status="running",
-        ))
+        state.add(
+            WorktreeEntry(
+                name="x",
+                branch="wt/x",
+                path="/x",
+                task="t",
+                status="running",
+            )
+        )
         save_state(git_project, state)
 
         ok, msg = cleanup_worktree(git_project, "x")
@@ -228,14 +276,18 @@ class TestCleanupWorktree:
 
     def test_success(self, git_project):
         state = WorktreeState()
-        state.add(WorktreeEntry(
-            name="x", branch="wt/x", path="/x", task="t",
-            status="done",
-        ))
+        state.add(
+            WorktreeEntry(
+                name="x",
+                branch="wt/x",
+                path="/x",
+                task="t",
+                status="done",
+            )
+        )
         save_state(git_project, state)
 
-        with patch(f"{_M}.remove_worktree",
-                   return_value=(True, "Removed")):
+        with patch(f"{_M}.remove_worktree", return_value=(True, "Removed")):
             ok, msg = cleanup_worktree(git_project, "x")
             assert ok is True
 
@@ -245,14 +297,18 @@ class TestCleanupWorktree:
 
     def test_force_running(self, git_project):
         state = WorktreeState()
-        state.add(WorktreeEntry(
-            name="x", branch="wt/x", path="/x", task="t",
-            status="running",
-        ))
+        state.add(
+            WorktreeEntry(
+                name="x",
+                branch="wt/x",
+                path="/x",
+                task="t",
+                status="running",
+            )
+        )
         save_state(git_project, state)
 
-        with patch(f"{_M}.remove_worktree",
-                   return_value=(True, "Force removed")):
+        with patch(f"{_M}.remove_worktree", return_value=(True, "Force removed")):
             ok, msg = cleanup_worktree(git_project, "x", force=True)
             assert ok is True
 
@@ -266,19 +322,29 @@ class TestCleanupAll:
         import os
 
         state = WorktreeState()
-        state.add(WorktreeEntry(
-            name="a", branch="wt/a", path="/a", task="a",
-            status="done",
-        ))
+        state.add(
+            WorktreeEntry(
+                name="a",
+                branch="wt/a",
+                path="/a",
+                task="a",
+                status="done",
+            )
+        )
         # Use current PID so refresh_all sees it as still alive
-        state.add(WorktreeEntry(
-            name="b", branch="wt/b", path="/b", task="b",
-            status="running", pid=os.getpid(),
-        ))
+        state.add(
+            WorktreeEntry(
+                name="b",
+                branch="wt/b",
+                path="/b",
+                task="b",
+                status="running",
+                pid=os.getpid(),
+            )
+        )
         save_state(git_project, state)
 
-        with patch(f"{_M}.remove_worktree",
-                   return_value=(True, "Removed")):
+        with patch(f"{_M}.remove_worktree", return_value=(True, "Removed")):
             results = cleanup_all(git_project)
             assert len(results) == 2
             # 'a' cleaned, 'b' skipped (still running)
@@ -287,18 +353,27 @@ class TestCleanupAll:
 
     def test_merged_only(self, git_project):
         state = WorktreeState()
-        state.add(WorktreeEntry(
-            name="a", branch="wt/a", path="/a", task="a",
-            status="merged",
-        ))
-        state.add(WorktreeEntry(
-            name="b", branch="wt/b", path="/b", task="b",
-            status="done",
-        ))
+        state.add(
+            WorktreeEntry(
+                name="a",
+                branch="wt/a",
+                path="/a",
+                task="a",
+                status="merged",
+            )
+        )
+        state.add(
+            WorktreeEntry(
+                name="b",
+                branch="wt/b",
+                path="/b",
+                task="b",
+                status="done",
+            )
+        )
         save_state(git_project, state)
 
-        with patch(f"{_M}.remove_worktree",
-                   return_value=(True, "Removed")):
+        with patch(f"{_M}.remove_worktree", return_value=(True, "Removed")):
             results = cleanup_all(git_project, merged_only=True)
             assert len(results) == 1
             assert results[0][0] == "a"

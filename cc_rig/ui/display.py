@@ -93,6 +93,9 @@ def format_summary(config: ProjectConfig) -> str:
         f"  Commands:   {len(config.commands)}",
         f"  Hooks:      {len(config.hooks)}",
         f"  Skills:     {len(config.recommended_skills)}",
+        f"  Process:    {len(config.process_skills)} ({config.workflow_source})"
+        if config.process_skills
+        else "  Process:    0",
         f"  Plugins:    {len(config.recommended_plugins)}",
         f"  MCPs:       {len(config.default_mcps)}",
         "",

@@ -46,10 +46,18 @@ BUILTIN_TEMPLATES = [
 BUILTIN_WORKFLOWS = [
     "speedrun",
     "standard",
+    "gstack",
+    "aihero",
     "spec-driven",
-    "gtd-lite",
-    "verify-heavy",
+    "superpowers",
+    "gtd",
 ]
+
+# Old workflow names that map to new canonical names
+_WORKFLOW_ALIASES: dict[str, str] = {
+    "gtd-lite": "gtd",
+    "verify-heavy": "superpowers",
+}
 
 # Map preset names to filenames (handles hyphens → underscores)
 _TEMPLATE_FILES: dict[str, str] = {
@@ -74,7 +82,12 @@ _TEMPLATE_FILES: dict[str, str] = {
 _WORKFLOW_FILES: dict[str, str] = {
     "speedrun": "speedrun.json",
     "standard": "standard.json",
+    "gstack": "gstack.json",
+    "aihero": "aihero.json",
     "spec-driven": "spec_driven.json",
+    "superpowers": "superpowers.json",
+    "gtd": "gtd.json",
+    # Backward compat: old preset files still exist for direct loading
     "gtd-lite": "gtd_lite.json",
     "verify-heavy": "verify_heavy.json",
 }
@@ -105,8 +118,12 @@ def load_template(name: str) -> dict[str, Any]:
 
 
 def load_workflow(name: str) -> dict[str, Any]:
-    """Load a workflow preset by name. Raises ValueError if not found."""
-    return _load_preset(name, _WORKFLOW_FILES, "workflows", BUILTIN_WORKFLOWS)
+    """Load a workflow preset by name. Resolves aliases first.
+
+    Raises ValueError if not found.
+    """
+    canonical = _WORKFLOW_ALIASES.get(name, name)
+    return _load_preset(canonical, _WORKFLOW_FILES, "workflows", BUILTIN_WORKFLOWS)
 
 
 def list_presets(

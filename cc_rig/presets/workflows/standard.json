@@ -1,6 +1,10 @@
 {
   "name": "standard",
+  "version": 2,
   "description": "Solid defaults for most projects. Memory + lessons.",
+  "source": "cc-rig",
+  "source_url": "",
+  "process_skills": [],
   "agents": [
     "code-reviewer",
     "test-writer",

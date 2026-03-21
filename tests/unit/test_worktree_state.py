@@ -81,21 +81,15 @@ class TestWorktreeState:
 
     def test_add_and_get(self):
         state = WorktreeState()
-        entry = WorktreeEntry(
-            name="foo", branch="wt/foo", path="/tmp/foo", task="do foo"
-        )
+        entry = WorktreeEntry(name="foo", branch="wt/foo", path="/tmp/foo", task="do foo")
         state.add(entry)
         assert state.get("foo") is entry
         assert len(state.worktrees) == 1
 
     def test_add_replaces_same_name(self):
         state = WorktreeState()
-        e1 = WorktreeEntry(
-            name="foo", branch="wt/foo", path="/tmp/foo", task="v1"
-        )
-        e2 = WorktreeEntry(
-            name="foo", branch="wt/foo", path="/tmp/foo", task="v2"
-        )
+        e1 = WorktreeEntry(name="foo", branch="wt/foo", path="/tmp/foo", task="v1")
+        e2 = WorktreeEntry(name="foo", branch="wt/foo", path="/tmp/foo", task="v2")
         state.add(e1)
         state.add(e2)
         assert len(state.worktrees) == 1
@@ -103,12 +97,8 @@ class TestWorktreeState:
 
     def test_remove(self):
         state = WorktreeState()
-        state.add(
-            WorktreeEntry(name="a", branch="wt/a", path="/a", task="a")
-        )
-        state.add(
-            WorktreeEntry(name="b", branch="wt/b", path="/b", task="b")
-        )
+        state.add(WorktreeEntry(name="a", branch="wt/a", path="/a", task="a"))
+        state.add(WorktreeEntry(name="b", branch="wt/b", path="/b", task="b"))
         assert state.remove("a") is True
         assert state.get("a") is None
         assert len(state.worktrees) == 1
@@ -119,15 +109,9 @@ class TestWorktreeState:
 
     def test_to_dict_from_dict_roundtrip(self):
         state = WorktreeState()
+        state.add(WorktreeEntry(name="x", branch="wt/x", path="/x", task="task x", status="done"))
         state.add(
-            WorktreeEntry(
-                name="x", branch="wt/x", path="/x", task="task x", status="done"
-            )
-        )
-        state.add(
-            WorktreeEntry(
-                name="y", branch="wt/y", path="/y", task="task y", status="running"
-            )
+            WorktreeEntry(name="y", branch="wt/y", path="/y", task="task y", status="running")
         )
         d = state.to_dict()
         restored = WorktreeState.from_dict(d)
@@ -154,11 +138,7 @@ class TestStateFileIO:
 
     def test_save_and_load_roundtrip(self, tmp_path):
         state = WorktreeState()
-        state.add(
-            WorktreeEntry(
-                name="test", branch="wt/test", path="/test", task="do test"
-            )
-        )
+        state.add(WorktreeEntry(name="test", branch="wt/test", path="/test", task="do test"))
         save_state(tmp_path, state)
         loaded = load_state(tmp_path)
         assert len(loaded.worktrees) == 1
@@ -171,11 +151,7 @@ class TestStateFileIO:
 
     def test_saved_file_is_valid_json(self, tmp_path):
         state = WorktreeState()
-        state.add(
-            WorktreeEntry(
-                name="x", branch="wt/x", path="/x", task="t"
-            )
-        )
+        state.add(WorktreeEntry(name="x", branch="wt/x", path="/x", task="t"))
         path = save_state(tmp_path, state)
         data = json.loads(path.read_text())
         assert "worktrees" in data
@@ -185,6 +161,7 @@ class TestStateFileIO:
 class TestPIDUtils:
     def test_is_pid_alive_current_process(self):
         import os
+
         assert is_pid_alive(os.getpid()) is True
 
     def test_is_pid_alive_nonexistent(self):
@@ -195,16 +172,24 @@ class TestPIDUtils:
 class TestRefreshStatus:
     def test_running_with_dead_pid(self):
         entry = WorktreeEntry(
-            name="x", branch="wt/x", path="/x", task="t",
-            status="running", pid=99999999,
+            name="x",
+            branch="wt/x",
+            path="/x",
+            task="t",
+            status="running",
+            pid=99999999,
         )
         refresh_entry_status(entry)
         assert entry.status in ("done", "failed", "orphaned")
 
     def test_running_with_no_pid(self):
         entry = WorktreeEntry(
-            name="x", branch="wt/x", path="/x", task="t",
-            status="running", pid=None,
+            name="x",
+            branch="wt/x",
+            path="/x",
+            task="t",
+            status="running",
+            pid=None,
         )
         refresh_entry_status(entry)
         assert entry.status == "orphaned"
@@ -212,17 +197,26 @@ class TestRefreshStatus:
     def test_terminal_status_not_changed(self):
         for status in ("done", "failed", "merged", "pr-created"):
             entry = WorktreeEntry(
-                name="x", branch="wt/x", path="/x", task="t",
-                status=status, pid=99999999,
+                name="x",
+                branch="wt/x",
+                path="/x",
+                task="t",
+                status=status,
+                pid=99999999,
             )
             refresh_entry_status(entry)
             assert entry.status == status
 
     def test_running_with_alive_pid(self):
         import os
+
         entry = WorktreeEntry(
-            name="x", branch="wt/x", path="/x", task="t",
-            status="running", pid=os.getpid(),
+            name="x",
+            branch="wt/x",
+            path="/x",
+            task="t",
+            status="running",
+            pid=os.getpid(),
         )
         refresh_entry_status(entry)
         assert entry.status == "running"
@@ -231,14 +225,22 @@ class TestRefreshStatus:
         state = WorktreeState()
         state.add(
             WorktreeEntry(
-                name="a", branch="wt/a", path="/a", task="a",
-                status="running", pid=99999999,
+                name="a",
+                branch="wt/a",
+                path="/a",
+                task="a",
+                status="running",
+                pid=99999999,
             )
         )
         state.add(
             WorktreeEntry(
-                name="b", branch="wt/b", path="/b", task="b",
-                status="done", pid=1,
+                name="b",
+                branch="wt/b",
+                path="/b",
+                task="b",
+                status="done",
+                pid=1,
             )
         )
         refresh_all(state)

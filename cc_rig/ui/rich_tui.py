@@ -47,6 +47,8 @@ def rich_format_summary(config: Any) -> str:
     table.add_row("Commands", str(len(config.commands)))
     table.add_row("Hooks", str(len(config.hooks)))
     table.add_row("Skills", str(len(config.recommended_skills)))
+    if config.process_skills:
+        table.add_row("Process", f"{len(config.process_skills)} ({config.workflow_source})")
     table.add_row("Plugins", str(len(config.recommended_plugins)))
     table.add_row("MCPs", str(len(config.default_mcps)))
 

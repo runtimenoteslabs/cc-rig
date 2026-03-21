@@ -488,9 +488,9 @@ class TemplateScreen(ModalScreen[Optional[dict]]):
         yield BrandHeader(self._state.get("step_label", ""))
         detected = self._state.get("detected_framework", "")
         with VerticalScroll(id="body"):
-            yield Label("Select your stack", classes="screen-title")
+            yield Label("Select your stack (optional)", classes="screen-title")
             yield Label(
-                "Determines tool commands, agent docs, and framework-specific rules.",
+                "Pick your framework for tailored tool commands and agent docs, or stay Generic.",
                 classes="description",
             )
             if detected:
@@ -504,7 +504,7 @@ class TemplateScreen(ModalScreen[Optional[dict]]):
                 label = desc
                 if t == detected:
                     label = f"{desc} (detected)"
-                selected = self._state.get("template", detected or "fastapi")
+                selected = self._state.get("template", detected or "generic")
                 buttons.append(RadioButton(label, value=(t == selected)))
             yield AutoSelectRadioSet(*buttons, id="template-radio")
         yield NavBar()
@@ -621,6 +621,9 @@ def _format_config_summary(config: Any, output_dir: str = ".") -> str:
         f"  Hooks:      {len(config.hooks)}",
         f"  Features:   {features_str}",
         f"  Skills:     {len(config.recommended_skills)} recommended",
+        f"  Process:    {len(config.process_skills)} ({config.workflow_source})"
+        if config.process_skills
+        else "  Process:    0",
         f"  Plugins:    {len(config.recommended_plugins)}",
         f"  MCPs:       {len(config.default_mcps)}",
         f"  Harness:    {config.harness.level}",
@@ -835,13 +838,18 @@ class FeaturesScreen(ModalScreen[Optional[dict]]):
         self._state = state
 
     def compose(self) -> ComposeResult:
-        from cc_rig.ui.descriptions import FEATURE_DETAILS, WORKFLOW_FEATURE_DEFAULTS
+        from cc_rig.ui.descriptions import (
+            FEATURE_DETAILS,
+            WORKFLOW_FEATURE_CONFLICTS,
+            WORKFLOW_FEATURE_DEFAULTS,
+        )
 
         yield BrandHeader(self._state.get("step_label", ""))
         config = self._state.get("config")
         features = config.features if config else None
         workflow = self._state.get("workflow", "standard")
         recommended = WORKFLOW_FEATURE_DEFAULTS.get(workflow, set())
+        conflicts = WORKFLOW_FEATURE_CONFLICTS.get(workflow, set())
 
         with VerticalScroll(id="body"):
             yield Label("Features", classes="screen-title")
@@ -852,15 +860,23 @@ class FeaturesScreen(ModalScreen[Optional[dict]]):
 
             for detail in FEATURE_DETAILS:
                 key = detail["key"]
-                current_val = getattr(features, key, False) if features else False
                 label = detail["label"]
+
                 if key in recommended:
-                    label += "  ★ your workflow enables this"
-                yield Checkbox(
-                    label,
-                    value=current_val,
-                    id=detail["widget_id"],
-                )
+                    label += f"  [included with {workflow}]"
+                    yield Checkbox(
+                        label, value=True, disabled=True, id=detail["widget_id"],
+                    )
+                elif key in conflicts:
+                    label += f"  [not available with {workflow}]"
+                    yield Checkbox(
+                        label, value=False, disabled=True, id=detail["widget_id"],
+                    )
+                else:
+                    current_val = getattr(features, key, False) if features else False
+                    yield Checkbox(
+                        label, value=current_val, id=detail["widget_id"],
+                    )
 
             # Detail panel — updates on focus/change
             first = FEATURE_DETAILS[0]
@@ -870,6 +886,15 @@ class FeaturesScreen(ModalScreen[Optional[dict]]):
         yield KeyHintsBar()
 
     def on_mount(self) -> None:
+        from cc_rig.ui.descriptions import FEATURE_DETAILS
+
+        # Focus first non-disabled checkbox
+        for detail in FEATURE_DETAILS:
+            chk = self.query_one(f"#{detail['widget_id']}", Checkbox)
+            if not chk.disabled:
+                chk.focus()
+                return
+        # Fallback: focus first checkbox even if disabled
         self.query_one("#feat-memory", Checkbox).focus()
 
     def on_descendant_focus(self, event: Any) -> None:
@@ -927,10 +952,11 @@ class SkillPacksScreen(ModalScreen[Optional[dict]]):
         self._state = state
 
     def compose(self) -> ComposeResult:
-        from cc_rig.skills.registry import SKILL_PACKS
+        from cc_rig.skills.registry import SKILL_PACKS, compute_pack_overlap
 
         yield BrandHeader(self._state.get("step_label", ""))
         template = self._state.get("template", "")
+        workflow = self._state.get("workflow", "standard")
         config = self._state.get("config")
         base_count = len(config.recommended_skills) if config else 0
 
@@ -938,7 +964,7 @@ class SkillPacksScreen(ModalScreen[Optional[dict]]):
             yield Label("Optional skill packs", classes="screen-title")
             if base_count:
                 yield Label(
-                    f"Your stack already includes {base_count} skills. "
+                    f"Your setup already includes {base_count} skills. "
                     "Packs add specialized knowledge for specific domains.",
                     classes="description",
                 )
@@ -950,12 +976,26 @@ class SkillPacksScreen(ModalScreen[Optional[dict]]):
 
             for pack_name, pack in SKILL_PACKS.items():
                 n_skills = len(pack.skill_names)
-                label = f"{pack.label} ({n_skills} skills) - {pack.description}"
-                recommended = pack.suggested_templates is None or (
-                    template in (pack.suggested_templates or [])
+                overlap, total, is_comprehensive = compute_pack_overlap(
+                    workflow, pack_name,
                 )
-                if recommended and template:
-                    label += "  ★ recommended for your stack"
+                label = f"{pack.label} ({n_skills} skills) - {pack.description}"
+
+                # Workflow-aware labeling
+                if overlap == total and total > 0:
+                    label += "  (fully covered by your workflow)"
+                elif overlap > 0:
+                    label += f"  ({overlap}/{total} covered by your workflow)"
+                elif is_comprehensive:
+                    label += "  (your workflow is comprehensive, this adds depth)"
+                else:
+                    # Fall back to template-based recommendation
+                    template_recommended = pack.suggested_templates is None or (
+                        template in (pack.suggested_templates or [])
+                    )
+                    if template_recommended and template:
+                        label += "  * recommended"
+
                 prev_packs = self._state.get("skill_packs", [])
                 yield Checkbox(
                     label,
@@ -1220,9 +1260,9 @@ def _wants_expert(s: dict[str, Any]) -> bool:
 
 _GUIDED_SCREENS: list[tuple[type, str, Any]] = [
     (WelcomeScreen, "Welcome", None),
-    (BasicsScreen, "Project basics", None),
-    (TemplateScreen, "Select your stack", None),
     (WorkflowScreen, "Select your workflow", None),
+    (TemplateScreen, "Select your stack", None),
+    (BasicsScreen, "Project basics", None),
     (ReviewScreen, "Configuration preview", None),
     (ExpertScreen, "Customize", _wants_expert),
     (FeaturesScreen, "Features", _wants_expert),
@@ -1232,8 +1272,8 @@ _GUIDED_SCREENS: list[tuple[type, str, Any]] = [
 ]
 
 _QUICK_SCREENS: list[tuple[type, str, Any]] = [
-    (TemplateScreen, "Select your stack", None),
     (WorkflowScreen, "Select your workflow", None),
+    (TemplateScreen, "Select your stack", None),
     (BasicsScreen, "Project name", None),
     (ReviewScreen, "Configuration preview", None),
     (ExpertScreen, "Customize", _wants_expert),

@@ -226,7 +226,17 @@ TEMPLATE_PLUGINS: dict[str, list[str]] = {
 WORKFLOW_PLUGINS: dict[str, list[str]] = {
     "speedrun": ["commit-commands"],
     "standard": ["commit-commands", "code-review"],
+    "gstack": ["commit-commands", "code-review", "pr-review-toolkit"],
+    "aihero": ["commit-commands", "code-review", "feature-dev", "pr-review-toolkit"],
     "spec-driven": ["commit-commands", "code-review", "feature-dev", "pr-review-toolkit"],
+    "superpowers": [
+        "commit-commands",
+        "code-review",
+        "pr-review-toolkit",
+        "security-guidance",
+    ],
+    "gtd": ["commit-commands", "code-review"],
+    # Backward compat aliases
     "gtd-lite": ["commit-commands", "code-review"],
     "verify-heavy": [
         "commit-commands",

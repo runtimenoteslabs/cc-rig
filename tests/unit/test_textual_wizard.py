@@ -38,7 +38,7 @@ from cc_rig.ui.textual_wizard import (  # noqa: E402
     WizardApp,
     WorkflowScreen,
 )
-from cc_rig.ui.tui import should_use_textual
+from cc_rig.ui.tui import should_use_textual  # noqa: E402
 
 
 def _make_state(**overrides):
@@ -94,8 +94,8 @@ class TestWelcomeScreen:
             # Default selection is "Fresh project" (index 0) — click Start
             await pilot.click("#btn-next")
             await pilot.pause()
-            # Should advance to BasicsScreen
-            assert isinstance(app.screen, BasicsScreen)
+            # Should advance to WorkflowScreen (new order: Welcome → Workflow → Template → Basics)
+            assert isinstance(app.screen, WorkflowScreen)
             await pilot.click("#btn-cancel")
 
 
@@ -108,8 +108,12 @@ class TestBasicsScreen:
         app = WizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Advance past WelcomeScreen
-            await pilot.click("#btn-next")
+            # Advance past WelcomeScreen → WorkflowScreen → TemplateScreen → BasicsScreen
+            await pilot.click("#btn-next")  # Welcome → Workflow
+            await pilot.pause()
+            await pilot.click("#btn-next")  # Workflow → Template
+            await pilot.pause()
+            await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
             screen = app.screen
             assert isinstance(screen, BasicsScreen)
@@ -123,13 +127,17 @@ class TestBasicsScreen:
         app = WizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            await pilot.click("#btn-next")
+            await pilot.click("#btn-next")  # Welcome → Workflow
+            await pilot.pause()
+            await pilot.click("#btn-next")  # Workflow → Template
+            await pilot.pause()
+            await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
             assert isinstance(app.screen, BasicsScreen)
-            # Press Back
+            # Press Back — Basics goes back to TemplateScreen (not WelcomeScreen)
             await pilot.click("#btn-back")
             await pilot.pause()
-            assert isinstance(app.screen, WelcomeScreen)
+            assert isinstance(app.screen, TemplateScreen)
             await pilot.click("#btn-cancel")
 
 
@@ -165,11 +173,11 @@ class TestCancel:
 
 class TestQuickWizardApp:
     @pytest.mark.asyncio
-    async def test_starts_with_template_screen(self):
+    async def test_starts_with_workflow_screen(self):
         app = QuickWizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            assert isinstance(app.screen, TemplateScreen)
+            assert isinstance(app.screen, WorkflowScreen)
             await pilot.click("#btn-cancel")
 
     @pytest.mark.asyncio
@@ -188,16 +196,16 @@ class TestQuickWizardApp:
 class TestFullForwardFlow:
     @pytest.mark.asyncio
     async def test_quick_flow_complete(self):
-        """Quick flow: Template → Workflow → Basics → Review → SkillPacks → Confirm."""
+        """Quick flow: Workflow → Template → Basics → Review → SkillPacks → Confirm."""
         app = QuickWizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Screen 1: TemplateScreen — accept default (fastapi) → Next
-            assert isinstance(app.screen, TemplateScreen)
+            # Screen 1: WorkflowScreen — accept default → Next
+            assert isinstance(app.screen, WorkflowScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
-            # Screen 2: WorkflowScreen
-            assert isinstance(app.screen, WorkflowScreen)
+            # Screen 2: TemplateScreen — accept default (fastapi) → Next
+            assert isinstance(app.screen, TemplateScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
             # Screen 3: BasicsScreen — name already set
@@ -220,7 +228,7 @@ class TestFullForwardFlow:
         state = app.return_value
         assert state is not None
         assert state.get("confirmed") is True
-        assert state.get("template") == "fastapi"
+        assert state.get("template") == "generic"
         assert "config" in state
 
 
@@ -238,16 +246,16 @@ class TestExpertFeaturesFlow:
             assert isinstance(app.screen, WelcomeScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
-            # Basics
-            assert isinstance(app.screen, BasicsScreen)
+            # Workflow
+            assert isinstance(app.screen, WorkflowScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
             # Template
             assert isinstance(app.screen, TemplateScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
-            # Workflow
-            assert isinstance(app.screen, WorkflowScreen)
+            # Basics
+            assert isinstance(app.screen, BasicsScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
             # Review
@@ -279,14 +287,14 @@ class TestExpertFeaturesFlow:
         app = WizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Welcome → Basics → Template → Workflow → Review
-            await pilot.click("#btn-next")  # Welcome → Basics
+            # Welcome → Workflow → Template → Basics → Review
+            await pilot.click("#btn-next")  # Welcome → Workflow
             await pilot.pause()
-            await pilot.click("#btn-next")  # Basics → Template
+            await pilot.click("#btn-next")  # Workflow → Template
             await pilot.pause()
-            await pilot.click("#btn-next")  # Template → Workflow
+            await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
-            await pilot.click("#btn-next")  # Workflow → Review
+            await pilot.click("#btn-next")  # Basics → Review
             await pilot.pause()
             assert isinstance(app.screen, ReviewScreen)
             await pilot.click("#btn-next")  # Review → SkillPacks
@@ -311,7 +319,7 @@ class TestSaveConfig:
         app = QuickWizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Template → Workflow → Basics → Review → SkillPacks → Confirm
+            # Workflow → Template → Basics → Review → SkillPacks → Confirm
             await pilot.click("#btn-next")
             await pilot.pause()
             await pilot.click("#btn-next")
@@ -365,8 +373,8 @@ class TestSaveConfig:
 
 class TestBackFromQuickFlow:
     @pytest.mark.asyncio
-    async def test_back_from_quick_template_returns_to_welcome(self):
-        """Selecting quick mode then pressing Back on TemplateScreen returns to WelcomeScreen."""
+    async def test_back_from_quick_workflow_returns_to_welcome(self):
+        """Selecting quick mode then pressing Back on WorkflowScreen returns to WelcomeScreen."""
         app = WizardApp(initial_state=_make_state(launcher_mode="quick"))
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
@@ -379,8 +387,8 @@ class TestBackFromQuickFlow:
             await pilot.pause()
             await pilot.click("#btn-next")
             await pilot.pause()
-            # Should now be on TemplateScreen in quick flow
-            assert isinstance(app.screen, TemplateScreen)
+            # Should now be on WorkflowScreen (first screen in quick flow)
+            assert isinstance(app.screen, WorkflowScreen)
             # Press Back — should return to WelcomeScreen, not loop
             await pilot.click("#btn-back")
             await pilot.pause()
@@ -398,14 +406,14 @@ class TestExpertScreenTabs:
         app = WizardApp(initial_state=_make_state(force_expert=True))
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Navigate: Welcome → Basics → Template → Workflow → Review → Expert
-            await pilot.click("#btn-next")  # Welcome → Basics
+            # Navigate: Welcome → Workflow → Template → Basics → Review → Expert
+            await pilot.click("#btn-next")  # Welcome → Workflow
             await pilot.pause()
-            await pilot.click("#btn-next")  # Basics → Template
+            await pilot.click("#btn-next")  # Workflow → Template
             await pilot.pause()
-            await pilot.click("#btn-next")  # Template → Workflow
+            await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
-            await pilot.click("#btn-next")  # Workflow → Review
+            await pilot.click("#btn-next")  # Basics → Review
             await pilot.pause()
             await pilot.click("#btn-next")  # Review → Expert
             await pilot.pause()
@@ -427,13 +435,13 @@ class TestExpertScreenTabs:
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
             # Navigate to ExpertScreen
-            await pilot.click("#btn-next")  # Welcome → Basics
+            await pilot.click("#btn-next")  # Welcome → Workflow
             await pilot.pause()
-            await pilot.click("#btn-next")  # Basics → Template
+            await pilot.click("#btn-next")  # Workflow → Template
             await pilot.pause()
-            await pilot.click("#btn-next")  # Template → Workflow
+            await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
-            await pilot.click("#btn-next")  # Workflow → Review
+            await pilot.click("#btn-next")  # Basics → Review
             await pilot.pause()
             await pilot.click("#btn-next")  # Review → Expert
             await pilot.pause()
@@ -456,13 +464,13 @@ class TestExpertPluginsTab:
     async def _navigate_to_expert(self, pilot: Any) -> None:
         """Helper: navigate from WelcomeScreen through to ExpertScreen."""
         await pilot.pause()
-        await pilot.click("#btn-next")  # Welcome → Basics
+        await pilot.click("#btn-next")  # Welcome → Workflow
         await pilot.pause()
-        await pilot.click("#btn-next")  # Basics → Template
+        await pilot.click("#btn-next")  # Workflow → Template
         await pilot.pause()
-        await pilot.click("#btn-next")  # Template → Workflow
+        await pilot.click("#btn-next")  # Template → Basics
         await pilot.pause()
-        await pilot.click("#btn-next")  # Workflow → Review
+        await pilot.click("#btn-next")  # Basics → Review
         await pilot.pause()
         await pilot.click("#btn-next")  # Review → Expert
         await pilot.pause()
@@ -530,13 +538,13 @@ class TestHarnessRalphLoop:
     async def _navigate_to_harness(self, pilot: Any) -> None:
         """Helper: navigate WizardApp (non-expert) to HarnessScreen."""
         await pilot.pause()
-        await pilot.click("#btn-next")  # Welcome → Basics
+        await pilot.click("#btn-next")  # Welcome → Workflow
         await pilot.pause()
-        await pilot.click("#btn-next")  # Basics → Template
+        await pilot.click("#btn-next")  # Workflow → Template
         await pilot.pause()
-        await pilot.click("#btn-next")  # Template → Workflow
+        await pilot.click("#btn-next")  # Template → Basics
         await pilot.pause()
-        await pilot.click("#btn-next")  # Workflow → Review
+        await pilot.click("#btn-next")  # Basics → Review
         await pilot.pause()
         await pilot.click("#btn-next")  # Review → SkillPacks (no expert)
         await pilot.pause()
@@ -650,12 +658,8 @@ class TestWorkflowDetailsPanel:
         app = WizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Navigate: Welcome → Basics → Template → Workflow
-            await pilot.click("#btn-next")  # Welcome → Basics
-            await pilot.pause()
-            await pilot.click("#btn-next")  # Basics → Template
-            await pilot.pause()
-            await pilot.click("#btn-next")  # Template → Workflow
+            # Navigate: Welcome → Workflow (Workflow is now second screen)
+            await pilot.click("#btn-next")  # Welcome → Workflow
             await pilot.pause()
             assert isinstance(app.screen, WorkflowScreen)
             # Detail panel should exist with default content (standard)
@@ -677,10 +681,10 @@ class TestQuickFlowReviewAndExpert:
         app = QuickWizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Template → Workflow → Basics → Review
-            await pilot.click("#btn-next")  # Template → Workflow
+            # Workflow → Template → Basics → Review
+            await pilot.click("#btn-next")  # Workflow → Template
             await pilot.pause()
-            await pilot.click("#btn-next")  # Workflow → Basics
+            await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
             await pilot.click("#btn-next")  # Basics → Review
             await pilot.pause()
@@ -693,10 +697,10 @@ class TestQuickFlowReviewAndExpert:
         app = QuickWizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Template → Workflow → Basics → Review → Expert
-            await pilot.click("#btn-next")  # Template
-            await pilot.pause()
+            # Workflow → Template → Basics → Review → Expert
             await pilot.click("#btn-next")  # Workflow
+            await pilot.pause()
+            await pilot.click("#btn-next")  # Template
             await pilot.pause()
             await pilot.click("#btn-next")  # Basics
             await pilot.pause()

@@ -42,7 +42,18 @@ VALID_FRAMEWORKS_BY_LANGUAGE: dict[str, set[str]] = {
 
 VALID_FRAMEWORKS = {fw for fws in VALID_FRAMEWORKS_BY_LANGUAGE.values() for fw in fws}
 
-VALID_WORKFLOWS = {"speedrun", "standard", "spec-driven", "gtd-lite", "verify-heavy"}
+VALID_WORKFLOWS = {
+    "speedrun",
+    "standard",
+    "gstack",
+    "aihero",
+    "spec-driven",
+    "superpowers",
+    "gtd",
+    # Backward compat aliases (old names still valid)
+    "gtd-lite",
+    "verify-heavy",
+}
 
 VALID_PROJECT_TYPES = {"api", "web_fullstack", "cli", "generic"}
 

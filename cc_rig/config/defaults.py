@@ -251,6 +251,11 @@ def compute_defaults(
     wf = load_workflow(workflow)
     features = Features.from_dict(wf["features"])
 
+    # Step 2b: Extract v2 process skill metadata (graceful defaults for v1 presets)
+    process_skill_names: list[str] = list(wf.get("process_skills", []))
+    workflow_source: str = wf.get("source", "cc-rig")
+    workflow_source_url: str = wf.get("source_url", "")
+
     # Step 3: Build agent list from workflow
     agents = list(wf["agents"])
 
@@ -377,6 +382,9 @@ def compute_defaults(
         skill_packs=resolved_packs,
         claude_plan=claude_plan,
         model_overrides=_compute_model_overrides(claude_plan),
+        process_skills=process_skill_names,
+        workflow_source=workflow_source,
+        workflow_source_url=workflow_source_url,
         cc_rig_version=__version__,
         created_at=datetime.now(timezone.utc).isoformat(),
         template_preset=tmpl["name"],

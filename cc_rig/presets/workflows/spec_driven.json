@@ -1,6 +1,15 @@
 {
   "name": "spec-driven",
+  "version": 2,
   "description": "Plan-first. Spec workflow + worktrees.",
+  "source": "cc-rig + mattpocock/skills + obra/superpowers",
+  "source_url": "",
+  "process_skills": [
+    "write-a-prd",
+    "prd-to-issues",
+    "writing-plans",
+    "executing-plans"
+  ],
   "agents": [
     "code-reviewer",
     "test-writer",

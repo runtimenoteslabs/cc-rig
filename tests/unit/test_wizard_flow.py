@@ -51,15 +51,15 @@ class TestZeroConfigFlow:
 class TestGuidedFlow:
     def test_full_guided_generates(self, tmp_path):
         output = tmp_path / "out"
-        # Inputs: launcher, name, description, no-detection → template pick,
-        # workflow pick, no-skill-packs, no-customize, no-harness, yes-generate
+        # Inputs: launcher, workflow pick, template pick, name, description,
+        # no-skill-packs, no-customize, no-harness, yes-generate
         io = _make_io(
             [
                 "1",  # launcher: fresh project
+                "2",  # workflow: standard (index 2)
+                "2",  # template: fastapi (index 2, after generic)
                 "my-project",  # project name
                 "A test project",  # description
-                "2",  # template: fastapi (index 2, after generic)
-                "2",  # workflow: standard (index 2)
                 "n",  # add optional skill packs? no
                 "n",  # customize? no
                 "n",  # add runtime harness? no
@@ -79,10 +79,10 @@ class TestGuidedFlow:
         io = _make_io(
             [
                 "1",  # launcher: fresh project
+                "1",  # workflow: speedrun
+                "1",  # template: generic
                 "my-project",
                 "",
-                "1",  # template
-                "1",  # workflow
                 "n",  # add optional skill packs? no
                 "n",  # customize? no
                 "n",  # add runtime harness? no
@@ -115,14 +115,14 @@ class TestQuickFlow:
 class TestExpertFlow:
     def test_expert_with_no_customization(self, tmp_path):
         output = tmp_path / "out"
-        # Guided flow + expert mode but decline all customization
+        # Guided flow + expert mode: workflow, template, name, desc, expert, ...
         io = _make_io(
             [
                 "1",  # launcher: fresh project
+                "2",  # workflow: standard
+                "2",  # template: fastapi (after generic)
                 "expert-proj",  # name
                 "",  # description
-                "2",  # template: fastapi (after generic)
-                "2",  # workflow: standard
                 "none",  # expert: customize nothing
                 "n",  # add optional skill packs? no
                 "n",  # add runtime harness? no
@@ -142,10 +142,10 @@ class TestExpertFlow:
         io = _make_io(
             [
                 "1",  # launcher: fresh project
+                "2",  # workflow: standard
+                "2",  # template: fastapi (after generic)
                 "plugin-proj",  # name
                 "",  # description
-                "2",  # template: fastapi (after generic)
-                "2",  # workflow: standard
                 "3",  # expert categories: plugins (3rd option in ask_multi)
                 "7,16",  # plugin selection: github + pyright-lsp
                 "n",  # add optional skill packs? no

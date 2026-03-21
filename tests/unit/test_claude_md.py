@@ -65,9 +65,11 @@ class TestLineCounts:
     _TARGETS = {
         "speedrun": 65,
         "standard": 100,
-        "spec-driven": 120,
-        "gtd-lite": 127,
-        "verify-heavy": 125,
+        "gstack": 125,
+        "aihero": 140,
+        "spec-driven": 140,
+        "superpowers": 145,
+        "gtd": 145,
     }
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
