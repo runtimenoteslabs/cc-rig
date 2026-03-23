@@ -24,7 +24,7 @@ class TestPluginCatalog:
 
     def test_catalog_has_expected_count(self):
         """Guard: update count when adding/removing plugins."""
-        assert len(PLUGIN_CATALOG) == 24
+        assert len(PLUGIN_CATALOG) == 47
 
     def test_all_plugins_have_name(self):
         for name, spec in PLUGIN_CATALOG.items():
@@ -115,8 +115,8 @@ class TestLanguagePlugins:
     def test_rust_has_rust_analyzer(self):
         assert LANGUAGE_PLUGINS["rust"] == "rust-analyzer-lsp"
 
-    def test_ruby_has_no_lsp(self):
-        assert "ruby" not in LANGUAGE_PLUGINS
+    def test_ruby_has_ruby_lsp(self):
+        assert LANGUAGE_PLUGINS["ruby"] == "ruby-lsp"
 
     def test_elixir_has_no_lsp(self):
         assert "elixir" not in LANGUAGE_PLUGINS
@@ -212,8 +212,7 @@ class TestResolvePlugins:
         plugins, _ = resolve_plugins("rails", "standard", "ruby")
         names = {p.name for p in plugins}
         assert "github" in names
-        # Ruby has no LSP plugin
-        assert not any(p.category == "lsp" for p in plugins)
+        assert "ruby-lsp" in names  # V2.1: Ruby now has LSP
 
     def test_generic_speedrun(self):
         plugins, _ = resolve_plugins("generic", "speedrun", "generic")
@@ -245,3 +244,93 @@ class TestResolvePlugins:
         _, mcps_remove = resolve_plugins("generic", "standard", "generic", [])
         # github replacement is still reported even with empty mcps
         assert "github" in mcps_remove
+
+
+# ── V2.1 Plugin Expansion Tests ──────────────────────────────────────
+
+
+class TestV21PluginExpansion:
+    """V2.1: New LSP, integration, workflow, and style plugins."""
+
+    def test_new_lsp_plugins_exist(self):
+        new_lsp = ["ruby-lsp", "clangd-lsp", "kotlin-lsp", "lua-lsp", "swift-lsp"]
+        for name in new_lsp:
+            assert name in PLUGIN_CATALOG, f"Missing LSP plugin {name!r}"
+            assert PLUGIN_CATALOG[name].category == "lsp"
+
+    def test_new_lsp_plugins_have_binary(self):
+        new_lsp = ["ruby-lsp", "clangd-lsp", "kotlin-lsp", "lua-lsp", "swift-lsp"]
+        for name in new_lsp:
+            assert PLUGIN_CATALOG[name].requires_binary, f"{name} missing requires_binary"
+
+    def test_new_integration_plugins_exist(self):
+        new_integ = [
+            "asana",
+            "context7",
+            "discord",
+            "greptile",
+            "laravel-boost",
+            "playwright",
+            "serena",
+            "telegram",
+        ]
+        for name in new_integ:
+            assert name in PLUGIN_CATALOG, f"Missing integration plugin {name!r}"
+            assert PLUGIN_CATALOG[name].category == "integration"
+
+    def test_new_workflow_plugins_exist(self):
+        new_wf = [
+            "code-simplifier",
+            "claude-md-management",
+            "skill-creator",
+            "frontend-design",
+            "agent-sdk-dev",
+            "mcp-server-dev",
+            "plugin-dev",
+            "claude-code-setup",
+        ]
+        for name in new_wf:
+            assert name in PLUGIN_CATALOG, f"Missing workflow plugin {name!r}"
+            assert PLUGIN_CATALOG[name].category == "workflow"
+
+    def test_style_plugins_exist(self):
+        style = ["explanatory-output-style", "learning-output-style"]
+        for name in style:
+            assert name in PLUGIN_CATALOG, f"Missing style plugin {name!r}"
+            assert PLUGIN_CATALOG[name].category == "style"
+
+    def test_csharp_lsp_binary_fixed(self):
+        assert PLUGIN_CATALOG["csharp-lsp"].requires_binary == "csharp-ls"
+
+    def test_laravel_has_laravel_boost(self):
+        assert "laravel-boost" in TEMPLATE_PLUGINS["laravel"]
+
+    def test_nextjs_has_frontend_design(self):
+        assert "frontend-design" in TEMPLATE_PLUGINS["nextjs"]
+
+    def test_nextjs_has_playwright(self):
+        assert "playwright" in TEMPLATE_PLUGINS["nextjs"]
+
+    def test_express_has_playwright(self):
+        assert "playwright" in TEMPLATE_PLUGINS["express"]
+
+    def test_spec_driven_has_code_simplifier(self):
+        assert "code-simplifier" in WORKFLOW_PLUGINS["spec-driven"]
+
+    def test_superpowers_has_code_simplifier(self):
+        assert "code-simplifier" in WORKFLOW_PLUGINS["superpowers"]
+
+    def test_verify_heavy_has_code_simplifier(self):
+        assert "code-simplifier" in WORKFLOW_PLUGINS["verify-heavy"]
+
+    def test_speedrun_no_code_simplifier(self):
+        assert "code-simplifier" not in WORKFLOW_PLUGINS["speedrun"]
+
+    def test_ruby_rails_gets_ruby_lsp(self):
+        plugins, _ = resolve_plugins("rails", "standard", "ruby")
+        names = {p.name for p in plugins}
+        assert "ruby-lsp" in names
+
+    def test_elixir_phoenix_no_lsp(self):
+        plugins, _ = resolve_plugins("phoenix", "standard", "elixir")
+        assert not any(p.category == "lsp" for p in plugins)

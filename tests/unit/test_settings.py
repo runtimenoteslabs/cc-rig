@@ -790,3 +790,56 @@ class TestEnabledPlugins:
         settings = json.loads((tmp_path / ".claude" / "settings.json").read_text())
         for key, val in settings.get("enabledPlugins", {}).items():
             assert val is True, f"{key} value is {val!r}, expected True (boolean)"
+
+
+class TestV21SettingsFields:
+    """V2.1: effortLevel and includeGitInstructions in settings.json."""
+
+    def _settings(self, template, workflow, tmp_path):
+        config = compute_defaults(template, workflow, project_name="test")
+        generate_settings(config, tmp_path)
+        return json.loads((tmp_path / ".claude" / "settings.json").read_text())
+
+    def test_effort_level_present(self, tmp_path):
+        settings = self._settings("fastapi", "standard", tmp_path)
+        assert "effortLevel" in settings
+
+    def test_speedrun_has_low_effort(self, tmp_path):
+        settings = self._settings("fastapi", "speedrun", tmp_path)
+        assert settings["effortLevel"] == "low"
+
+    def test_standard_has_medium_effort(self, tmp_path):
+        settings = self._settings("fastapi", "standard", tmp_path)
+        assert settings["effortLevel"] == "medium"
+
+    def test_superpowers_has_high_effort(self, tmp_path):
+        settings = self._settings("fastapi", "superpowers", tmp_path)
+        assert settings["effortLevel"] == "high"
+
+    def test_spec_driven_has_high_effort(self, tmp_path):
+        settings = self._settings("fastapi", "spec-driven", tmp_path)
+        assert settings["effortLevel"] == "high"
+
+    def test_gstack_has_medium_effort(self, tmp_path):
+        settings = self._settings("fastapi", "gstack", tmp_path)
+        assert settings["effortLevel"] == "medium"
+
+    def test_include_git_instructions_false_for_superpowers(self, tmp_path):
+        settings = self._settings("fastapi", "superpowers", tmp_path)
+        assert settings["includeGitInstructions"] is False
+
+    def test_include_git_instructions_false_for_verify_heavy(self, tmp_path):
+        settings = self._settings("fastapi", "verify-heavy", tmp_path)
+        assert settings["includeGitInstructions"] is False
+
+    def test_include_git_instructions_false_for_spec_driven(self, tmp_path):
+        settings = self._settings("fastapi", "spec-driven", tmp_path)
+        assert settings["includeGitInstructions"] is False
+
+    def test_include_git_instructions_absent_for_standard(self, tmp_path):
+        settings = self._settings("fastapi", "standard", tmp_path)
+        assert "includeGitInstructions" not in settings
+
+    def test_include_git_instructions_absent_for_speedrun(self, tmp_path):
+        settings = self._settings("fastapi", "speedrun", tmp_path)
+        assert "includeGitInstructions" not in settings

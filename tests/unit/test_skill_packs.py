@@ -24,10 +24,10 @@ ALL_PACK_NAMES = ["security", "devops", "web-quality", "code-quality", "database
 
 
 class TestSkillPackRegistry:
-    """SKILL_PACKS must contain all 5 packs with valid references."""
+    """SKILL_PACKS must contain all 6 packs with valid references."""
 
-    def test_has_5_packs(self):
-        assert len(SKILL_PACKS) == 5
+    def test_has_6_packs(self):
+        assert len(SKILL_PACKS) == 6
 
     @pytest.mark.parametrize("pack_name", ALL_PACK_NAMES)
     def test_pack_is_present(self, pack_name):

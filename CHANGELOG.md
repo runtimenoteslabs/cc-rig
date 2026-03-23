@@ -2,6 +2,25 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [2.1.0] - 2026-03-23
+
+### Added
+- **Plugin catalog expansion** (24 to 47 plugins). 5 new LSP plugins (ruby-lsp, clangd-lsp, kotlin-lsp, lua-lsp, swift-lsp), 8 integration (asana, context7, discord, greptile, laravel-boost, playwright, serena, telegram), 8 workflow (code-simplifier, claude-md-management, skill-creator, frontend-design, agent-sdk-dev, mcp-server-dev, plugin-dev, claude-code-setup), 2 style (explanatory-output-style, learning-output-style). New "style" plugin category.
+- **ECC skills integration** (55 to 78 skills). 23 framework-specific skills from affaan-m/everything-claude-code (97K stars): Python (2), Django (4), Spring Boot (4), Laravel (4), Go (2), Rust (2), plus 5 cross-cutting SDLC skills. New "ecc-sdlc" skill pack.
+- **Template agents** (13 to 19 agents). 4 language-specific reviewers (python-reviewer, go-reviewer, rust-reviewer, java-reviewer) auto-added per template. 2 cross-cutting agents: build-fixer (all workflows), e2e-runner (non-CLI, non-speedrun).
+- **Agent frontmatter enhancement**. New `effort` and `skills` optional fields on agent definitions. Opus agents (architect, pr-reviewer, pm-spec, security-auditor) set to `effort: high`.
+- **Settings enhancement**. `effortLevel` per workflow (speedrun=low, standard/gstack/aihero/gtd=medium, spec-driven/superpowers=high). `includeGitInstructions: false` for high-rigor workflows (superpowers, verify-heavy, spec-driven) to reduce CLAUDE.md duplication.
+- **CC platform alignment**. VALID_CC_EVENTS expanded from 9 to 21 (StopFailure, PostCompact, WorktreeCreate, WorktreeRemove, PostToolUseFailure, PermissionRequest, ConfigChange, InstructionsLoaded, Elicitation, ElicitationResult, TeammateIdle, TaskCompleted). LSP added to VALID_CC_TOOLS.
+
+### Changed
+- **Ruby template now has LSP**. ruby-lsp plugin auto-enabled for Rails template (was "no official LSP plugin yet").
+- **csharp-lsp binary name**. Fixed `requires_binary` from "OmniSharp" to "csharp-ls" (matches current CC plugin).
+- **Template plugin enrichment**. nextjs gets frontend-design + playwright; laravel gets laravel-boost; express gets playwright.
+- **Workflow plugin enrichment**. spec-driven, superpowers, verify-heavy get code-simplifier plugin.
+- **Django skills are now a superset of FastAPI/Flask**. All Python templates share ecc-python-patterns + ecc-python-testing; Django additionally gets 4 Django-specific ECC skills.
+
+---
+
 ## [2.0.0] - 2026-03-22
 
 ### Added

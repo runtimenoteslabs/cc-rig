@@ -336,7 +336,7 @@ class TestAgentDefConsistency:
 
     def test_agent_count(self):
         """Catch accidental additions/removals of agents."""
-        assert len(_AGENT_DEFS) == 13
+        assert len(_AGENT_DEFS) == 19
 
 
 # ── Tier-aware model resolution tests ─────────────────────────────────

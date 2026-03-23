@@ -14,6 +14,19 @@ from cc_rig.generators.fileops import FileTracker
 # Legitimate commands (e.g. "ruff check", "npx prettier --write") never need these.
 _SHELL_INJECTION_RE = re.compile(r"[;|&`$><\n\r]|\.\./")
 
+# Workflow → CC effort level mapping (V2.1)
+_WORKFLOW_EFFORT: dict[str, str] = {
+    "speedrun": "low",
+    "standard": "medium",
+    "gstack": "medium",
+    "aihero": "medium",
+    "spec-driven": "high",
+    "superpowers": "high",
+    "gtd": "medium",
+    "gtd-lite": "medium",
+    "verify-heavy": "high",
+}
+
 
 # ── Hook metadata registry ─────────────────────────────────────────
 # Maps hook name -> (event, matcher, hook_type)
@@ -204,6 +217,15 @@ def generate_settings(
             key = f"{plugin.name}@{plugin.marketplace}"
             enabled_plugins[key] = True
         settings["enabledPlugins"] = enabled_plugins
+
+    # Effort level per workflow (V2.1)
+    effort = _WORKFLOW_EFFORT.get(config.workflow, "medium")
+    settings["effortLevel"] = effort
+
+    # Suppress built-in git instructions for high-rigor workflows (V2.1)
+    # These workflows have comprehensive guardrails in CLAUDE.md already.
+    if config.workflow in ("superpowers", "verify-heavy", "spec-driven"):
+        settings["includeGitInstructions"] = False
 
     # Write settings.json
     settings_content = json.dumps(settings, indent=2) + "\n"

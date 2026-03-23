@@ -61,15 +61,15 @@ _VERIFY_HEAVY_CROSS_CUTTING_COUNT = 14
 
 
 # ---------------------------------------------------------------------------
-# SKILL_CATALOG completeness — 41 skills
+# SKILL_CATALOG completeness — 78 skills
 # ---------------------------------------------------------------------------
 
 
 class TestSkillCatalogCompleteness:
-    """SKILL_CATALOG must contain exactly 41 uniquely-named skills."""
+    """SKILL_CATALOG must contain exactly 78 uniquely-named skills."""
 
-    def test_catalog_has_41_skills(self):
-        assert len(SKILL_CATALOG) == 55
+    def test_catalog_has_78_skills(self):
+        assert len(SKILL_CATALOG) == 78
 
     def test_all_catalog_keys_are_skill_spec(self):
         for name, spec in SKILL_CATALOG.items():
@@ -198,14 +198,27 @@ class TestTemplateSkillsCompleteness:
                 f"Template {template!r} references unknown skill {skill_name!r}"
             )
 
-    def test_python_templates_share_same_skills(self):
-        """fastapi, django, flask all have identical template skill lists."""
-        assert TEMPLATE_SKILLS["fastapi"] == TEMPLATE_SKILLS["django"]
+    def test_fastapi_flask_share_same_skills(self):
+        """fastapi and flask have identical template skill lists."""
         assert TEMPLATE_SKILLS["fastapi"] == TEMPLATE_SKILLS["flask"]
 
+    def test_django_is_superset_of_fastapi(self):
+        """django has all fastapi skills plus ecc-django-* skills."""
+        fastapi_set = set(TEMPLATE_SKILLS["fastapi"])
+        django_set = set(TEMPLATE_SKILLS["django"])
+        assert fastapi_set < django_set  # strict subset
+        extra = django_set - fastapi_set
+        assert extra == {
+            "ecc-django-patterns",
+            "ecc-django-security",
+            "ecc-django-tdd",
+            "ecc-django-verification",
+        }
+
     def test_go_templates_share_same_skills(self):
-        """gin and echo have identical template skill lists."""
+        """gin, echo, and go-std have identical template skill lists."""
         assert TEMPLATE_SKILLS["gin"] == TEMPLATE_SKILLS["echo"]
+        assert TEMPLATE_SKILLS["gin"] == TEMPLATE_SKILLS["go-std"]
 
     def test_fastapi_template_skills(self):
         expected = {
@@ -216,6 +229,8 @@ class TestTemplateSkillsCompleteness:
             "planetscale-postgresql",
             "github-actions-generator",
             "dockerfile-generator",
+            "ecc-python-patterns",
+            "ecc-python-testing",
         }
         assert set(TEMPLATE_SKILLS["fastapi"]) == expected
 
@@ -239,6 +254,8 @@ class TestTemplateSkillsCompleteness:
             "property-based-testing",
             "static-analysis",
             "github-actions-generator",
+            "ecc-rust-patterns",
+            "ecc-rust-testing",
         }
         assert set(TEMPLATE_SKILLS["rust-cli"]) == expected
 
@@ -531,15 +548,14 @@ class TestResolveSkillsHappyPath:
         assert "planetscale-postgresql" in names
 
     def test_fastapi_standard_total_without_db_mcps(self):
-        """5 workflow + 5 template skills (modern-python, property-based-testing,
-        webapp-testing, github-actions-generator, dockerfile-generator) = 10."""
+        """5 workflow + 7 template skills (5 base + 2 ecc-python) = 12."""
         result = resolve_skills("fastapi", "standard")
-        assert len(result) == 10
+        assert len(result) == 12
 
     def test_fastapi_standard_total_with_postgres_mcp(self):
-        """5 workflow + 7 template skills (adds supabase + planetscale) = 12."""
+        """5 workflow + 9 template skills (7 base + 2 ecc-python) = 14."""
         result = resolve_skills("fastapi", "standard", ["postgres"])
-        assert len(result) == 12
+        assert len(result) == 14
 
     def test_fastapi_speedrun_only_coding_skills(self):
         """Speedrun: only coding phase is active for template skills."""
@@ -848,20 +864,21 @@ class TestSkillCountScaling:
         assert self._count("fastapi", "standard") > self._count("rust-cli", "standard")
 
     def test_rust_cli_fewer_template_skills_fewest_total(self):
-        """rust-cli has 3 template skills vs 7 for fastapi (with same workflow)."""
+        """rust-cli has 5 template skills vs 9 for fastapi (with same workflow)."""
         rust_count = self._count("rust-cli", "speedrun")
-        # rust-cli speedrun: property-based-testing(testing=bundled_only→inactive),
-        # static-analysis(security=False), github-actions-generator(devops=False)
-        # → all inactive → 0 template skills → 0 total (no workflow skills for speedrun)
-        assert rust_count == 0
+        # rust-cli speedrun: property-based-testing(testing=bundled_only->inactive),
+        # static-analysis(security=False), github-actions-generator(devops=False),
+        # ecc-rust-patterns(coding=True->active), ecc-rust-testing(testing=bundled_only->inactive)
+        # -> only ecc-rust-patterns active -> 1 total
+        assert rust_count == 1
 
     def test_fastapi_speedrun_minimal_count(self):
-        """Speedrun with fastapi, no mcps: only modern-python is active."""
-        assert self._count("fastapi", "speedrun") == 1
+        """Speedrun with fastapi, no mcps: modern-python + ecc-python-patterns = 2."""
+        assert self._count("fastapi", "speedrun") == 2
 
     def test_fastapi_speedrun_with_postgres_mcp_count(self):
-        """Speedrun + postgres: modern-python + supabase + planetscale = 3."""
-        assert self._count("fastapi", "speedrun", ["postgres"]) == 3
+        """Speedrun + postgres: modern-python + ecc-python-patterns + supabase + planetscale = 4."""
+        assert self._count("fastapi", "speedrun", ["postgres"]) == 4
 
     def test_gtd_lite_skill_count_equals_spec_driven(self):
         assert self._count("fastapi", "gtd-lite") == self._count("fastapi", "spec-driven")
@@ -875,13 +892,13 @@ class TestSkillCountScaling:
 class TestFastapiStandardCombo:
     """Detailed verification for the canonical fastapi+standard combo."""
 
-    def test_fastapi_standard_with_postgres_has_12_skills(self):
+    def test_fastapi_standard_with_postgres_has_14_skills(self):
         result = resolve_skills("fastapi", "standard", ["postgres"])
-        assert len(result) == 12
+        assert len(result) == 14
 
-    def test_fastapi_standard_without_db_has_10_skills(self):
+    def test_fastapi_standard_without_db_has_12_skills(self):
         result = resolve_skills("fastapi", "standard")
-        assert len(result) == 10
+        assert len(result) == 12
 
     def test_fastapi_standard_skill_phases_covered(self):
         result = resolve_skills("fastapi", "standard")
@@ -911,9 +928,11 @@ class TestFastapiStandardCombo:
             "finishing-a-development-branch",
             # template: coding
             "modern-python",
+            "ecc-python-patterns",
             # template: testing
             "property-based-testing",
             "webapp-testing",
+            "ecc-python-testing",
             # template: devops
             "github-actions-generator",
             "dockerfile-generator",
@@ -998,10 +1017,10 @@ class TestEdgeCases:
 
 
 class TestSkillPacksCompleteness:
-    """SKILL_PACKS must contain 5 packs with valid references."""
+    """SKILL_PACKS must contain 6 packs with valid references."""
 
-    def test_has_5_packs(self):
-        assert len(SKILL_PACKS) == 5
+    def test_has_6_packs(self):
+        assert len(SKILL_PACKS) == 6
 
     def test_all_packs_are_skill_pack_spec(self):
         for name, pack in SKILL_PACKS.items():
@@ -1043,8 +1062,21 @@ class TestSkillPacksCompleteness:
         assert "desloppify" in names
 
     def test_known_packs_present(self):
-        expected = {"security", "devops", "web-quality", "database-pro", "code-quality"}
+        expected = {
+            "security",
+            "devops",
+            "web-quality",
+            "database-pro",
+            "code-quality",
+            "ecc-sdlc",
+        }
         assert set(SKILL_PACKS.keys()) == expected
+
+    def test_ecc_sdlc_pack_exists(self):
+        pack = SKILL_PACKS["ecc-sdlc"]
+        assert pack.label == "ECC SDLC Suite"
+        assert len(pack.skill_names) == 5
+        assert pack.suggested_templates is None
 
 
 class TestComputePackOverlap:
@@ -1121,9 +1153,7 @@ class TestWorkflowFeatureConflicts:
             recommended = WORKFLOW_FEATURE_DEFAULTS[workflow]
             conflicts = WORKFLOW_FEATURE_CONFLICTS.get(workflow, set())
             overlap = recommended & conflicts
-            assert not overlap, (
-                f"{workflow}: {overlap} is both recommended and conflicted"
-            )
+            assert not overlap, f"{workflow}: {overlap} is both recommended and conflicted"
 
     def test_gstack_conflicts_spec_and_gtd(self):
         from cc_rig.ui.descriptions import WORKFLOW_FEATURE_CONFLICTS
@@ -1145,3 +1175,67 @@ class TestWorkflowFeatureConflicts:
             assert workflow in WORKFLOW_FEATURE_CONFLICTS, (
                 f"{workflow} missing from WORKFLOW_FEATURE_CONFLICTS"
             )
+
+
+# ── V2.1 ECC Skills Tests ───────────────────────────────────────────
+
+
+class TestECCSkills:
+    """V2.1: 23 skills from affaan-m/everything-claude-code."""
+
+    def test_ecc_skills_count(self):
+        ecc = [s for s in SKILL_CATALOG.values() if s.repo == "affaan-m/everything-claude-code"]
+        assert len(ecc) == 23
+
+    def test_ecc_skills_use_skill_md_only(self):
+        ecc = [s for s in SKILL_CATALOG.values() if s.repo == "affaan-m/everything-claude-code"]
+        for spec in ecc:
+            assert spec.download_mode == "skill_md_only", (
+                f"ECC skill {spec.name!r} should use skill_md_only"
+            )
+
+    def test_ecc_skills_use_main_branch(self):
+        ecc = [s for s in SKILL_CATALOG.values() if s.repo == "affaan-m/everything-claude-code"]
+        for spec in ecc:
+            assert spec.branch == "main", f"ECC skill {spec.name!r} should use main branch"
+
+    def test_django_has_ecc_django_skills(self):
+        django_ecc = [s for s in TEMPLATE_SKILLS["django"] if s.startswith("ecc-django-")]
+        assert len(django_ecc) == 4
+
+    def test_spring_has_ecc_springboot_skills(self):
+        spring_ecc = [s for s in TEMPLATE_SKILLS["spring"] if s.startswith("ecc-springboot-")]
+        assert len(spring_ecc) == 4
+
+    def test_laravel_has_ecc_laravel_skills(self):
+        laravel_ecc = [s for s in TEMPLATE_SKILLS["laravel"] if s.startswith("ecc-laravel-")]
+        assert len(laravel_ecc) == 4
+
+    def test_go_templates_have_ecc_golang_skills(self):
+        for tmpl in ("gin", "echo", "go-std"):
+            go_ecc = [s for s in TEMPLATE_SKILLS[tmpl] if s.startswith("ecc-golang-")]
+            assert len(go_ecc) == 2, f"Template {tmpl!r} should have 2 ECC Go skills"
+
+    def test_rust_templates_have_ecc_rust_skills(self):
+        for tmpl in ("rust-cli", "rust-web"):
+            rust_ecc = [s for s in TEMPLATE_SKILLS[tmpl] if s.startswith("ecc-rust-")]
+            assert len(rust_ecc) == 2, f"Template {tmpl!r} should have 2 ECC Rust skills"
+
+    def test_python_templates_have_ecc_python_skills(self):
+        for tmpl in ("fastapi", "django", "flask"):
+            py_ecc = [s for s in TEMPLATE_SKILLS[tmpl] if s.startswith("ecc-python-")]
+            assert len(py_ecc) == 2, f"Template {tmpl!r} should have 2 ECC Python skills"
+
+    def test_nextjs_no_ecc_skills(self):
+        """nextjs should not get framework-specific ECC skills."""
+        ecc = [s for s in TEMPLATE_SKILLS["nextjs"] if s.startswith("ecc-")]
+        assert len(ecc) == 0
+
+    def test_generic_no_ecc_skills(self):
+        ecc = [s for s in TEMPLATE_SKILLS["generic"] if s.startswith("ecc-")]
+        assert len(ecc) == 0
+
+    def test_ecc_sdlc_pack_skills_in_catalog(self):
+        pack = SKILL_PACKS["ecc-sdlc"]
+        for name in pack.skill_names:
+            assert name in SKILL_CATALOG, f"ECC SDLC pack skill {name!r} not in catalog"

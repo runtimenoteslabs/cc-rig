@@ -16,6 +16,8 @@ _AGENT_OPTIONAL_FIELDS = {
     "isolation",
     "agent_memory",
     "disallowed_tools",
+    "effort",
+    "skills",
 }
 _AGENT_ALL_FIELDS = _AGENT_REQUIRED_FIELDS | _AGENT_OPTIONAL_FIELDS
 

@@ -1,7 +1,8 @@
 """Official Claude Code plugin catalog, mappings, and resolver.
 
 Mirrors the cc_rig/skills/registry.py pattern for community skills.
-Plugins are Anthropic marketplace extensions — LSP, integration, workflow, autonomy.
+Plugins are Anthropic marketplace extensions — LSP, integration, workflow,
+autonomy, utility, style.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ class PluginSpec:
 
     name: str  # e.g. "pyright-lsp"
     marketplace: str  # "claude-plugins-official"
-    category: str  # "lsp", "integration", "workflow", "autonomy", "utility"
+    category: str  # "lsp", "integration", "workflow", "autonomy", "utility", "style"
     description: str  # one-line for wizard/review
     requires_binary: str = ""  # e.g. "pyright" (LSP only), "" if self-contained
     replaces_mcp: str = ""  # MCP name this replaces, "" if none
@@ -65,8 +66,8 @@ PLUGIN_CATALOG: dict[str, PluginSpec] = {
         name="csharp-lsp",
         marketplace="claude-plugins-official",
         category="lsp",
-        description="C# diagnostics via OmniSharp",
-        requires_binary="OmniSharp",
+        description="C# diagnostics and code actions",
+        requires_binary="csharp-ls",
     ),
     "php-lsp": PluginSpec(
         name="php-lsp",
@@ -182,6 +183,153 @@ PLUGIN_CATALOG: dict[str, PluginSpec] = {
         category="utility",
         description="Visual hook builder and manager",
     ),
+    # ── V2.1: New LSP plugins (fill language gaps) ────────────────────
+    "ruby-lsp": PluginSpec(
+        name="ruby-lsp",
+        marketplace="claude-plugins-official",
+        category="lsp",
+        description="Ruby language server with diagnostics and formatting",
+        requires_binary="ruby-lsp",
+    ),
+    "clangd-lsp": PluginSpec(
+        name="clangd-lsp",
+        marketplace="claude-plugins-official",
+        category="lsp",
+        description="C/C++ diagnostics and code completion via clangd",
+        requires_binary="clangd",
+    ),
+    "kotlin-lsp": PluginSpec(
+        name="kotlin-lsp",
+        marketplace="claude-plugins-official",
+        category="lsp",
+        description="Kotlin language server with diagnostics",
+        requires_binary="kotlin-language-server",
+    ),
+    "lua-lsp": PluginSpec(
+        name="lua-lsp",
+        marketplace="claude-plugins-official",
+        category="lsp",
+        description="Lua language server with diagnostics",
+        requires_binary="lua-language-server",
+    ),
+    "swift-lsp": PluginSpec(
+        name="swift-lsp",
+        marketplace="claude-plugins-official",
+        category="lsp",
+        description="Swift language server via SourceKit-LSP",
+        requires_binary="sourcekit-lsp",
+    ),
+    # ── V2.1: New integration plugins (external) ─────────────────────
+    "asana": PluginSpec(
+        name="asana",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Asana project and task management",
+    ),
+    "context7": PluginSpec(
+        name="context7",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Documentation context provider for libraries and frameworks",
+    ),
+    "discord": PluginSpec(
+        name="discord",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Discord messaging and channel integration",
+    ),
+    "greptile": PluginSpec(
+        name="greptile",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="AI-powered codebase search and understanding",
+    ),
+    "laravel-boost": PluginSpec(
+        name="laravel-boost",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Laravel-specific development tools and patterns",
+    ),
+    "playwright": PluginSpec(
+        name="playwright",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Browser automation and end-to-end testing",
+    ),
+    "serena": PluginSpec(
+        name="serena",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="AI assistant integration and orchestration",
+    ),
+    "telegram": PluginSpec(
+        name="telegram",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Telegram messaging and bot integration",
+    ),
+    # ── V2.1: New workflow plugins ────────────────────────────────────
+    "code-simplifier": PluginSpec(
+        name="code-simplifier",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="Code clarity and maintainability improvements",
+    ),
+    "claude-md-management": PluginSpec(
+        name="claude-md-management",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="CLAUDE.md file maintenance and optimization",
+    ),
+    "skill-creator": PluginSpec(
+        name="skill-creator",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="Create and optimize custom skills",
+    ),
+    "frontend-design": PluginSpec(
+        name="frontend-design",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="Frontend design guidance and component patterns",
+    ),
+    "agent-sdk-dev": PluginSpec(
+        name="agent-sdk-dev",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="Claude Agent SDK development toolkit",
+    ),
+    "mcp-server-dev": PluginSpec(
+        name="mcp-server-dev",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="MCP server design and development",
+    ),
+    "plugin-dev": PluginSpec(
+        name="plugin-dev",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="Plugin development and testing toolkit",
+    ),
+    "claude-code-setup": PluginSpec(
+        name="claude-code-setup",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="Codebase analysis and automation recommendations",
+    ),
+    # ── V2.1: Style plugins (new category) ───────────────────────────
+    "explanatory-output-style": PluginSpec(
+        name="explanatory-output-style",
+        marketplace="claude-plugins-official",
+        category="style",
+        description="Educational insights about implementation choices",
+    ),
+    "learning-output-style": PluginSpec(
+        name="learning-output-style",
+        marketplace="claude-plugins-official",
+        category="style",
+        description="Interactive learning mode with guided explanations",
+    ),
 }
 
 
@@ -195,7 +343,8 @@ LANGUAGE_PLUGINS: dict[str, str] = {
     "java": "jdtls-lsp",
     "csharp": "csharp-lsp",
     "php": "php-lsp",
-    # ruby, elixir, generic: no official LSP plugin yet
+    "ruby": "ruby-lsp",
+    # elixir, generic: no official LSP plugin yet
 }
 
 
@@ -206,7 +355,7 @@ TEMPLATE_PLUGINS: dict[str, list[str]] = {
     "fastapi": ["github"],
     "django": ["github"],
     "flask": ["github"],
-    "nextjs": ["github", "vercel"],
+    "nextjs": ["github", "vercel", "frontend-design", "playwright"],
     "gin": ["github"],
     "echo": ["github"],
     "rust-cli": ["github"],
@@ -214,8 +363,8 @@ TEMPLATE_PLUGINS: dict[str, list[str]] = {
     "rails": ["github"],
     "spring": ["github"],
     "dotnet": ["github"],
-    "laravel": ["github"],
-    "express": ["github"],
+    "laravel": ["github", "laravel-boost"],
+    "express": ["github", "playwright"],
     "phoenix": ["github"],
     "go-std": ["github"],
 }
@@ -228,12 +377,19 @@ WORKFLOW_PLUGINS: dict[str, list[str]] = {
     "standard": ["commit-commands", "code-review"],
     "gstack": ["commit-commands", "code-review", "pr-review-toolkit"],
     "aihero": ["commit-commands", "code-review", "feature-dev", "pr-review-toolkit"],
-    "spec-driven": ["commit-commands", "code-review", "feature-dev", "pr-review-toolkit"],
+    "spec-driven": [
+        "commit-commands",
+        "code-review",
+        "feature-dev",
+        "pr-review-toolkit",
+        "code-simplifier",
+    ],
     "superpowers": [
         "commit-commands",
         "code-review",
         "pr-review-toolkit",
         "security-guidance",
+        "code-simplifier",
     ],
     "gtd": ["commit-commands", "code-review"],
     # Backward compat aliases
@@ -243,13 +399,14 @@ WORKFLOW_PLUGINS: dict[str, list[str]] = {
         "code-review",
         "pr-review-toolkit",
         "security-guidance",
+        "code-simplifier",
     ],
 }
 
 
 # ── Valid plugin categories ───────────────────────────────────────────
 
-VALID_PLUGIN_CATEGORIES = {"lsp", "integration", "workflow", "autonomy", "utility"}
+VALID_PLUGIN_CATEGORIES = {"lsp", "integration", "workflow", "autonomy", "utility", "style"}
 
 
 # ── Resolver ─────────────────────────────────────────────────────────

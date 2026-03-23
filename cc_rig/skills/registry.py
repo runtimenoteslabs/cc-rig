@@ -36,7 +36,7 @@ class SkillPackSpec:
     suggested_templates: list[str] | None = None  # None = all, list = specific
 
 
-# ── All downloadable skills (55 unique) ────────────────────────────────
+# ── All downloadable skills (78 unique) ────────────────────────────────
 
 SKILL_CATALOG: dict[str, SkillSpec] = {
     # obra/superpowers — 12 skills
@@ -488,6 +488,175 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
         description="SQL query performance analysis and optimization",
         download_mode="skill_md_only",
     ),
+    # affaan-m/everything-claude-code — 23 skills (v2.1)
+    # Python (2 cross-framework)
+    "ecc-python-patterns": SkillSpec(
+        name="ecc-python-patterns",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/python-patterns",
+        sdlc_phase="coding",
+        description="Python idioms, type hints, async patterns, packaging",
+    ),
+    "ecc-python-testing": SkillSpec(
+        name="ecc-python-testing",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/python-testing",
+        sdlc_phase="testing",
+        description="pytest patterns, fixtures, mocking, coverage strategies",
+    ),
+    # Django (4)
+    "ecc-django-patterns": SkillSpec(
+        name="ecc-django-patterns",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/django-patterns",
+        sdlc_phase="coding",
+        description="Django models, views, forms, signals, middleware patterns",
+    ),
+    "ecc-django-security": SkillSpec(
+        name="ecc-django-security",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/django-security",
+        sdlc_phase="security",
+        description="Django CSRF, auth, permissions, SQL injection prevention",
+    ),
+    "ecc-django-tdd": SkillSpec(
+        name="ecc-django-tdd",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/django-tdd",
+        sdlc_phase="testing",
+        description="Django test client, factories, fixtures, coverage",
+    ),
+    "ecc-django-verification": SkillSpec(
+        name="ecc-django-verification",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/django-verification",
+        sdlc_phase="review",
+        description="Django deployment checklist, migration verification",
+    ),
+    # Spring Boot (4)
+    "ecc-springboot-patterns": SkillSpec(
+        name="ecc-springboot-patterns",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/springboot-patterns",
+        sdlc_phase="coding",
+        description="Spring Boot DI, JPA, REST controllers, configuration",
+    ),
+    "ecc-springboot-security": SkillSpec(
+        name="ecc-springboot-security",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/springboot-security",
+        sdlc_phase="security",
+        description="Spring Security, OAuth2, CORS, input validation",
+    ),
+    "ecc-springboot-tdd": SkillSpec(
+        name="ecc-springboot-tdd",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/springboot-tdd",
+        sdlc_phase="testing",
+        description="JUnit 5, MockMvc, Testcontainers, integration tests",
+    ),
+    "ecc-springboot-verification": SkillSpec(
+        name="ecc-springboot-verification",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/springboot-verification",
+        sdlc_phase="review",
+        description="Spring Boot health checks, actuator, deployment verification",
+    ),
+    # Laravel (4)
+    "ecc-laravel-patterns": SkillSpec(
+        name="ecc-laravel-patterns",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/laravel-patterns",
+        sdlc_phase="coding",
+        description="Laravel Eloquent, Blade, middleware, service providers",
+    ),
+    "ecc-laravel-security": SkillSpec(
+        name="ecc-laravel-security",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/laravel-security",
+        sdlc_phase="security",
+        description="Laravel auth, gates, policies, CSRF, encryption",
+    ),
+    "ecc-laravel-tdd": SkillSpec(
+        name="ecc-laravel-tdd",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/laravel-tdd",
+        sdlc_phase="testing",
+        description="PHPUnit, feature tests, database testing, Dusk",
+    ),
+    "ecc-laravel-verification": SkillSpec(
+        name="ecc-laravel-verification",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/laravel-verification",
+        sdlc_phase="review",
+        description="Laravel deployment, queue verification, config caching",
+    ),
+    # Go (2)
+    "ecc-golang-patterns": SkillSpec(
+        name="ecc-golang-patterns",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/golang-patterns",
+        sdlc_phase="coding",
+        description="Go idioms, error handling, concurrency, interface design",
+    ),
+    "ecc-golang-testing": SkillSpec(
+        name="ecc-golang-testing",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/golang-testing",
+        sdlc_phase="testing",
+        description="Go table tests, benchmarks, test helpers, mocking",
+    ),
+    # Rust (2)
+    "ecc-rust-patterns": SkillSpec(
+        name="ecc-rust-patterns",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/rust-patterns",
+        sdlc_phase="coding",
+        description="Rust ownership, lifetimes, traits, error handling patterns",
+    ),
+    "ecc-rust-testing": SkillSpec(
+        name="ecc-rust-testing",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/rust-testing",
+        sdlc_phase="testing",
+        description="Rust unit tests, integration tests, proptest, criterion",
+    ),
+    # Cross-cutting SDLC (5)
+    "ecc-tdd-workflow": SkillSpec(
+        name="ecc-tdd-workflow",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/tdd-workflow",
+        sdlc_phase="testing",
+        description="TDD methodology with 80%+ coverage targets",
+    ),
+    "ecc-verification-loop": SkillSpec(
+        name="ecc-verification-loop",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/verification-loop",
+        sdlc_phase="review",
+        description="Pre-PR verification gate with automated checks",
+    ),
+    "ecc-search-first": SkillSpec(
+        name="ecc-search-first",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/search-first",
+        sdlc_phase="planning",
+        description="Research-before-coding workflow for unfamiliar codebases",
+    ),
+    "ecc-coding-standards": SkillSpec(
+        name="ecc-coding-standards",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/coding-standards",
+        sdlc_phase="coding",
+        description="Universal coding standards: KISS, DRY, YAGNI enforcement",
+    ),
+    "ecc-api-design": SkillSpec(
+        name="ecc-api-design",
+        repo="affaan-m/everything-claude-code",
+        repo_path="skills/api-design",
+        sdlc_phase="coding",
+        description="REST API design, pagination, error handling, versioning",
+    ),
 }
 
 
@@ -503,6 +672,8 @@ TEMPLATE_SKILLS: dict[str, list[str]] = {
         "planetscale-postgresql",
         "github-actions-generator",
         "dockerfile-generator",
+        "ecc-python-patterns",
+        "ecc-python-testing",
     ],
     "django": [
         "modern-python",
@@ -512,6 +683,12 @@ TEMPLATE_SKILLS: dict[str, list[str]] = {
         "planetscale-postgresql",
         "github-actions-generator",
         "dockerfile-generator",
+        "ecc-python-patterns",
+        "ecc-python-testing",
+        "ecc-django-patterns",
+        "ecc-django-security",
+        "ecc-django-tdd",
+        "ecc-django-verification",
     ],
     "flask": [
         "modern-python",
@@ -521,6 +698,8 @@ TEMPLATE_SKILLS: dict[str, list[str]] = {
         "planetscale-postgresql",
         "github-actions-generator",
         "dockerfile-generator",
+        "ecc-python-patterns",
+        "ecc-python-testing",
     ],
     "nextjs": [
         "vercel-react-best-practices",
@@ -538,6 +717,8 @@ TEMPLATE_SKILLS: dict[str, list[str]] = {
         "planetscale-postgresql",
         "dockerfile-generator",
         "github-actions-generator",
+        "ecc-golang-patterns",
+        "ecc-golang-testing",
     ],
     "echo": [
         "property-based-testing",
@@ -546,11 +727,15 @@ TEMPLATE_SKILLS: dict[str, list[str]] = {
         "planetscale-postgresql",
         "dockerfile-generator",
         "github-actions-generator",
+        "ecc-golang-patterns",
+        "ecc-golang-testing",
     ],
     "rust-cli": [
         "property-based-testing",
         "static-analysis",
         "github-actions-generator",
+        "ecc-rust-patterns",
+        "ecc-rust-testing",
     ],
     "rust-web": [
         "property-based-testing",
@@ -559,6 +744,8 @@ TEMPLATE_SKILLS: dict[str, list[str]] = {
         "planetscale-postgresql",
         "dockerfile-generator",
         "github-actions-generator",
+        "ecc-rust-patterns",
+        "ecc-rust-testing",
     ],
     "rails": [
         "property-based-testing",
@@ -575,6 +762,10 @@ TEMPLATE_SKILLS: dict[str, list[str]] = {
         "planetscale-postgresql",
         "dockerfile-generator",
         "github-actions-generator",
+        "ecc-springboot-patterns",
+        "ecc-springboot-security",
+        "ecc-springboot-tdd",
+        "ecc-springboot-verification",
     ],
     "dotnet": [
         "property-based-testing",
@@ -591,6 +782,10 @@ TEMPLATE_SKILLS: dict[str, list[str]] = {
         "planetscale-postgresql",
         "dockerfile-generator",
         "github-actions-generator",
+        "ecc-laravel-patterns",
+        "ecc-laravel-security",
+        "ecc-laravel-tdd",
+        "ecc-laravel-verification",
     ],
     "express": [
         "property-based-testing",
@@ -614,6 +809,8 @@ TEMPLATE_SKILLS: dict[str, list[str]] = {
         "planetscale-postgresql",
         "dockerfile-generator",
         "github-actions-generator",
+        "ecc-golang-patterns",
+        "ecc-golang-testing",
     ],
 }
 
@@ -819,6 +1016,19 @@ SKILL_PACKS: dict[str, SkillPackSpec] = {
             "query-efficiency-auditor",
         ],
         suggested_templates=None,  # all templates (DB MCPs determine applicability)
+    ),
+    "ecc-sdlc": SkillPackSpec(
+        name="ecc-sdlc",
+        label="ECC SDLC Suite",
+        description="TDD workflow, verification loop, search-first, coding standards, API design",
+        skill_names=[
+            "ecc-tdd-workflow",
+            "ecc-verification-loop",
+            "ecc-search-first",
+            "ecc-coding-standards",
+            "ecc-api-design",
+        ],
+        suggested_templates=None,  # all templates
     ),
 }
 

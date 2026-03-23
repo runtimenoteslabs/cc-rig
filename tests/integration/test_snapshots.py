@@ -160,11 +160,11 @@ class TestSkillsSnapshot:
         assert "## Installed Skills" in content
 
     def test_speedrun_no_installed_skills_section(self, tmp_path):
-        """Speedrun has no cross-cutting skills, so no Installed Skills section."""
+        """Generic + speedrun has no skills, so no Installed Skills section."""
         output = tmp_path / "out"
-        _generate("rust-cli", "speedrun", output)
+        _generate("generic", "speedrun", output)
         content = (output / "CLAUDE.md").read_text()
-        # rust-cli + speedrun resolves 0 skills → section omitted
+        # generic + speedrun resolves 0 skills -> section omitted
         assert "## Installed Skills" not in content
 
 

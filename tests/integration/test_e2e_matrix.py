@@ -151,14 +151,17 @@ class TestS01FastapiStandardB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 42, f"Expected 42 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 45, f"Expected 45 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
         expected = [
             "architect.md",
+            "build-fixer.md",
             "code-reviewer.md",
+            "e2e-runner.md",
             "explorer.md",
+            "python-reviewer.md",
             "refactorer.md",
             "test-writer.md",
         ]
@@ -316,8 +319,9 @@ class TestS02FastapiVerifyHeavyB3:
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
-        # 12 from workflow + parallel-worker auto-added = 13
-        assert len(agents) == 13, f"Expected 13 agents, got {len(agents)}: {agents}"
+        # 12 from workflow + parallel-worker + python-reviewer
+        # + build-fixer + e2e-runner = 16
+        assert len(agents) == 16, f"Expected 16 agents, got {len(agents)}: {agents}"
         assert "security-auditor.md" in agents
         assert "doc-writer.md" in agents
         assert "techdebt-hunter.md" in agents
@@ -418,7 +422,7 @@ class TestS03FastapiGtdLiteB0:
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
-        assert len(agents) == 8, f"Expected 8 agents, got {len(agents)}: {agents}"
+        assert len(agents) == 11, f"Expected 11 agents, got {len(agents)}: {agents}"
         assert "parallel-worker.md" in agents
 
     def test_gtd_commands_present(self):
@@ -475,11 +479,17 @@ class TestS04FastapiSpeedrunB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 30, f"Expected 30 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 32, f"Expected 32 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
-        expected = ["code-reviewer.md", "explorer.md", "test-writer.md"]
+        expected = [
+            "build-fixer.md",
+            "code-reviewer.md",
+            "explorer.md",
+            "python-reviewer.md",
+            "test-writer.md",
+        ]
         assert agents == expected
 
     def test_commands(self):
@@ -658,8 +668,8 @@ class TestS06GinSpecDrivenB0:
         assert "pm-spec.md" in agents
         assert "implementer.md" in agents
         assert "parallel-worker.md" in agents
-        # 8 from workflow + parallel-worker = 9
-        assert len(agents) == 9, f"Expected 9 agents, got {len(agents)}: {agents}"
+        # 8 from workflow + parallel-worker + go-reviewer + build-fixer + e2e-runner = 12
+        assert len(agents) == 12, f"Expected 12 agents, got {len(agents)}: {agents}"
 
     def test_claude_md_references_go_gin(self):
         content = _read_claude_md(self.root)
@@ -784,8 +794,9 @@ class TestS08ExpertCustomization:
 
     def test_agent_count(self):
         agents = _list_dir(self.root, ".claude/agents")
-        # code-reviewer, test-writer, explorer + pm-spec, implementer = 5
-        assert len(agents) == 5, f"Expected 5 agents, got {len(agents)}: {agents}"
+        # code-reviewer, test-writer, explorer + pm-spec, implementer
+        # + python-reviewer + build-fixer + e2e-runner = 8
+        assert len(agents) == 8, f"Expected 8 agents, got {len(agents)}: {agents}"
 
     def test_spec_commands_present(self):
         commands = _list_dir(self.root, ".claude/commands")
@@ -883,7 +894,7 @@ class TestS10DjangoSpeedrunB0:
 
     def test_minimal_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
-        assert len(agents) == 3
+        assert len(agents) == 5
 
     def test_minimal_commands(self):
         commands = _list_dir(self.root, ".claude/commands")
@@ -905,7 +916,7 @@ class TestS10DjangoSpeedrunB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 30, f"Expected 30 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 32, f"Expected 32 files, got {len(files)}: {sorted(files)}"
 
     def test_hooks_executable(self):
         _assert_hooks_executable(self.root)
@@ -2036,12 +2047,10 @@ def test_go_template_has_gopls_lsp(tmp_path):
     assert "gopls-lsp@claude-plugins-official" in settings["enabledPlugins"]
 
 
-def test_ruby_template_no_lsp(tmp_path):
+def test_ruby_template_has_ruby_lsp(tmp_path):
     config, _ = _generate(tmp_path, "rails", "standard")
     settings = _read_settings(tmp_path)
-    plugins = settings["enabledPlugins"]
-    lsp_plugins = [k for k in plugins if "lsp" in k]
-    assert len(lsp_plugins) == 0
+    assert "ruby-lsp@claude-plugins-official" in settings["enabledPlugins"]
 
 
 def test_nextjs_has_vercel_plugin(tmp_path):

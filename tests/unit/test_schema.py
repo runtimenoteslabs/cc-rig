@@ -326,3 +326,74 @@ class TestPluginValidation:
         )
         errors = validate_config(config)
         assert not any("ralph_loop_plugin" in e for e in errors)
+
+
+class TestV21SchemaExpansion:
+    """V2.1 schema alignment: new CC events, tools, plugin categories, agents."""
+
+    def test_new_cc_events_accepted(self):
+        from cc_rig.config.schema import VALID_CC_EVENTS
+
+        new_events = {
+            "StopFailure",
+            "PostCompact",
+            "WorktreeCreate",
+            "WorktreeRemove",
+            "PostToolUseFailure",
+            "PermissionRequest",
+            "ConfigChange",
+            "InstructionsLoaded",
+            "Elicitation",
+            "ElicitationResult",
+            "TeammateIdle",
+            "TaskCompleted",
+        }
+        for event in new_events:
+            assert event in VALID_CC_EVENTS, f"{event} not in VALID_CC_EVENTS"
+
+    def test_cc_events_count(self):
+        from cc_rig.config.schema import VALID_CC_EVENTS
+
+        assert len(VALID_CC_EVENTS) == 21
+
+    def test_lsp_tool_accepted(self):
+        from cc_rig.config.schema import VALID_CC_TOOLS
+
+        assert "LSP" in VALID_CC_TOOLS
+
+    def test_cc_tools_count(self):
+        from cc_rig.config.schema import VALID_CC_TOOLS
+
+        assert len(VALID_CC_TOOLS) == 14
+
+    def test_style_plugin_category_accepted(self):
+        from cc_rig.config.schema import VALID_PLUGIN_CATEGORIES
+
+        assert "style" in VALID_PLUGIN_CATEGORIES
+
+    def test_plugin_categories_count(self):
+        from cc_rig.config.schema import VALID_PLUGIN_CATEGORIES
+
+        assert len(VALID_PLUGIN_CATEGORIES) == 6
+
+    def test_new_agents_accepted(self):
+        new_agents = {
+            "python-reviewer",
+            "go-reviewer",
+            "rust-reviewer",
+            "java-reviewer",
+            "e2e-runner",
+            "build-fixer",
+        }
+        for agent in new_agents:
+            assert agent in VALID_AGENTS, f"{agent} not in VALID_AGENTS"
+
+    def test_agents_count(self):
+        assert len(VALID_AGENTS) == 19
+
+    def test_new_agents_validate_in_config(self):
+        config = _make_valid_config(
+            agents=["code-reviewer", "python-reviewer", "build-fixer", "e2e-runner"],
+        )
+        errors = validate_config(config)
+        assert not any("unknown agent" in e for e in errors)

@@ -116,7 +116,7 @@ your-project/
 │   ├── agents/                     # Specialized agents for different tasks
 │   ├── commands/                   # Slash commands you trigger with /
 │   ├── hooks/                      # Auto-format, lint, safety blocks
-│   └── skills/                     # Community skills auto-installed from 10 repos
+│   └── skills/                     # Community skills auto-installed from 17 repos
 ├── agent_docs/                     # Framework-specific guides for Claude
 └── memory/                         # Git-tracked team knowledge across sessions
 ```
@@ -133,27 +133,33 @@ A companion `CLAUDE.local.md` is generated for personal preferences (not git-tra
 
 ### Agents
 
-Isolated Claude instances in `.claude/agents/`, each with its own system prompt, model assignment and tool restrictions in YAML frontmatter. cc-rig emits up to 10 of Claude Code's 14 supported frontmatter fields. Beyond the basics (name, description, model, tools), agents get optional fields like `background`, `isolation`, `permissionMode`, `maxTurns` and `memory` where appropriate. This means generated agents work out of the box with Claude Code's parallel execution features like `/simplify` and `/batch`.
+Isolated Claude instances in `.claude/agents/`, each with its own system prompt, model assignment and tool restrictions in YAML frontmatter. cc-rig emits up to 12 of Claude Code's 14 supported frontmatter fields. Beyond the basics (name, description, model, tools), agents get optional fields like `effort`, `skills`, `background`, `isolation`, `permissionMode`, `maxTurns` and `memory` where appropriate. This means generated agents work out of the box with Claude Code's parallel execution features like `/simplify` and `/batch`.
 
 | Agent | Role | Model | Advanced fields |
 |-------|------|-------|-----------------|
 | `code-reviewer` | 6-aspect code review | Sonnet | `memory: project` |
-| `architect` | System design, ADRs | Opus* | `memory: project` |
+| `architect` | System design, ADRs | Opus* | `memory: project`, `effort: high` |
 | `test-writer` | Test generation with coverage awareness | Sonnet | - |
 | `explorer` | Fast codebase scanning | Haiku | `permissionMode: plan`, `maxTurns: 15` |
 | `refactorer` | Safe refactoring with test verification | Sonnet | - |
-| `pr-reviewer` | Pull request review | Opus* | - |
-| `security-auditor` | OWASP-aware security review | Opus* | `memory: project` |
+| `pr-reviewer` | Pull request review | Opus* | `effort: high` |
+| `security-auditor` | OWASP-aware security review | Opus* | `memory: project`, `effort: high` |
 | `implementer` | Feature implementation from specs | Sonnet | - |
 | `doc-writer` | Documentation generation | Sonnet | - |
-| `pm-spec` | Specification creation from requirements | Opus* | - |
+| `pm-spec` | Specification creation from requirements | Opus* | `effort: high` |
 | `techdebt-hunter` | Technical debt identification | Sonnet | - |
 | `db-reader` | Database schema and query analysis | Sonnet | - |
 | `parallel-worker` | Background work in isolated git worktrees | Sonnet | `background: true`, `isolation: worktree` |
+| `python-reviewer` | Python-specific code review | Sonnet | auto-added for Python templates |
+| `go-reviewer` | Go-specific code review | Sonnet | auto-added for Go templates |
+| `rust-reviewer` | Rust-specific code review | Sonnet | auto-added for Rust templates |
+| `java-reviewer` | Java-specific code review | Sonnet | auto-added for Spring template |
+| `build-fixer` | Diagnose and fix build failures | Sonnet | auto-added for all workflows |
+| `e2e-runner` | End-to-end test execution | Sonnet | auto-added for web projects |
 
 *\*Opus on Max/Enterprise plans, Sonnet on Pro/Team. cc-rig auto-resolves model assignments based on your Claude plan tier. No manual config needed.*
 
-Your workflow preset determines which agents are included, from 3 for quick prototyping to 13 for full production rigor.
+Your workflow preset determines which agents are included, from 3 for quick prototyping to 19 for full production rigor. Language-specific reviewers are added automatically based on your stack.
 
 ### Slash Commands
 
@@ -208,7 +214,7 @@ The Claude Code skill ecosystem is huge. [skills.sh](https://skills.sh/) indexes
 
 **Process skills** (installed per workflow):
 - Community workflows install their original skills with full attribution. gstack installs 6 skills from garrytan/gstack, aihero installs 7 from mattpocock/skills, superpowers installs 11 from obra/superpowers, gtd installs planning-with-files from OthmanAdi.
-- 55 skills in the catalog from 11 repos.
+- 78 skills in the catalog from 17 repos.
 
 **Starter set** (auto-installed at `init`):
 - **Framework-matched**: Python projects get `modern-python` and `property-based-testing`, Next.js gets `vercel-react-best-practices` and `next-best-practices`, Go/Rust get `static-analysis`
@@ -222,8 +228,9 @@ The Claude Code skill ecosystem is huge. [skills.sh](https://skills.sh/) indexes
 | Security Deep Dive | supply chain auditing, variant analysis, dangerous API detection | trailofbits/skills |
 | DevOps & IaC | Terraform, Kubernetes, monitoring, GitOps | hashicorp, ahmedasmar |
 | Web Quality | Core Web Vitals, accessibility, SEO, performance | addyosmani |
-| Code Quality | 20 quality dimensions, anti-gaming scoring, scan→plan→fix loop | peteromallet/desloppify |
+| Code Quality | 20 quality dimensions, anti-gaming scoring, scan/plan/fix loop | peteromallet/desloppify |
 | Database Pro | migration patterns, query optimization, multi-DB support | multiple |
+| ECC SDLC | Python patterns, testing, Django/Spring/Laravel/Go/Rust best practices | affaan-m/everything-claude-code |
 
 Add skills anytime, from cc-rig or any source:
 
@@ -239,15 +246,16 @@ Browse the full ecosystem: [skills.sh](https://skills.sh/) · [awesome-claude-sk
 
 ### Plugins
 
-cc-rig also curates 24 official Anthropic marketplace plugins and writes them into `settings.json` as `enabledPlugins`. Plugins are self-contained extensions that Claude Code installs and manages natively. No manual MCP setup or binary downloads.
+cc-rig also curates 47 official Anthropic marketplace plugins and writes them into `settings.json` as `enabledPlugins`. Plugins are self-contained extensions that Claude Code installs and manages natively. No manual MCP setup or binary downloads.
 
-Five categories:
+Six categories:
 
 | Category | Count | Examples |
 |----------|-------|---------|
-| **LSP** | 7 | pyright-lsp, typescript-lsp, gopls-lsp, rust-analyzer-lsp, jdtls-lsp, csharp-lsp, php-lsp |
-| **Integration** | 10 | github, vercel, supabase, sentry, slack, linear, notion, firebase, gitlab, atlassian |
-| **Workflow** | 5 | commit-commands, code-review, pr-review-toolkit, feature-dev, security-guidance |
+| **LSP** | 12 | pyright-lsp, typescript-lsp, gopls-lsp, rust-analyzer-lsp, jdtls-lsp, ruby-lsp, kotlin-lsp, swift-lsp |
+| **Integration** | 18 | github, vercel, supabase, sentry, slack, linear, notion, firebase, playwright, greptile |
+| **Workflow** | 13 | commit-commands, code-review, code-simplifier, frontend-design, agent-sdk-dev, mcp-server-dev |
+| **Style** | 2 | explanatory-output-style, learning-output-style |
 | **Autonomy** | 1 | ralph-loop (official Anthropic autonomous iteration loop) |
 | **Utility** | 1 | hookify (visual hook builder) |
 
@@ -588,7 +596,7 @@ Yes. Everything is plain text. Edit whatever you want. cc-rig won't overwrite yo
 <details>
 <summary><strong>What about Claude Code plugins and skills?</strong></summary>
 
-cc-rig handles both community skills and official Anthropic plugins. For skills, cc-rig installs a starter set of community skills matched to your framework from 10 repos, with optional packs for deeper coverage. For plugins, cc-rig curates a 24-plugin official marketplace catalog across 5 categories (LSP, integration, workflow, autonomy, utility) and writes <code>enabledPlugins</code> into <code>settings.json</code> with smart defaults resolved by language, template and workflow. You can install any additional skill from <a href="https://skills.sh/">skills.sh</a> (73K+), <a href="https://github.com/ComposioHQ/awesome-claude-skills">awesome-claude-skills</a> or any GitHub repo.
+cc-rig handles both community skills and official Anthropic plugins. For skills, cc-rig installs a starter set of community skills matched to your framework from 17 repos, with 6 optional packs for deeper coverage. For plugins, cc-rig curates a 47-plugin official marketplace catalog across 6 categories (LSP, integration, workflow, style, autonomy, utility) and writes <code>enabledPlugins</code> into <code>settings.json</code> with smart defaults resolved by language, template and workflow. You can install any additional skill from <a href="https://skills.sh/">skills.sh</a> (73K+), <a href="https://github.com/ComposioHQ/awesome-claude-skills">awesome-claude-skills</a> or any GitHub repo.
 </details>
 
 <details>

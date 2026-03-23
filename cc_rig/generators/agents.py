@@ -28,6 +28,8 @@ class AgentDef:
     isolation: str | None = None  # "worktree"
     agent_memory: str | None = None  # "user", "project", "local"
     disallowed_tools: str | None = None  # comma-separated
+    effort: str | None = None  # "low", "medium", "high"
+    skills: str | None = None  # comma-separated skill names to preload
 
 
 # ── Agent definitions (loaded from JSON) ──────────────────────────
@@ -41,6 +43,8 @@ _AGENT_OPTIONAL_FIELDS = frozenset(
         "isolation",
         "agent_memory",
         "disallowed_tools",
+        "effort",
+        "skills",
     }
 )
 
@@ -112,6 +116,10 @@ def generate_agents(
             lines.append(f"isolation: {defn.isolation}")
         if defn.agent_memory is not None:
             lines.append(f"memory: {defn.agent_memory}")
+        if defn.effort is not None:
+            lines.append(f"effort: {defn.effort}")
+        if defn.skills is not None:
+            lines.append(f"skills: {defn.skills}")
         lines.append("---")
         content = "\n".join(lines) + f"\n\n{defn.body}\n"
 

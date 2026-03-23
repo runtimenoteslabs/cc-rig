@@ -28,6 +28,26 @@ _HOOK_TOOL_REQUIREMENTS: dict[str, str] = {
     "typecheck": "typecheck",
 }
 
+# Template-specific agent additions (V2.1: language reviewers)
+TEMPLATE_AGENTS: dict[str, list[str]] = {
+    "fastapi": ["python-reviewer"],
+    "django": ["python-reviewer"],
+    "flask": ["python-reviewer"],
+    "gin": ["go-reviewer"],
+    "echo": ["go-reviewer"],
+    "go-std": ["go-reviewer"],
+    "rust-cli": ["rust-reviewer"],
+    "rust-web": ["rust-reviewer"],
+    "spring": ["java-reviewer"],
+    "nextjs": [],
+    "express": [],
+    "rails": [],
+    "dotnet": [],
+    "laravel": [],
+    "phoenix": [],
+    "generic": [],
+}
+
 # DB services that trigger "if_applicable" database phase.
 _DB_SERVICES = {"postgres", "mysql", "sqlite"}
 
@@ -258,6 +278,17 @@ def compute_defaults(
 
     # Step 3: Build agent list from workflow
     agents = list(wf["agents"])
+
+    # Step 3b: Merge template-specific agents (language reviewers)
+    for agent_name in TEMPLATE_AGENTS.get(template, []):
+        if agent_name not in agents:
+            agents.append(agent_name)
+
+    # Step 3c: Add cross-cutting agents (build-fixer for all, e2e-runner for web)
+    if "build-fixer" not in agents:
+        agents.append("build-fixer")
+    if tmpl.get("project_type") != "cli" and workflow != "speedrun" and "e2e-runner" not in agents:
+        agents.append("e2e-runner")
 
     # Step 4: Build command list from workflow
     commands = list(wf["commands"])

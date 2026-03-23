@@ -82,7 +82,13 @@ class TestAgentCounts:
 class TestAgentMembership:
     def test_speedrun_agents(self):
         config = compute_defaults("fastapi", "speedrun", project_name="test")
-        assert set(config.agents) == {"code-reviewer", "test-writer", "explorer"}
+        assert set(config.agents) == {
+            "code-reviewer",
+            "test-writer",
+            "explorer",
+            "python-reviewer",
+            "build-fixer",
+        }
 
     def test_standard_agents(self):
         config = compute_defaults("fastapi", "standard", project_name="test")
@@ -92,6 +98,9 @@ class TestAgentMembership:
             "explorer",
             "architect",
             "refactorer",
+            "python-reviewer",
+            "build-fixer",
+            "e2e-runner",
         }
 
     def test_spec_driven_has_pm_spec(self):
@@ -669,13 +678,20 @@ class TestTemplateSkillIdentity:
         assert "supabase-postgres-best-practices" in names
         assert "planetscale-postgresql" in names
 
-    def test_django_matches_fastapi_skills(self):
-        """Django has same template skills as FastAPI (both Python + postgres)."""
+    def test_django_is_superset_of_fastapi_skills(self):
+        """Django has all FastAPI skills plus ecc-django-* framework skills."""
         fa = compute_defaults("fastapi", "standard", project_name="test")
         dj = compute_defaults("django", "standard", project_name="test")
         fa_names = {s.name for s in fa.recommended_skills}
         dj_names = {s.name for s in dj.recommended_skills}
-        assert fa_names == dj_names
+        assert fa_names < dj_names  # strict subset
+        extra = dj_names - fa_names
+        assert extra == {
+            "ecc-django-patterns",
+            "ecc-django-security",
+            "ecc-django-tdd",
+            "ecc-django-verification",
+        }
 
     def test_flask_matches_fastapi_skills(self):
         """Flask has same template skills as FastAPI."""
@@ -942,10 +958,10 @@ class TestPluginResolution:
         plugin_names = [p.name for p in config.recommended_plugins]
         assert "gopls-lsp" in plugin_names
 
-    def test_ruby_no_lsp(self):
+    def test_ruby_has_ruby_lsp(self):
         config = compute_defaults("rails", "standard", project_name="test")
-        lsp_plugins = [p for p in config.recommended_plugins if p.category == "lsp"]
-        assert len(lsp_plugins) == 0
+        plugin_names = [p.name for p in config.recommended_plugins]
+        assert "ruby-lsp" in plugin_names
 
     def test_generic_no_lsp(self):
         config = compute_defaults("generic", "standard", project_name="test")
@@ -991,11 +1007,63 @@ class TestPluginResolution:
         """FastAPI + standard should produce an exact known plugin count."""
         config = compute_defaults("fastapi", "standard", project_name="test")
         names = [p.name for p in config.recommended_plugins]
-        # language: python → pyright-lsp
-        # template: fastapi → github
-        # workflow: standard → commit-commands, code-review
+        # language: python -> pyright-lsp
+        # template: fastapi -> github
+        # workflow: standard -> commit-commands, code-review
         assert len(names) == 4, f"Expected 4 plugins, got {len(names)}: {names}"
         assert "pyright-lsp" in names
         assert "github" in names
         assert "commit-commands" in names
         assert "code-review" in names
+
+
+class TestV21TemplateAgents:
+    """V2.1: TEMPLATE_AGENTS coverage and compute_defaults() merge."""
+
+    def test_all_templates_in_template_agents(self):
+        from cc_rig.config.defaults import TEMPLATE_AGENTS
+        from cc_rig.presets.manager import BUILTIN_TEMPLATES
+
+        for tmpl in BUILTIN_TEMPLATES:
+            assert tmpl in TEMPLATE_AGENTS, f"Missing TEMPLATE_AGENTS entry for {tmpl!r}"
+
+    def test_python_templates_get_python_reviewer(self):
+        for tmpl in ("fastapi", "django", "flask"):
+            config = compute_defaults(tmpl, "standard", project_name="test")
+            assert "python-reviewer" in config.agents, f"{tmpl} missing python-reviewer"
+
+    def test_go_templates_get_go_reviewer(self):
+        for tmpl in ("gin", "echo", "go-std"):
+            config = compute_defaults(tmpl, "standard", project_name="test")
+            assert "go-reviewer" in config.agents, f"{tmpl} missing go-reviewer"
+
+    def test_rust_templates_get_rust_reviewer(self):
+        for tmpl in ("rust-cli", "rust-web"):
+            config = compute_defaults(tmpl, "standard", project_name="test")
+            assert "rust-reviewer" in config.agents, f"{tmpl} missing rust-reviewer"
+
+    def test_spring_gets_java_reviewer(self):
+        config = compute_defaults("spring", "standard", project_name="test")
+        assert "java-reviewer" in config.agents
+
+    def test_generic_no_template_reviewer(self):
+        config = compute_defaults("generic", "standard", project_name="test")
+        reviewers = {"python-reviewer", "go-reviewer", "rust-reviewer", "java-reviewer"}
+        assert not reviewers.intersection(config.agents)
+
+    def test_build_fixer_in_all_workflows(self):
+        for wf in ("speedrun", "standard", "superpowers"):
+            config = compute_defaults("fastapi", wf, project_name="test")
+            assert "build-fixer" in config.agents, f"{wf} missing build-fixer"
+
+    def test_e2e_runner_in_non_speedrun_web(self):
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        assert "e2e-runner" in config.agents
+
+    def test_e2e_runner_not_in_speedrun(self):
+        config = compute_defaults("fastapi", "speedrun", project_name="test")
+        assert "e2e-runner" not in config.agents
+
+    def test_e2e_runner_not_in_cli(self):
+        config = compute_defaults("rust-cli", "standard", project_name="test")
+        assert "e2e-runner" not in config.agents
