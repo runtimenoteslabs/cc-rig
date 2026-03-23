@@ -2,13 +2,13 @@
   <img alt="cc-rig" src="https://raw.githubusercontent.com/runtimenoteslabs/cc-rig/main/assets/cc-rig-logo.png" width="200">
 </p>
 
-<h3 align="center">Set up Claude Code the right way - in under a minute.</h3>
+<h3 align="center">Set up Claude Code the right way, in under a minute.</h3>
 
 <p align="center">
   <a href="#getting-started">Getting Started</a> ·
+  <a href="#how-it-works">How It Works</a> ·
   <a href="#what-gets-generated">What Gets Generated</a> ·
-  <a href="#define-your-stack-and-process">Stack & Process</a> ·
-  <a href="#for-teams">For Teams</a> ·
+  <a href="#going-deeper">Going Deeper</a> ·
   <a href="#faq">FAQ</a>
 </p>
 
@@ -27,6 +27,30 @@ Most Claude Code projects run on a CLAUDE.md and not much else. The rest of the 
 <p align="center">
   <img src="https://raw.githubusercontent.com/runtimenoteslabs/cc-rig/main/assets/demo-2-guided.gif" alt="cc-rig guided setup demo" width="800">
 </p>
+
+### Before and after
+
+A typical Claude Code project:
+
+```
+CLAUDE.md
+```
+
+After `cc-rig init` (one command, two questions, ~30 seconds):
+
+```
+CLAUDE.md                    # Cache-aware, framework-tuned, under 100 lines
+CLAUDE.local.md              # Personal preferences (gitignored)
+.claude/settings.json        # Permissions, hooks, 47 curated plugins
+.claude/agents/              # 3-19 specialized agents with YAML frontmatter
+.claude/commands/            # 6-19 slash commands matched to your workflow
+.claude/hooks/               # Auto-format, lint gates, safety blocks
+.claude/skills/              # Community skills from 17 repos
+agent_docs/                  # Framework-specific guides (auto-loaded via @import)
+memory/                      # Git-tracked team knowledge across sessions
+```
+
+Nothing proprietary. Delete cc-rig tomorrow and everything keeps working.
 
 ---
 
@@ -101,235 +125,9 @@ cc-rig init --quick
 
 ---
 
-## What Gets Generated
+## How It Works
 
-cc-rig generates **native Claude Code files**, the same formats from the [official docs](https://docs.anthropic.com/en/docs/claude-code). Nothing proprietary. Delete cc-rig tomorrow and everything keeps working.
-
-```
-your-project/
-├── CLAUDE.md                       # Project rules Claude follows
-├── CLAUDE.local.md                 # Personal preferences (not git-tracked)
-├── .mcp.json                       # MCP server integrations
-├── .claude/
-│   ├── settings.json               # Permissions, hooks, safety guards
-│   ├── cc-rig-init.log             # Generation log (what was created + validation)
-│   ├── agents/                     # Specialized agents for different tasks
-│   ├── commands/                   # Slash commands you trigger with /
-│   ├── hooks/                      # Auto-format, lint, safety blocks
-│   └── skills/                     # Community skills auto-installed from 17 repos
-├── agent_docs/                     # Framework-specific guides for Claude
-└── memory/                         # Git-tracked team knowledge across sessions
-```
-
-Everything is tracked in a manifest, so `cc-rig clean` removes exactly what was generated. Nothing more.
-
-### CLAUDE.md
-
-Targets under 100 lines. Static content first, dynamic content last. Claude Code's prompt cache is prefix-matched, so every wasted token costs money on every API call.
-
-Includes project identity, stack, tool commands, guardrails, framework-specific rules and `@import` references to deeper docs (auto-loaded by Claude Code). Not a wall of text. A tight brief that Claude actually reads.
-
-A companion `CLAUDE.local.md` is generated for personal preferences (not git-tracked). Use it for per-developer customization without affecting the shared config.
-
-### Agents
-
-Isolated Claude instances in `.claude/agents/`, each with its own system prompt, model assignment and tool restrictions in YAML frontmatter. cc-rig emits up to 12 of Claude Code's 14 supported frontmatter fields. Beyond the basics (name, description, model, tools), agents get optional fields like `effort`, `skills`, `background`, `isolation`, `permissionMode`, `maxTurns` and `memory` where appropriate. This means generated agents work out of the box with Claude Code's parallel execution features like `/simplify` and `/batch`.
-
-| Agent | Role | Model | Advanced fields |
-|-------|------|-------|-----------------|
-| `code-reviewer` | 6-aspect code review | Sonnet | `memory: project` |
-| `architect` | System design, ADRs | Opus* | `memory: project`, `effort: high` |
-| `test-writer` | Test generation with coverage awareness | Sonnet | - |
-| `explorer` | Fast codebase scanning | Haiku | `permissionMode: plan`, `maxTurns: 15` |
-| `refactorer` | Safe refactoring with test verification | Sonnet | - |
-| `pr-reviewer` | Pull request review | Opus* | `effort: high` |
-| `security-auditor` | OWASP-aware security review | Opus* | `memory: project`, `effort: high` |
-| `implementer` | Feature implementation from specs | Sonnet | - |
-| `doc-writer` | Documentation generation | Sonnet | - |
-| `pm-spec` | Specification creation from requirements | Opus* | `effort: high` |
-| `techdebt-hunter` | Technical debt identification | Sonnet | - |
-| `db-reader` | Database schema and query analysis | Sonnet | - |
-| `parallel-worker` | Background work in isolated git worktrees | Sonnet | `background: true`, `isolation: worktree` |
-| `python-reviewer` | Python-specific code review | Sonnet | auto-added for Python templates |
-| `go-reviewer` | Go-specific code review | Sonnet | auto-added for Go templates |
-| `rust-reviewer` | Rust-specific code review | Sonnet | auto-added for Rust templates |
-| `java-reviewer` | Java-specific code review | Sonnet | auto-added for Spring template |
-| `build-fixer` | Diagnose and fix build failures | Sonnet | auto-added for all workflows |
-| `e2e-runner` | End-to-end test execution | Sonnet | auto-added for web projects |
-
-*\*Opus on Max/Enterprise plans, Sonnet on Pro/Team. cc-rig auto-resolves model assignments based on your Claude plan tier. No manual config needed.*
-
-Your workflow preset determines which agents are included, from 3 for quick prototyping to 19 for full production rigor. Language-specific reviewers are added automatically based on your stack.
-
-### Slash Commands
-
-Workflows you trigger with `/` in Claude Code. Each is a markdown file in `.claude/commands/`.
-
-| Command | What It Does |
-|---------|-------------|
-| `/fix-issue` | Reproduce → diagnose → fix → test → commit |
-| `/plan` | Architecture-first planning with checkpoints |
-| `/research` | Explore codebase before implementing changes |
-| `/review` | Multi-dimensional code review via agent |
-| `/test` | Generate tests with coverage awareness |
-| `/assumptions` | Surface Claude's hidden assumptions (with confidence levels) |
-| `/remember` | Save learnings to persistent memory |
-| `/learn` | Extract patterns from code for future sessions |
-| `/refactor` | Safe refactoring with test verification |
-| `/optimize` | Performance analysis and optimization |
-| `/techdebt` | Identify and address technical debt |
-| `/spec-create` | Create implementation spec from requirements |
-| `/spec-execute` | Execute a spec with built-in validation |
-| `/daily-plan` | Morning planning from active tasks |
-| `/worktree` | Spawn a parallel worker in an isolated git worktree |
-| `/gtd-capture` | Capture tasks into GTD inbox |
-| `/gtd-process` | Process and prioritize captured tasks |
-| `/security` | Security review via auditor agent |
-| `/document` | Generate documentation |
-
-Up to 19 commands depending on your workflow preset.
-
-### Hooks
-
-Shell scripts on Claude Code lifecycle events, configured in `settings.json`.
-
-| Event | What Fires | Why |
-|-------|-----------|-----|
-| **PostToolUse** (Write) | Auto-format (prettier/ruff/gofmt) | Instant cleanup, <1s |
-| **PreToolUse** (Bash) | Lint + typecheck on git commit | Quality gate before commits |
-| **PreToolUse** (Write/Bash) | Block `rm -rf /`, pushes to main, `.env` writes | Safety guards |
-| **Stop** | Save learnings to memory, remind about tests, show session cost | Preserve context, cost awareness |
-| **PreCompact** | Save context before compaction | Survive context loss |
-| **SessionStart** | Load project context and active tasks | Continuity |
-| **SessionStart** | Print open/done task counts (harness B1+) | Quick orientation |
-| **PreToolUse** (Bash) | Lint gate on `git commit` (harness B2+) | Structural enforcement |
-
-Up to 14 hooks from your workflow preset, plus up to 3 more from the harness level.
-
-### Skills
-
-Auto-invoked behaviors in `.claude/skills/`. Claude loads them when the task matches. No manual trigger needed.
-
-The Claude Code skill ecosystem is huge. [skills.sh](https://skills.sh/) indexes 73K+, repos like [obra/superpowers](https://github.com/obra/superpowers), [trailofbits/skills](https://github.com/trailofbits/skills) and [anthropics/skills](https://github.com/anthropics/skills) offer high-quality options across every SDLC phase. cc-rig gives you a smart starting set and makes it easy to add more.
-
-**Process skills** (installed per workflow):
-- Community workflows install their original skills with full attribution. gstack installs 6 skills from garrytan/gstack, aihero installs 7 from mattpocock/skills, superpowers installs 11 from obra/superpowers, gtd installs planning-with-files from OthmanAdi.
-- 78 skills in the catalog from 17 repos.
-
-**Starter set** (auto-installed at `init`):
-- **Framework-matched**: Python projects get `modern-python` and `property-based-testing`, Next.js gets `vercel-react-best-practices` and `next-best-practices`, Go/Rust get `static-analysis`
-- **Cross-cutting**: code review, security basics, TDD, debugging. Scaled by workflow level (0 for speedrun, up to 14 for superpowers)
-- **`project-patterns`** stub for your team's custom conventions
-
-**Optional skill packs** (select during wizard or add later):
-
-| Pack | What it adds | Source repos |
-|------|-------------|--------------|
-| Security Deep Dive | supply chain auditing, variant analysis, dangerous API detection | trailofbits/skills |
-| DevOps & IaC | Terraform, Kubernetes, monitoring, GitOps | hashicorp, ahmedasmar |
-| Web Quality | Core Web Vitals, accessibility, SEO, performance | addyosmani |
-| Code Quality | 20 quality dimensions, anti-gaming scoring, scan/plan/fix loop | peteromallet/desloppify |
-| Database Pro | migration patterns, query optimization, multi-DB support | multiple |
-| ECC SDLC | Python patterns, testing, Django/Spring/Laravel/Go/Rust best practices | affaan-m/everything-claude-code |
-
-Add skills anytime, from cc-rig or any source:
-
-```bash
-cc-rig skills list                    # Show what's installed
-cc-rig skills catalog                 # Browse available packs and skills
-cc-rig skills add <name>              # Install from catalog
-cc-rig skills remove <name>           # Remove a skill
-npx skills add <repo> --skill <name>  # Install any skill from any repo
-```
-
-Browse the full ecosystem: [skills.sh](https://skills.sh/) · [awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) · [skillsmp.com](https://skillsmp.com/)
-
-### Plugins
-
-cc-rig also curates 47 official Anthropic marketplace plugins and writes them into `settings.json` as `enabledPlugins`. Plugins are self-contained extensions that Claude Code installs and manages natively. No manual MCP setup or binary downloads.
-
-Six categories:
-
-| Category | Count | Examples |
-|----------|-------|---------|
-| **LSP** | 12 | pyright-lsp, typescript-lsp, gopls-lsp, rust-analyzer-lsp, jdtls-lsp, ruby-lsp, kotlin-lsp, swift-lsp |
-| **Integration** | 18 | github, vercel, supabase, sentry, slack, linear, notion, firebase, playwright, greptile |
-| **Workflow** | 13 | commit-commands, code-review, code-simplifier, frontend-design, agent-sdk-dev, mcp-server-dev |
-| **Style** | 2 | explanatory-output-style, learning-output-style |
-| **Autonomy** | 1 | ralph-loop (official Anthropic autonomous iteration loop) |
-| **Utility** | 1 | hookify (visual hook builder) |
-
-Smart defaults resolve plugins by language (LSP), template (integrations) and workflow (workflow plugins). The github plugin replaces the GitHub MCP server: self-contained, auto-start, no token config needed. Expert mode offers a multi-select from the full catalog.
-
-### Memory
-
-Two complementary memory systems:
-
-- **Auto-memory** (`~/.claude/projects/`): personal, per-machine notes managed automatically by Claude Code. Always on. Use for personal preferences and local context.
-- **Team memory** (`memory/`): git-tracked shared knowledge that travels with the repo. Use for decisions, patterns, gotchas and conventions that every contributor should know.
-
-cc-rig generates the team memory layer:
-
-| File | Purpose |
-|------|---------|
-| `decisions.md` | Architectural decisions with rationale |
-| `patterns.md` | Discovered code patterns and conventions |
-| `gotchas.md` | Known issues, things that didn't work |
-| `people.md` | Team ownership and responsibilities |
-| `session-log.md` | Brief per-session progress log |
-
-A `Stop` hook prompts Claude to save team-relevant learnings before ending. A `PreCompact` hook does the same before context compaction wipes working memory. The `/remember` command routes personal notes to auto-memory and team knowledge to `memory/` files.
-
-Team memory files are **not** baked into CLAUDE.md. They load via Read tool on demand. This keeps the cached prompt prefix stable across sessions.
-
-### Permissions & Safety
-
-`settings.json` with sensible defaults:
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Read", "Glob", "Grep", "Edit", "Write",
-      "NotebookEdit", "Bash", "WebSearch", "WebFetch", "Task"
-    ],
-    "deny": [
-      "Bash(rm -rf /)",
-      "Bash(rm -rf ~)"
-    ]
-  }
-}
-```
-
-Safety hooks handle the rest by blocking `.env` edits, pushes to main and destructive `rm` commands with `exit 2`.
-
-### MCP Servers
-
-`.mcp.json` at the project root, configured for your stack. Available integrations:
-
-**Auto-configured** (selected by template): PostgreSQL · Playwright
-
-**Available** (add via expert mode): Slack · Linear · Sentry · Filesystem
-
-> **Note**: GitHub is now an official plugin (self-contained, auto-start) rather than an MCP server. It is enabled by default via `enabledPlugins` in `settings.json` and no longer requires manual token configuration in `.mcp.json`.
-
-### Agent Docs
-
-Framework-specific reference in `agent_docs/`. Real content, not placeholder text:
-
-- **architecture.md** - e.g., Next.js App Router with RSC/Client component boundaries
-- **conventions.md** - naming, file structure, import ordering and error handling
-- **testing.md** - test strategy, fixtures, mocking and coverage expectations
-- **deployment.md** - deployment workflow and infrastructure patterns for your stack
-- **cache-friendly-workflow.md** - practices for maximizing prompt cache hit rates
-
-CLAUDE.md references these via `@import` syntax, so Claude Code auto-loads them without Read tool calls. They're still outside the cached prefix to keep token costs low.
-
----
-
-## Define Your Stack and Process
-
-cc-rig is **workflow-first**. You pick how you like to work, then optionally pick your stack. Any combination works.
+cc-rig is **workflow-first**. You pick how you like to work, then optionally pick your stack. The two axes compose independently: any workflow works with any template.
 
 <details>
 <summary>Full showcase: 16 templates x 7 workflows x harness levels</summary>
@@ -359,7 +157,7 @@ Backward-compatible aliases: `verify-heavy` resolves to `superpowers`, `gtd-lite
 
 ### What you're building: Stack (optional)
 
-Stack is secondary enrichment. It adds framework-specific tool commands, agent docs, and rules. The default is Generic (no stack-specific content).
+Stack is secondary enrichment. It adds framework-specific tool commands, agent docs, rules, and language-specific reviewer agents. The default is Generic (no stack-specific content).
 
 | Template | Stack | Highlights |
 |----------|-------|-----------|
@@ -405,42 +203,103 @@ cc-rig init --template gin --workflow gtd
 
 ---
 
-## For Teams
+## What Gets Generated
 
-### Save and share your config
+cc-rig generates **native Claude Code files**, the same formats from the [official docs](https://docs.anthropic.com/en/docs/claude-code). Everything is editable, nothing is proprietary. For the complete reference with all tables, see [docs/generated-output.md](docs/generated-output.md).
 
-Every `cc-rig init` saves a config file to your project. Commit it and teammates get the same setup:
+### CLAUDE.md
 
-```bash
-# Teammate clones the repo, then:
-cc-rig init --config .cc-rig.json
-```
+Targets under 100 lines. Static content first, dynamic content last. Claude Code's prompt cache is prefix-matched, so every wasted token costs money on every API call. Includes project identity, stack, tool commands, guardrails, framework-specific rules and `@import` references to deeper docs. A companion `CLAUDE.local.md` is generated for personal preferences (not git-tracked).
 
-Same agents, same hooks, same permissions. Only project name and output directory change.
+### Agents
 
-### Export a portable config
+Your workflow and stack together determine which agents ship. Speedrun gets 3. Superpowers gets the full set, including an architect and security auditor on Opus with `effort: high`, and a parallel worker that runs in isolated worktrees. Each agent gets its own system prompt, model assignment, and tool restrictions in YAML frontmatter (up to 12 of 14 supported fields).
 
-Strip machine-specific paths for clean sharing:
+| Agent | Role | Model | Advanced fields |
+|-------|------|-------|-----------------|
+| `code-reviewer` | 6-aspect code review | Sonnet | `memory: project` |
+| `architect` | System design, ADRs | Opus* | `memory: project`, `effort: high` |
+| `explorer` | Fast codebase scanning | Haiku | `permissionMode: plan`, `maxTurns: 15` |
+| `security-auditor` | OWASP-aware security review | Opus* | `memory: project`, `effort: high` |
+| `parallel-worker` | Background work in isolated git worktrees | Sonnet | `background: true`, `isolation: worktree` |
+| `python-reviewer` | Python-specific code review | Sonnet | auto-added for Python templates |
 
-```bash
-cc-rig config save --export team.json --portable
-```
+Plus `pr-reviewer`, `pm-spec`, `test-writer`, `refactorer`, `implementer`, `doc-writer`, `techdebt-hunter`, `db-reader`, `build-fixer`, `e2e-runner` and language-specific reviewers for Go, Rust, and Java. [See all 19 agents](docs/generated-output.md#agents).
 
-### Lock a config
+### Slash Commands
 
-Prevent modifications via expert mode. Teammates can still add custom CLAUDE.md rules (always additive), but can't change agents, hooks or commands:
+Workflows you trigger with `/` in Claude Code. Your workflow preset determines the set.
 
-```bash
-cc-rig config lock my-app
-```
+| Command | What It Does |
+|---------|-------------|
+| `/fix-issue` | Reproduce, diagnose, fix, test, commit |
+| `/plan` | Architecture-first planning with checkpoints |
+| `/review` | Multi-dimensional code review via agent |
+| `/spec-create` | Create implementation spec from requirements |
+| `/worktree` | Spawn a parallel worker in an isolated git worktree |
+| `/remember` | Save learnings to persistent memory |
 
-### Browse and compare
+Plus `/test`, `/research`, `/assumptions`, `/learn`, `/refactor`, `/optimize`, `/techdebt`, `/spec-execute`, `/daily-plan`, `/gtd-capture`, `/gtd-process`, `/security`, `/document`. [See all 19 commands](docs/generated-output.md#slash-commands).
 
-```bash
-cc-rig config list              # See all saved configs
-cc-rig config inspect my-setup  # View config details
-cc-rig config diff my-setup     # Diff against current project
-```
+### Hooks
+
+Shell scripts on Claude Code lifecycle events, configured in `settings.json`.
+
+| Event | What Fires | Why |
+|-------|-----------|-----|
+| **PostToolUse** (Write) | Auto-format (prettier/ruff/gofmt) | Instant cleanup, <1s |
+| **PreToolUse** (Bash) | Lint + typecheck on git commit | Quality gate before commits |
+| **PreToolUse** (Write/Bash) | Block `rm -rf /`, pushes to main, `.env` writes | Safety guards |
+| **Stop** | Save learnings to memory, show session cost | Preserve context, cost awareness |
+
+Up to 14 hooks from your workflow preset, plus up to 3 more from the harness level. [See all hooks](docs/generated-output.md#hooks).
+
+### Skills
+
+cc-rig downloads skills from the original community repos at init time and does not bundle or redistribute them. Your workflow determines the process skills: gstack installs Garry Tan's 6 skills from [garrytan/gstack](https://github.com/garrytan/gstack), superpowers installs obra's 11 from [obra/superpowers](https://github.com/obra/superpowers). Your stack adds framework-matched content: Django projects get Django ORM and testing patterns from [everything-claude-code](https://github.com/affaan-m/everything-claude-code), Go projects get static analysis, Rust projects get ownership and lifetime patterns.
+
+**Starter set** (auto-installed at `init`):
+- **Framework-matched**: Python projects get `modern-python` and `property-based-testing`, Next.js gets `vercel-react-best-practices` and `next-best-practices`, Go/Rust get `static-analysis`
+- **Cross-cutting**: code review, security basics, TDD, debugging. Scaled by workflow (0 for speedrun, up to 14 for superpowers)
+- **`project-patterns`** stub for your team's custom conventions
+
+**Optional skill packs** (select during wizard or add later):
+
+| Pack | What it adds | Source repos |
+|------|-------------|--------------|
+| Security Deep Dive | supply chain auditing, variant analysis, dangerous API detection | trailofbits/skills |
+| DevOps & IaC | Terraform, Kubernetes, monitoring, GitOps | hashicorp, ahmedasmar |
+| Web Quality | Core Web Vitals, accessibility, SEO, performance | addyosmani |
+| Code Quality | 20 quality dimensions, anti-gaming scoring, scan/plan/fix loop | peteromallet/desloppify |
+| Database Pro | migration patterns, query optimization, multi-DB support | multiple |
+| ECC SDLC | Python patterns, testing, Django/Spring/Laravel/Go/Rust best practices | affaan-m/everything-claude-code |
+
+Browse the full ecosystem: [skills.sh](https://skills.sh/) · [awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) · [skillsmp.com](https://skillsmp.com/). [Skill CLI commands](docs/generated-output.md#skills).
+
+### Plugins
+
+cc-rig curates 47 official Anthropic marketplace plugins and writes them into `settings.json` as `enabledPlugins`. Your language gets its LSP plugin, your template gets relevant integrations (Next.js gets Playwright, Laravel gets Laravel Boost), your workflow gets workflow plugins. Plugins are self-contained: no manual MCP setup or binary downloads.
+
+| Category | Count | Examples |
+|----------|-------|---------|
+| **LSP** | 12 | pyright-lsp, typescript-lsp, gopls-lsp, rust-analyzer-lsp, jdtls-lsp, ruby-lsp |
+| **Integration** | 18 | github, vercel, supabase, sentry, slack, linear, notion, firebase, playwright |
+| **Workflow** | 13 | commit-commands, code-review, code-simplifier, frontend-design, agent-sdk-dev |
+| **Style** | 2 | explanatory-output-style, learning-output-style |
+| **Autonomy** | 1 | ralph-loop (official Anthropic autonomous iteration loop) |
+| **Utility** | 1 | hookify (visual hook builder) |
+
+### Memory, permissions, MCP, agent docs
+
+cc-rig generates a **team memory layer** (`memory/`): 5 git-tracked files for decisions, patterns, gotchas, people and session logs. A Stop hook saves learnings before sessions end, a PreCompact hook does the same before context compaction. Memory loads on demand via Read tool, not baked into CLAUDE.md, keeping the cached prefix stable.
+
+**Permissions** are configured in `settings.json` with sensible allow/deny defaults. Safety hooks block `.env` edits, pushes to main and destructive `rm` commands.
+
+**MCP servers** are configured in `.mcp.json` per template (PostgreSQL, Playwright). GitHub is now an official plugin, no MCP setup needed.
+
+**Agent docs** in `agent_docs/` provide framework-specific reference (architecture, conventions, testing, deployment, cache-friendly workflow) loaded via `@import` syntax.
+
+[Full details for all of the above](docs/generated-output.md#memory).
 
 ---
 
@@ -448,7 +307,7 @@ cc-rig config diff my-setup     # Diff against current project
 
 ### Expert mode
 
-Full control over everything: agents, commands, hooks, skills, MCP servers, permissions, features and custom CLAUDE.md rules. Starts from your workflow's defaults:
+Full control over agents, commands, hooks, skills, MCP servers, permissions, features and custom CLAUDE.md rules. Starts from your workflow's defaults:
 
 ```bash
 cc-rig init --expert
@@ -456,7 +315,7 @@ cc-rig init --expert
 
 ### Autonomous mode
 
-Claude works through a task list while you're away. Add a harness to any cc-rig project:
+Claude works through a task list while you're away.
 
 <details>
 <summary>Harness options: from scaffold to autonomous loops</summary>
@@ -472,104 +331,31 @@ cc-rig harness init               # + enforcement gates (lint blocks commits) + 
 cc-rig harness init --autonomy    # + loop script, 5-step PROMPT.md, progress ledger
 ```
 
-Each level builds on the previous. Or pick individual features: the wizard's "Custom" option lets you enable any combination of task tracking, budget awareness, verification gates and autonomy loop independently. A 6th option enables the **ralph-loop plugin**, Anthropic's official autonomous iteration loop plugin, as an alternative to cc-rig's generated `loop.sh`.
+Each level builds on the previous. The wizard's "Custom" option lets you enable any combination of task tracking, budget awareness, verification gates and autonomy loop independently. A 6th option enables the **ralph-loop plugin**, Anthropic's official autonomous iteration loop.
 
-The standard level generates `init-sh.sh` (wraps your test/lint/format commands) and a commit-gate hook that structurally blocks commits when lint fails. The autonomy level generates `loop.sh` and `PROMPT.md` (5-step workflow: assess, advance, tidy, verify, record), an external bash loop that feeds tasks to Claude one at a time, each with fresh context. Based on the [Ralph Wiggum technique](https://github.com/ghuntley/how-to-ralph-wiggum) by Geoffrey Huntley.
+The autonomy level generates `loop.sh` and `PROMPT.md`, a bash loop that feeds tasks to Claude one at a time with fresh context. Based on the [Ralph Wiggum technique](https://github.com/ghuntley/how-to-ralph-wiggum) by Geoffrey Huntley. Safety rails included: iteration limits, budget enforcement, checkpoint auto-commits, stuck detection and a cost summary on exit.
+
+**Warning**: `loop.sh` uses `--dangerously-skip-permissions`. Run inside a Docker container or sandboxed environment. [Full autonomous mode details](docs/generated-output.md#autonomous-mode-details).
+
+### For teams
+
+Every `cc-rig init` saves a config file. Commit it and teammates get the same setup:
 
 ```bash
-./loop.sh           # Run the autonomy loop (default: 20 iterations max)
-./loop.sh 50        # Override max iterations
+cc-rig init --config .cc-rig.json    # Same agents, hooks, permissions
 ```
 
-**Warning**: `loop.sh` uses `--dangerously-skip-permissions`. Run inside a Docker container or sandboxed environment. See [Claude Code security docs](https://docs.anthropic.com/en/docs/claude-code/security).
-
-Safety rails included: iteration limits, budget enforcement (stops the loop when token budget exceeded, warns at configurable threshold), checkpoint auto-commits (when Claude doesn't commit, the loop does), stuck detection, entropy management (tidy between iterations), per-iteration cost tracking in the progress ledger and a cost summary on exit (Ctrl+C, budget exceeded or completion).
-
-The `budget-reminder` Stop hook shows actual session token usage and estimated cost (parsed from Claude Code's JSONL session logs) every time a session ends. Works at all harness levels (B1+), degrades gracefully when python3 is unavailable.
+Export portable configs, lock configs to prevent modification, compare configs across projects. [Team config commands](docs/generated-output.md#for-teams).
 
 ### Health check and cleanup
 
-Validate your configuration after use. Checks file integrity, hook permissions, memory files and manifest consistency:
-
 ```bash
-cc-rig doctor                 # Check project health
-cc-rig doctor --fix           # Auto-fix safe issues (permissions, missing files)
+cc-rig doctor                 # Check project health (files, hooks, permissions, manifest)
+cc-rig doctor --fix           # Auto-fix safe issues
+cc-rig clean                  # Remove generated files using the manifest
 ```
 
-Remove everything cc-rig generated, using the manifest. Only touches what cc-rig created:
-
-```bash
-cc-rig clean
-```
-
----
-
-## CLI Reference
-
-```
-cc-rig init [options]              Set up a new project
-  --template <name>                Template preset (fastapi, nextjs, etc.)
-  --workflow <name>                Workflow preset (standard, speedrun, etc.)
-  --name <name>                    Project name
-  -o, --output <dir>               Output directory
-  --in-place                       Write to current directory
-  --quick                          Quick picker (numbered lists)
-  --expert                         Expert mode (full control)
-  --migrate                        Detect and set up existing project
-  --config <path>                  Load a saved config
-
-cc-rig preset list [--templates|--workflows]
-cc-rig preset inspect <name>       View preset details
-cc-rig preset create <name>        Create preset from project config
-cc-rig preset install <path>       Install a local preset file
-
-cc-rig config save|load|list|inspect|diff|lock|unlock
-cc-rig config update [-d DIR] [--quick|--expert]  Re-run wizard on existing config
-
-cc-rig harness init [--lite|--standard|--autonomy] [-d DIR]
-cc-rig harness status [--dir DIR]  Show current harness level and progress
-
-cc-rig skills list [-d DIR]        Show installed skills
-cc-rig skills catalog              Browse all available skills
-cc-rig skills add <name> [-d DIR]  Install a skill from the catalog
-cc-rig skills remove <name> [-d DIR] Remove an installed skill
-cc-rig skills install [-d DIR]     Retry failed downloads from init
-
-cc-rig worktree spawn "task1" "task2" ...  Launch Claude in parallel worktrees
-cc-rig worktree list [-d DIR]      Show all worktrees and status
-cc-rig worktree status <name>      Detailed status of one worktree
-cc-rig worktree pr <name>          Push branch and create PR from worktree
-cc-rig worktree cleanup [name] [--all] [--merged] [--force]
-
-cc-rig doctor [--fix] [--check-compat] [-d DIR]  Validate project health
-cc-rig clean [--force] [-d DIR]    Remove generated files
-```
-
----
-
-## Workflow Philosophy
-
-cc-rig's defaults encode seven workflow principles distilled from how the Claude Code team builds software, inspired by [Boris Cherny's workflow](https://x.com/bcherny/status/2007179832300581177) (creator of Claude Code):
-
-| Principle | cc-rig Implementation |
-|-----------|----------------------|
-| **Plan before coding** | `/plan` and `/assumptions` commands, `/research` for codebase exploration, CLAUDE.md workflow guidance |
-| **Use subagents for research** | `/research` command, `explorer` agent (Haiku), `parallel-worker` for worktree isolation |
-| **Self-improvement loop** | Auto-memory (personal), team memory (`/remember`, `memory-precompact` hook), persistent `memory/` files |
-| **Verify before done** | Hooks (format, lint, typecheck), B2+ enforcement gates (lint blocks commits), guardrails in CLAUDE.md |
-| **Demand elegance** | `/refactor` command, `refactorer` agent, workflow principles in CLAUDE.md |
-| **Fix failures immediately** | B1+ session-start task summary, B2+ commit-gate hook, B3 autonomy loop (stuck detection) |
-| **Track work with tasks** | `tasks/todo.md` (B1+), GTD system (inbox/todo/someday), `/daily-plan` |
-
-Each workflow preset dials these principles up or down:
-
-- **speedrun**: Minimal. Just code fast. Verification hooks present but no process enforcement.
-- **standard**: Core principles active. Plan, verify, remember, refactor.
-- **gstack**: Garry Tan's cognitive gears. Structured plan/review/ship cycle with 6 process skills.
-- **aihero**: Matt Pocock's PRD-driven flow. Requirements interview, TDD, architecture.
-- **spec-driven**: Plan-first emphasis. Specs before implementation.
-- **superpowers**: Full SDLC coverage. 11 process skills from obra/superpowers. Every quality gate active.
-- **gtd**: Task management emphasis. Persistent tracking with planning-with-files.
+Run `cc-rig --help` or see the [full CLI reference](docs/generated-output.md#cli-reference).
 
 ---
 
@@ -596,7 +382,7 @@ Yes. Everything is plain text. Edit whatever you want. cc-rig won't overwrite yo
 <details>
 <summary><strong>What about Claude Code plugins and skills?</strong></summary>
 
-cc-rig handles both community skills and official Anthropic plugins. For skills, cc-rig installs a starter set of community skills matched to your framework from 17 repos, with 6 optional packs for deeper coverage. For plugins, cc-rig curates a 47-plugin official marketplace catalog across 6 categories (LSP, integration, workflow, style, autonomy, utility) and writes <code>enabledPlugins</code> into <code>settings.json</code> with smart defaults resolved by language, template and workflow. You can install any additional skill from <a href="https://skills.sh/">skills.sh</a> (73K+), <a href="https://github.com/ComposioHQ/awesome-claude-skills">awesome-claude-skills</a> or any GitHub repo.
+cc-rig handles both community skills and official Anthropic plugins. For skills, cc-rig downloads from 17 community repos at init time, with 6 optional packs for deeper coverage. For plugins, cc-rig curates 47 official marketplace plugins across 6 categories (LSP, integration, workflow, style, autonomy, utility) and writes <code>enabledPlugins</code> into <code>settings.json</code> with defaults resolved by language, template and workflow. You can install any additional skill from <a href="https://skills.sh/">skills.sh</a>, <a href="https://github.com/ComposioHQ/awesome-claude-skills">awesome-claude-skills</a> or any GitHub repo.
 </details>
 
 <details>
@@ -625,42 +411,20 @@ pip install cc-rig
 
 ---
 
-## Community & Inspiration
+## Community & Ecosystem
 
-### Skill Ecosystem
+cc-rig's skills are downloaded at `init` time from the original repos. cc-rig does not bundle or redistribute them. Key sources:
 
-cc-rig's starter set and optional packs draw from these repos. Skills are downloaded at `init` time from the original repos. cc-rig does not bundle or redistribute them.
-
+- [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) - Framework-specific skills: Python, Django, Spring Boot, Laravel, Go, Rust + SDLC (MIT)
 - [obra/superpowers](https://github.com/obra/superpowers) - 14 SDLC workflow skills (MIT)
+- [garrytan/gstack](https://github.com/garrytan/gstack) - 6 cognitive gear skills: plan, review, ship, document (MIT)
+- [mattpocock/skills](https://github.com/mattpocock/skills) - 7 PRD-driven flow skills: grill-me, TDD, architecture (MIT)
 - [trailofbits/skills](https://github.com/trailofbits/skills) - 30+ security + modern dev skills (CC-BY-SA-4.0)
 - [anthropics/skills](https://github.com/anthropics/skills) - 16 official Anthropic skills (Apache 2.0)
-- [addyosmani/web-quality-skills](https://github.com/addyosmani/web-quality-skills) - Core Web Vitals, accessibility, SEO (MIT)
-- [hashicorp/agent-skills](https://github.com/hashicorp/agent-skills) - Official Terraform and Packer
-- [vercel-labs](https://github.com/vercel-labs/agent-skills) - React, Next.js and design guideline skills (MIT)
-- [supabase/agent-skills](https://github.com/supabase/agent-skills) - PostgreSQL best practices (MIT)
-- [planetscale/database-skills](https://github.com/planetscale/database-skills) - MySQL, PostgreSQL, Vitess (MIT)
-- [akin-ozer/cc-devops-skills](https://github.com/akin-ozer/cc-devops-skills) - 31 CI/CD, IaC and monitoring skills (Apache 2.0)
-- [ahmedasmar/devops-claude-skills](https://github.com/ahmedasmar/devops-claude-skills) - Kubernetes, Terraform, monitoring, GitOps (MIT)
-- [agamm/claude-code-owasp](https://github.com/agamm/claude-code-owasp) - OWASP Top 10:2025 security (MIT)
-- [wshobson/agents](https://github.com/wshobson/agents) - Tailwind CSS design system (MIT)
-- [peteromallet/desloppify](https://github.com/peteromallet/desloppify) - Code quality scoring and remediation (MIT)
 
-The broader ecosystem has thousands more. Discover skills at [skills.sh](https://skills.sh/) (73K+), [awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills), [skillsmp.com](https://skillsmp.com/) or install from any GitHub repo with `npx skills add`.
+Plus 11 more repos from HashiCorp, Vercel, Supabase, PlanetScale, Addy Osmani and others. [See all 17 source repos](docs/generated-output.md#source-repos). The broader ecosystem: [skills.sh](https://skills.sh/) · [awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) · [skillsmp.com](https://skillsmp.com/).
 
-### Research & Inspiration
-
-cc-rig's defaults draw from community research on what makes Claude Code work well:
-
-- [Thariq on prompt caching](https://www.techtwitter.com/articles/lessons-from-building-claude-code-prompt-caching-is-everything) - how Claude Code's team optimizes caching (informed cc-rig's cache-aware architecture)
-- [Boris Cherny's workflow principles](https://x.com/bcherny/status/2007179832300581177) - seven principles for effective Claude Code usage (creator of Claude Code)
-- [What great CLAUDE.md files have in common](https://blog.devgenius.io/what-great-claude-md-files-have-in-common-db482172ad2c) - content patterns
-- [HumanLayer's CLAUDE.md guide](https://www.humanlayer.dev/blog/writing-a-good-claude-md) - structure principles
-- [Spec workflow](https://github.com/Pimzino/claude-code-spec-workflow) by Pimzino - plan-first development
-- [cc-gtd](https://github.com/adagradschool/cc-gtd) by adagradschool - GTD for Claude Code
-- [SuperClaude](https://github.com/superclaude/superclaude) - runtime framework, different approach
-- [QMD](https://github.com/tobi/qmd) by Tobi Lütke - local doc search
-- [awesome-claude-code](https://github.com/hesreallyhim/awesome-claude-code) - community directory
-- [Ralph Wiggum technique](https://github.com/ghuntley/how-to-ralph-wiggum) by Geoffrey Huntley - autonomous loop pattern
+cc-rig's design is informed by [Boris Cherny's workflow principles](https://x.com/bcherny/status/2007179832300581177), [Thariq's prompt caching insights](https://www.techtwitter.com/articles/lessons-from-building-claude-code-prompt-caching-is-everything), and the [Ralph Wiggum technique](https://github.com/ghuntley/how-to-ralph-wiggum) by Geoffrey Huntley. [Full research & inspiration list](docs/generated-output.md#research--inspiration).
 
 ---
 
@@ -684,7 +448,7 @@ ruff check cc_rig/
 <p align="center">
   <strong>Ready to try it?</strong><br>
   <code>pip install cc-rig && cc-rig init</code><br><br>
-  <a href="https://github.com/runtimenoteslabs/cc-rig">Star the repo</a> if cc-rig saves you setup time.
+  If cc-rig saves you setup time, <a href="https://github.com/runtimenoteslabs/cc-rig">star the repo</a>.
 </p>
 
 ---
