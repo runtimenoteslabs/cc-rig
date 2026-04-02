@@ -57,7 +57,7 @@ VALID_WORKFLOWS = {
 
 VALID_PROJECT_TYPES = {"api", "web_fullstack", "cli", "generic"}
 
-VALID_PERMISSION_MODES = {"default", "permissive"}
+VALID_PERMISSION_MODES = {"default", "permissive", "auto"}
 
 VALID_CLAUDE_PLANS = {"pro", "team", "max", "enterprise"}
 
@@ -169,9 +169,14 @@ VALID_CC_EVENTS = {
     "ElicitationResult",
     "TeammateIdle",
     "TaskCompleted",
+    # Added in CC v2.1.83-2.1.89
+    "CwdChanged",  # v2.1.83: working directory change
+    "FileChanged",  # v2.1.83: watched file modifications
+    "TaskCreated",  # v2.1.84: TaskCreate tool used
+    "PermissionDenied",  # v2.1.89: auto mode classifier denial
 }
 
-# Valid CC tool names (CC v2.1.81)
+# Valid CC tool names (CC v2.1.90)
 VALID_CC_TOOLS = {
     "Read",
     "Write",

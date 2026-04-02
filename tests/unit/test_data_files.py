@@ -18,6 +18,7 @@ _AGENT_OPTIONAL_FIELDS = {
     "disallowed_tools",
     "effort",
     "skills",
+    "initial_prompt",
 }
 _AGENT_ALL_FIELDS = _AGENT_REQUIRED_FIELDS | _AGENT_OPTIONAL_FIELDS
 

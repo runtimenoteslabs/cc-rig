@@ -29,29 +29,30 @@ _WORKFLOW_EFFORT: dict[str, str] = {
 
 
 # ── Hook metadata registry ─────────────────────────────────────────
-# Maps hook name -> (event, matcher, hook_type)
+# Maps hook name -> (event, matcher, hook_type, if_condition)
 # hook_type is "command", "prompt", or "agent".
+# if_condition uses CC permission rule syntax (v2.1.85+), empty = no condition.
 
 
-_HOOK_REGISTRY: dict[str, tuple[str, str, str]] = {
-    "format": ("PostToolUse", "Write|Edit", "command"),
-    "lint": ("PreToolUse", "Bash", "command"),
-    "typecheck": ("PreToolUse", "Bash", "command"),
-    "block-rm-rf": ("PreToolUse", "Bash", "command"),
-    "block-env": ("PreToolUse", "Write|Edit", "command"),
-    "block-main": ("PreToolUse", "Bash", "command"),
-    "session-context": ("SessionStart", "", "command"),
-    "stop-validator": ("Stop", "", "command"),
-    "memory-precompact": ("PreCompact", "", "command"),
-    "push-review": ("PreToolUse", "Bash", "prompt"),
-    "subagent-review": ("SubagentStop", "", "agent"),
-    "commit-message": ("PreToolUse", "Bash", "prompt"),
-    "doc-review": ("Stop", "", "agent"),
-    "budget-reminder": ("Stop", "", "command"),
-    "session-tasks": ("SessionStart", "", "command"),
-    "commit-gate": ("PreToolUse", "Bash", "command"),
-    "context-survival": ("PreCompact", "", "command"),
-    "session-telemetry": ("Stop", "", "command"),
+_HOOK_REGISTRY: dict[str, tuple[str, str, str, str]] = {
+    "format": ("PostToolUse", "Write|Edit", "command", ""),
+    "lint": ("PreToolUse", "Bash", "command", "Bash(git commit*)"),
+    "typecheck": ("PreToolUse", "Bash", "command", "Bash(git commit*)"),
+    "block-rm-rf": ("PreToolUse", "Bash", "command", "Bash(rm *)"),
+    "block-env": ("PreToolUse", "Write|Edit", "command", ""),
+    "block-main": ("PreToolUse", "Bash", "command", "Bash(git push*)"),
+    "session-context": ("SessionStart", "", "command", ""),
+    "stop-validator": ("Stop", "", "command", ""),
+    "memory-precompact": ("PreCompact", "", "command", ""),
+    "push-review": ("PreToolUse", "Bash", "command", "Bash(git push*)"),
+    "subagent-review": ("SubagentStop", "", "agent", ""),
+    "commit-message": ("PreToolUse", "Bash", "command", "Bash(git commit*)"),
+    "doc-review": ("Stop", "", "agent", ""),
+    "budget-reminder": ("Stop", "", "command", ""),
+    "session-tasks": ("SessionStart", "", "command", ""),
+    "commit-gate": ("PreToolUse", "Bash", "command", "Bash(git commit*)"),
+    "context-survival": ("PreCompact", "", "command", ""),
+    "session-telemetry": ("Stop", "", "command", ""),
 }
 
 
@@ -173,7 +174,7 @@ def generate_settings(
         if meta is None:
             continue
 
-        event, matcher, hook_type = meta
+        event, matcher, hook_type, if_condition = meta
 
         if hook_type == "command":
             # Generate the shell script
@@ -205,6 +206,9 @@ def generate_settings(
                 "prompt": prompt_text,
             }
 
+        if if_condition:
+            hook_entry["if"] = if_condition
+
         event_entry: dict[str, Any] = {
             "hooks": [hook_entry],
         }
@@ -233,6 +237,20 @@ def generate_settings(
     if config.workflow in ("superpowers", "verify-heavy", "spec-driven"):
         settings["includeGitInstructions"] = False
 
+    # Auto mode (V2.3, CC v2.1.89+)
+    if config.permission_mode == "auto":
+        settings.setdefault("permissions", {})["defaultMode"] = "auto"
+        auto_mode: dict[str, Any] = {
+            "environment": [f"Trusted local development ({config.framework})"],
+            "allow": ["Installing packages from lockfile"],
+        }
+        if config.workflow in ("superpowers", "verify-heavy", "spec-driven"):
+            auto_mode["soft_deny"] = [
+                "Production deploys without approval",
+                "Force push to any branch",
+            ]
+        settings["autoMode"] = auto_mode
+
     # Write settings.json
     settings_content = json.dumps(settings, indent=2) + "\n"
     if tracker is not None:
@@ -254,7 +272,7 @@ def _build_permissions(config: ProjectConfig) -> dict[str, list[str]]:
         "allow": list(_DEFAULT_PERMISSIONS["allow"]),
         "deny": list(_DEFAULT_PERMISSIONS["deny"]),
     }
-    if config.permission_mode == "permissive":
+    if config.permission_mode in ("permissive", "auto"):
         for tool in _PERMISSIVE_ADDITIONS:
             if tool not in perms["allow"]:
                 perms["allow"].append(tool)

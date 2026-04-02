@@ -70,7 +70,7 @@ Python 3.9+. Includes the full-screen TUI wizard with arrow keys, radio buttons,
 >
 > **Next session?** Remember to `source ~/.cc-rig/bin/activate` before running `cc-rig`.
 
-- Works best with Claude Code v2.1.50+. Older versions or missing installs get a warning, but cc-rig generates everything anyway.
+- Works best with Claude Code v2.1.83+. Older versions or missing installs get a warning, but cc-rig generates everything anyway.
 
 ---
 

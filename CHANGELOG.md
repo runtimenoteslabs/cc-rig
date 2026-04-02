@@ -2,6 +2,20 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [2.3.0] - 2026-04-03
+
+### Added
+- **Conditional hooks** (CC v2.1.85+). Hooks now generate an `if` field using permission rule syntax for precise targeting. Lint and typecheck hooks fire only on `Bash(git commit*)`, block-rm-rf on `Bash(rm *)`, block-main on `Bash(git push*)`. Reduces false triggers on unrelated Bash commands.
+- **Agent `initialPrompt`** (CC v2.1.83+). Agents can auto-submit their first turn. Explorer, build-fixer, and techdebt-hunter now ship with initial prompts so they start working immediately without user input.
+- **Auto mode** (CC v2.1.89+). `"auto"` is now a valid permission mode. When selected, cc-rig generates an `autoMode` block in settings.json with workflow-aware allow/soft_deny rules. High-rigor workflows (superpowers, verify-heavy, spec-driven) get stricter deny rules.
+- **4 new CC events**. VALID_CC_EVENTS expanded from 21 to 25: `CwdChanged` (v2.1.83), `FileChanged` (v2.1.83), `TaskCreated` (v2.1.84), `PermissionDenied` (v2.1.89).
+- **Feature compat checks** for conditional_hooks, initial_prompt, and auto_mode. `cc-rig doctor` warns when detected CC version is too old for these features.
+
+### Changed
+- **Minimum CC version** bumped from v2.1.50 to v2.1.83. Reflects new features requiring v2.1.83+ (initialPrompt, CwdChanged/FileChanged events, conditional hooks).
+
+---
+
 ## [2.2.0] - 2026-04-03
 
 ### Added

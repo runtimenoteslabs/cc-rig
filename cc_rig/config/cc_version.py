@@ -12,8 +12,8 @@ import subprocess
 from dataclasses import dataclass
 
 # Minimum CC version for full feature support (worktrees, etc.)
-MIN_CC_VERSION = (2, 1, 50)
-MIN_CC_VERSION_STR = "2.1.50"
+MIN_CC_VERSION = (2, 1, 83)
+MIN_CC_VERSION_STR = "2.1.83"
 
 
 @dataclass
@@ -110,6 +110,9 @@ FEATURE_MIN_VERSIONS: dict[str, tuple[int, ...]] = {
     "settings_local": (1, 0, 2),
     "background_agents": (1, 0, 6),
     "worktree_isolation": (1, 0, 6),
+    "conditional_hooks": (2, 1, 85),
+    "initial_prompt": (2, 1, 83),
+    "auto_mode": (2, 1, 89),
 }
 
 
@@ -162,5 +165,18 @@ def check_feature_compat(
                     f"{_fmt_version(FEATURE_MIN_VERSIONS['worktree_isolation'])}+"
                 )
                 break
+            if defn.initial_prompt and version < FEATURE_MIN_VERSIONS["initial_prompt"]:
+                warnings.append(
+                    f"Agent '{agent_name}' uses initialPrompt, "
+                    f"requires Claude Code "
+                    f"{_fmt_version(FEATURE_MIN_VERSIONS['initial_prompt'])}+"
+                )
+                break
+
+    # Check auto mode
+    if config.permission_mode == "auto" and version < FEATURE_MIN_VERSIONS["auto_mode"]:
+        warnings.append(
+            f"Auto mode requires Claude Code {_fmt_version(FEATURE_MIN_VERSIONS['auto_mode'])}+"
+        )
 
     return warnings

@@ -30,6 +30,7 @@ class AgentDef:
     disallowed_tools: str | None = None  # comma-separated
     effort: str | None = None  # "low", "medium", "high"
     skills: str | None = None  # comma-separated skill names to preload
+    initial_prompt: str | None = None  # auto-submit first turn (v2.1.83+)
 
 
 # ── Agent definitions (loaded from JSON) ──────────────────────────
@@ -45,6 +46,7 @@ _AGENT_OPTIONAL_FIELDS = frozenset(
         "disallowed_tools",
         "effort",
         "skills",
+        "initial_prompt",
     }
 )
 
@@ -120,6 +122,8 @@ def generate_agents(
             lines.append(f"effort: {defn.effort}")
         if defn.skills is not None:
             lines.append(f"skills: {defn.skills}")
+        if defn.initial_prompt is not None:
+            lines.append(f"initialPrompt: {defn.initial_prompt}")
         lines.append("---")
         content = "\n".join(lines) + f"\n\n{defn.body}\n"
 

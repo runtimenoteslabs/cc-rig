@@ -494,14 +494,14 @@ class TestHookRegistryConsistency:
             meta = _HOOK_REGISTRY.get(hook_name)
             if meta is None:
                 continue
-            _, _, hook_type = meta
+            _, _, hook_type, _ = meta
             if hook_type == "command":
                 script = tmp_path / ".claude" / "hooks" / f"{hook_name}.sh"
                 assert script.exists(), f"Command hook '{hook_name}' has no generated script"
 
     def test_prompt_and_agent_hooks_have_prompt_text(self):
         """Every prompt/agent hook should have non-empty prompt text."""
-        for name, (_, _, hook_type) in _HOOK_REGISTRY.items():
+        for name, (_, _, hook_type, _) in _HOOK_REGISTRY.items():
             if hook_type in ("prompt", "agent"):
                 assert name in _PROMPT_TEXTS, (
                     f"Hook '{name}' (type={hook_type}) missing prompt text"
@@ -509,12 +509,12 @@ class TestHookRegistryConsistency:
                 assert len(_PROMPT_TEXTS[name]) > 10, f"Hook '{name}' prompt text too short"
 
     def test_hook_event_types_are_valid(self):
-        for name, (event, _, _) in _HOOK_REGISTRY.items():
+        for name, (event, _, _, _) in _HOOK_REGISTRY.items():
             assert event in VALID_CC_EVENTS, f"Hook '{name}' uses invalid event '{event}'"
 
     def test_hook_types_are_valid(self):
         valid_types = {"command", "prompt", "agent"}
-        for name, (_, _, hook_type) in _HOOK_REGISTRY.items():
+        for name, (_, _, hook_type, _) in _HOOK_REGISTRY.items():
             assert hook_type in valid_types, f"Hook '{name}' has invalid type '{hook_type}'"
 
     def test_hook_count(self):
