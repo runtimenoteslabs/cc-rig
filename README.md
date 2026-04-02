@@ -360,6 +360,19 @@ cc-rig clean                  # Remove generated files using the manifest
 
 Run `cc-rig --help` or see the [full CLI reference](docs/generated-output.md#cli-reference).
 
+### Saving tokens
+
+Claude Code's prompt cache is prefix-matched: if the system prompt, CLAUDE.md and tools are byte-identical to a previous request, cached tokens cost 10% of the uncached price ($0.30/M vs $3.00/M on Sonnet). A single changed byte in the prefix invalidates everything after it.
+
+cc-rig optimizes for this automatically:
+
+- **CLAUDE.md is static-first.** Project identity, commands and guardrails at the top (never change). Current context at the bottom (changes every session). Only the tail breaks cache.
+- **4 cache guardrails** tell Claude not to edit CLAUDE.md mid-session, not to toggle hooks/plugins, not to switch models (use subagents instead), and to load memory via Read tool rather than pasting it inline.
+- **Compaction survival.** A dedicated CLAUDE.md section tells Claude what to preserve when the context window is compacted. The B1+ harness adds a PreCompact hook that outputs project essentials before the wipe.
+- **`cc-rig doctor` checks your cache health.** It scans CLAUDE.md for dates and timestamps in the static zone (cache-breaking anti-patterns) and parses your most recent session JSONL to warn if your cache hit ratio drops below 40%.
+
+[Full guide: saving tokens with cc-rig](docs/saving-tokens.md)
+
 ---
 
 ## FAQ
