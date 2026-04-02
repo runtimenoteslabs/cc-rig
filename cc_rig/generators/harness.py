@@ -32,7 +32,16 @@ def generate_harness(
     Returns list of relative file paths written.
     """
     h = config.harness
-    if not any([h.task_tracking, h.budget_awareness, h.verification_gates, h.autonomy_loop]):
+    if not any(
+        [
+            h.task_tracking,
+            h.budget_awareness,
+            h.verification_gates,
+            h.autonomy_loop,
+            h.context_awareness,
+            h.session_telemetry,
+        ]
+    ):
         return []
 
     files: list[str] = []
@@ -53,6 +62,14 @@ def generate_harness(
     # Skip when ralph_loop_plugin is True — plugin handles autonomy
     if h.autonomy_loop and not h.ralph_loop_plugin:
         files.extend(_generate_b3(config, output_dir, tracker))
+
+    # Context awareness: append context section to harness.md
+    if h.context_awareness:
+        files.extend(_generate_context_awareness(config, output_dir, tracker))
+
+    # Session telemetry: append telemetry section to harness.md + /health command
+    if h.session_telemetry:
+        files.extend(_generate_session_telemetry(config, output_dir, tracker))
 
     return files
 
@@ -721,6 +738,143 @@ def _generate_b3(
 
 
 # ── Helpers ────────────────────────────────────────────────────────
+
+
+# ── Context Awareness ─────────────────────────────────────────────
+
+
+def _generate_context_awareness(
+    config: ProjectConfig,
+    output_dir: Path,
+    tracker: FileTracker | None = None,
+) -> list[str]:
+    """Append context awareness section to agent_docs/harness.md."""
+    files: list[str] = []
+    harness_md = output_dir / "agent_docs" / "harness.md"
+    rel = "agent_docs/harness.md"
+
+    content = (
+        "\n\n## Context Awareness\n"
+        "\n"
+        "### Cache-Break Vectors\n"
+        "\n"
+        "The following actions invalidate Claude Code's prompt cache. "
+        "Avoid these mid-session:\n"
+        "\n"
+        "1. Editing CLAUDE.md (especially top sections)\n"
+        "2. Adding or removing hooks in settings.json\n"
+        "3. Connecting or disconnecting MCP servers\n"
+        "4. Switching models mid-session\n"
+        "5. Toggling plugins mid-session\n"
+        "6. Editing settings.json permissions\n"
+        "7. Large file writes that change system prompt composition\n"
+        "8. Agent doc edits (if @imported in CLAUDE.md)\n"
+        "9. Memory file changes (if inlined, not loaded via Read)\n"
+        "10. Multiple concurrent sessions on the same project\n"
+        "\n"
+        "### Compaction Survival\n"
+        "\n"
+        "A PreCompact hook (`context-survival.sh`) fires before compaction. "
+        "It outputs project-specific preservation instructions that Claude "
+        "sees in the compaction summary prompt. This ensures critical project "
+        "context survives automatic compaction at ~85-98% capacity.\n"
+        "\n"
+        "### Best Practices\n"
+        "\n"
+        "- Use subagents for exploratory work (keeps main context clean)\n"
+        "- Checkpoint decisions to `memory/` or `tasks/todo.md`\n"
+        "- Run `/compact` proactively at ~70% rather than waiting for auto-compact\n"
+        "- After compaction, re-read `agent_docs/` to reload project context\n"
+        "- Keep CLAUDE.md stable during a session to maximize cache hits\n"
+    )
+
+    if harness_md.exists():
+        existing = harness_md.read_text()
+        _write(harness_md, existing + content, tracker, rel)
+    else:
+        harness_md.parent.mkdir(parents=True, exist_ok=True)
+        _write(harness_md, content.lstrip("\n"), tracker, rel)
+        files.append(rel)
+
+    return files
+
+
+# ── Session Telemetry ─────────────────────────────────────────────
+
+
+def _generate_session_telemetry(
+    config: ProjectConfig,
+    output_dir: Path,
+    tracker: FileTracker | None = None,
+) -> list[str]:
+    """Append telemetry section to harness.md and generate /health command."""
+    files: list[str] = []
+    harness_md = output_dir / "agent_docs" / "harness.md"
+    rel = "agent_docs/harness.md"
+
+    section = (
+        "\n\n## Session Telemetry\n"
+        "\n"
+        "Metrics are appended to `.claude/telemetry.jsonl` after each session.\n"
+        "\n"
+        "### Tracked Metrics\n"
+        "\n"
+        "| Metric | Source |\n"
+        "|--------|--------|\n"
+        "| Session duration | First/last message timestamps |\n"
+        "| Turn count | Human messages in JSONL |\n"
+        "| Tool call count | Tool use blocks in assistant messages |\n"
+        "| Model | Detected from assistant message model field |\n"
+        "| Token usage | input_tokens, output_tokens from usage |\n"
+        "| Estimated cost | Per-million pricing by model family |\n"
+        "| Compaction count | System messages indicating compaction |\n"
+        "\n"
+        "### /health Command\n"
+        "\n"
+        "Run `/health` to see aggregated telemetry:\n"
+        "- Total sessions and cumulative cost\n"
+        "- Average session length\n"
+        "- Most common model\n"
+        "- Compaction frequency\n"
+    )
+
+    if harness_md.exists():
+        existing = harness_md.read_text()
+        _write(harness_md, existing + section, tracker, rel)
+    else:
+        harness_md.parent.mkdir(parents=True, exist_ok=True)
+        _write(harness_md, section.lstrip("\n"), tracker, rel)
+        files.append(rel)
+
+    # Generate /health command
+    health_rel = ".claude/commands/health.md"
+    health_path = output_dir / ".claude" / "commands" / "health.md"
+    health_path.parent.mkdir(parents=True, exist_ok=True)
+
+    health_content = (
+        "---\n"
+        "description: Show session telemetry and project health metrics\n"
+        "allowed-tools: Bash, Read\n"
+        "---\n"
+        "\n"
+        "Read `.claude/telemetry.jsonl` and display aggregated metrics:\n"
+        "\n"
+        "1. Total sessions recorded\n"
+        "2. Total estimated cost (sum of estimated_cost_usd)\n"
+        "3. Average session duration (minutes)\n"
+        "4. Average turns per session\n"
+        "5. Most common model used\n"
+        "6. Total compactions across all sessions\n"
+        "7. Last 5 session summaries (date, duration, cost, compactions)\n"
+        "\n"
+        "Format as a clear summary table. If the file does not exist or is empty,\n"
+        'report "No telemetry data yet. Complete a session to start collecting '
+        'metrics."\n'
+    )
+    _write(health_path, health_content, tracker, health_rel)
+    files.append(health_rel)
+
+    return files
 
 
 def _write(

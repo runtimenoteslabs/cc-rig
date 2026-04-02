@@ -113,6 +113,8 @@ class HarnessConfig:
     verification_gates: bool = False  # B2: commit-gate hook + gates section
     autonomy_loop: bool = False  # B3: PROMPT.md + loop.sh + progress + config
     ralph_loop_plugin: bool = False  # Alternative to autonomy_loop (official plugin)
+    context_awareness: bool = False  # B1+: PreCompact survival hook + context docs
+    session_telemetry: bool = False  # B2+: Stop telemetry hook + /health command
 
     # Budget (B1+)
     budget_per_run_tokens: int | None = None
@@ -140,17 +142,19 @@ class HarnessConfig:
             return
 
         # Derive flags from level
-        _LEVEL_FLAGS: dict[str, tuple[bool, bool, bool, bool]] = {
-            "none": (False, False, False, False),
-            "lite": (True, True, False, False),
-            "standard": (True, True, True, False),
-            "autonomy": (True, True, True, True),
+        _LEVEL_FLAGS: dict[str, tuple[bool, bool, bool, bool, bool, bool]] = {
+            "none": (False, False, False, False, False, False),
+            "lite": (True, True, False, False, True, False),
+            "standard": (True, True, True, False, True, True),
+            "autonomy": (True, True, True, True, True, True),
         }
-        flags = _LEVEL_FLAGS.get(self.level, (False, False, False, False))
+        flags = _LEVEL_FLAGS.get(self.level, (False, False, False, False, False, False))
         self.task_tracking = flags[0]
         self.budget_awareness = flags[1]
         self.verification_gates = flags[2]
         self.autonomy_loop = flags[3]
+        self.context_awareness = flags[4]
+        self.session_telemetry = flags[5]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -160,6 +164,8 @@ class HarnessConfig:
             "verification_gates": self.verification_gates,
             "autonomy_loop": self.autonomy_loop,
             "ralph_loop_plugin": self.ralph_loop_plugin,
+            "context_awareness": self.context_awareness,
+            "session_telemetry": self.session_telemetry,
             "budget_per_run_tokens": self.budget_per_run_tokens,
             "budget_warn_at_percent": self.budget_warn_at_percent,
             "require_tests_pass": self.require_tests_pass,
@@ -188,6 +194,8 @@ class HarnessConfig:
             kwargs["budget_awareness"] = data.get("budget_awareness", False)
             kwargs["verification_gates"] = data.get("verification_gates", False)
             kwargs["autonomy_loop"] = data.get("autonomy_loop", False)
+            kwargs["context_awareness"] = data.get("context_awareness", False)
+            kwargs["session_telemetry"] = data.get("session_telemetry", False)
         if "ralph_loop_plugin" in data:
             kwargs["ralph_loop_plugin"] = data["ralph_loop_plugin"]
         return cls(**kwargs)

@@ -209,7 +209,7 @@ cc-rig generates **native Claude Code files**, the same formats from the [offici
 
 ### CLAUDE.md
 
-Targets under 100 lines. Static content first, dynamic content last. Claude Code's prompt cache is prefix-matched, so every wasted token costs money on every API call. Includes project identity, stack, tool commands, guardrails, framework-specific rules and `@import` references to deeper docs. A companion `CLAUDE.local.md` is generated for personal preferences (not git-tracked).
+Targets under 100 lines. Static content first, dynamic content last. Claude Code's prompt cache is prefix-matched, so every wasted token costs money on every API call. Includes project identity, stack, tool commands, guardrails (including 4 cache-specific rules), compaction survival instructions, framework-specific rules and `@import` references to deeper docs. A companion `CLAUDE.local.md` is generated for personal preferences (not git-tracked).
 
 ### Agents
 
@@ -250,9 +250,10 @@ Shell scripts on Claude Code lifecycle events, configured in `settings.json`.
 | **PostToolUse** (Write) | Auto-format (prettier/ruff/gofmt) | Instant cleanup, <1s |
 | **PreToolUse** (Bash) | Lint + typecheck on git commit | Quality gate before commits |
 | **PreToolUse** (Write/Bash) | Block `rm -rf /`, pushes to main, `.env` writes | Safety guards |
-| **Stop** | Save learnings to memory, show session cost | Preserve context, cost awareness |
+| **PreCompact** | Output project essentials before context compaction | Survive compaction (B1+ harness) |
+| **Stop** | Save learnings to memory, show session cost + cache stats | Preserve context, cost awareness |
 
-Up to 14 hooks from your workflow preset, plus up to 3 more from the harness level. [See all hooks](docs/generated-output.md#hooks).
+Up to 14 hooks from your workflow preset, plus up to 5 more from the harness level. [See all hooks](docs/generated-output.md#hooks).
 
 ### Skills
 
@@ -293,6 +294,8 @@ cc-rig curates 47 official Anthropic marketplace plugins and writes them into `s
 
 cc-rig generates a **team memory layer** (`memory/`): 5 git-tracked files for decisions, patterns, gotchas, people and session logs. A Stop hook saves learnings before sessions end, a PreCompact hook does the same before context compaction. Memory loads on demand via Read tool, not baked into CLAUDE.md, keeping the cached prefix stable.
 
+**Context intelligence** (v2.2): Every generated CLAUDE.md includes compaction survival instructions and cache guardrails. The B1+ harness adds a PreCompact hook that outputs project essentials before context compaction and documents 14 cache-break vectors. The B2+ harness adds session telemetry (token usage, cost tracking, cache hit stats) written to `.claude/telemetry.jsonl` on every session end. `cc-rig doctor` checks your CLAUDE.md for cache anti-patterns and parses session JSONL to warn when cache hit ratios drop below 40%.
+
 **Permissions** are configured in `settings.json` with sensible allow/deny defaults. Safety hooks block `.env` edits, pushes to main and destructive `rm` commands.
 
 **MCP servers** are configured in `.mcp.json` per template (PostgreSQL, Playwright). GitHub is now an official plugin, no MCP setup needed.
@@ -326,12 +329,12 @@ Claude works through a task list while you're away.
 </details>
 
 ```bash
-cc-rig harness init --lite        # Task tracking + session-start summary
-cc-rig harness init               # + enforcement gates (lint blocks commits) + init-sh.sh
+cc-rig harness init --lite        # Task tracking + budget + context survival hook
+cc-rig harness init               # + enforcement gates + session telemetry + init-sh.sh
 cc-rig harness init --autonomy    # + loop script, 5-step PROMPT.md, progress ledger
 ```
 
-Each level builds on the previous. The wizard's "Custom" option lets you enable any combination of task tracking, budget awareness, verification gates and autonomy loop independently. A 6th option enables the **ralph-loop plugin**, Anthropic's official autonomous iteration loop.
+Each level builds on the previous. The wizard's "Custom" option lets you enable any combination of task tracking, budget awareness, verification gates, context awareness, session telemetry and autonomy loop independently. A 6th option enables the **ralph-loop plugin**, Anthropic's official autonomous iteration loop.
 
 The autonomy level generates `loop.sh` and `PROMPT.md`, a bash loop that feeds tasks to Claude one at a time with fresh context. Based on the [Ralph Wiggum technique](https://github.com/ghuntley/how-to-ralph-wiggum) by Geoffrey Huntley. Safety rails included: iteration limits, budget enforcement, checkpoint auto-commits, stuck detection and a cost summary on exit.
 
@@ -350,7 +353,7 @@ Export portable configs, lock configs to prevent modification, compare configs a
 ### Health check and cleanup
 
 ```bash
-cc-rig doctor                 # Check project health (files, hooks, permissions, manifest)
+cc-rig doctor                 # Check project health (files, hooks, permissions, cache, manifest)
 cc-rig doctor --fix           # Auto-fix safe issues
 cc-rig clean                  # Remove generated files using the manifest
 ```
@@ -394,7 +397,7 @@ A harness that lets Claude work through a task list unattended. It uses structur
 <details>
 <summary><strong>Does this cost anything?</strong></summary>
 
-cc-rig is free and open source. Claude Code itself requires an <a href="https://www.anthropic.com/pricing">Anthropic plan</a>. cc-rig keeps CLAUDE.md lean and prompt cache hit rates high to minimize your token costs.
+cc-rig is free and open source. Claude Code itself requires an <a href="https://www.anthropic.com/pricing">Anthropic plan</a>. cc-rig keeps CLAUDE.md lean, generates cache guardrails, and tracks cache hit rates via session telemetry to minimize your token costs. Cached prompt tokens cost 10% of uncached tokens.
 </details>
 
 <details>

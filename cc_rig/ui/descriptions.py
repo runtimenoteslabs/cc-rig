@@ -51,6 +51,8 @@ def get_hook_descriptions() -> dict[str, str]:
         "autonomy-loop": "Enable autonomous iteration with safety rails",
         "session-tasks": "Print task summary at session start (B1+)",
         "commit-gate": "Lint enforcement + test reminder on git commit (B2+)",
+        "context-survival": "Preserve project context before compaction (B1+)",
+        "session-telemetry": "Save session metrics to telemetry.jsonl on stop (B2+)",
     }
 
 
@@ -176,30 +178,34 @@ HARNESS_DETAILS: dict[str, str] = {
         "Best for: Learning Claude Code, quick experiments, full manual control."
     ),
     "lite": (
-        "B1 - Task tracking + budget awareness\n"
+        "B1 - Task tracking + budget awareness + context awareness\n"
         "\n"
         "Adds a task file and session-tasks hook so Claude sees open/done\n"
-        "counts at startup. Budget-reminder hook fires on stop.\n"
+        "counts at startup. Budget-reminder hook fires on stop. Context\n"
+        "survival hook preserves project context during compaction.\n"
         "\n"
         "Adds to your scaffold:\n"
         "  tasks/todo.md          - Task list Claude reads for priorities\n"
-        "  agent_docs/harness.md  - Budget rules and task format reference\n"
+        "  agent_docs/harness.md  - Budget rules, context awareness docs\n"
         "  session-tasks hook     - Prints task summary at SessionStart\n"
         "  budget-reminder hook   - Prints budget status on Stop\n"
+        "  context-survival hook  - Preserves project context on PreCompact\n"
         "\n"
         "Best for: Solo work where you want cost visibility and task structure."
     ),
     "standard": (
-        "B2 - Enforcement gates\n"
+        "B2 - Enforcement gates + session telemetry\n"
         "\n"
         "Adds a commit-gate hook that runs lint on every git commit (blocks\n"
-        "on failure) and prompts about tests. An init-sh.sh utility script\n"
-        "wraps your test/lint/format commands for easy verification.\n"
+        "on failure) and prompts about tests. Session telemetry tracks metrics\n"
+        "locally. An init-sh.sh utility wraps your test/lint/format commands.\n"
         "\n"
         "Adds to B1:\n"
-        "  commit-gate hook         - Lint enforcement + test reminder on commit\n"
-        "  .claude/hooks/init-sh.sh - Utility: verify, tidy, setup, test, lint\n"
-        "  agent_docs/harness.md    - Enhanced with gate docs + init-sh reference\n"
+        "  commit-gate hook           - Lint enforcement + test reminder on commit\n"
+        "  session-telemetry hook     - Saves session metrics to telemetry.jsonl\n"
+        "  .claude/commands/health.md - /health command for aggregated metrics\n"
+        "  .claude/hooks/init-sh.sh   - Utility: verify, tidy, setup, test, lint\n"
+        "  agent_docs/harness.md      - Enhanced with gate + telemetry docs\n"
         "\n"
         "Best for: Teams, production code, CI-like discipline in the editor."
     ),
@@ -238,6 +244,8 @@ HARNESS_DETAILS: dict[str, str] = {
         "  Task tracking       - todo.md + session-tasks hook\n"
         "  Budget awareness    - budget-reminder hook + budget docs\n"
         "  Verification gates  - commit-gate hook + init-sh.sh\n"
+        "  Context awareness   - compaction survival hook + context docs\n"
+        "  Session telemetry   - session metrics + /health command\n"
         "  Autonomy loop       - PROMPT.md + loop.sh + progress tracking\n"
         "\n"
         "Best for: Users who want specific features without the full tier."
@@ -253,6 +261,8 @@ HARNESS_DETAILS: dict[str, str] = {
         "  Task tracking       - todo.md + session-tasks hook\n"
         "  Budget awareness    - budget-reminder hook + budget docs\n"
         "  Verification gates  - commit-gate hook + init-sh.sh\n"
+        "  Context awareness   - compaction survival hook + context docs\n"
+        "  Session telemetry   - session metrics + /health command\n"
         "\n"
         "The plugin replaces: PROMPT.md, loop.sh, claude-progress.txt,\n"
         "  harness-config.json (cc-rig's autonomy files are not generated).\n"

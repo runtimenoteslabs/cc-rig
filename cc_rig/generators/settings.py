@@ -50,6 +50,8 @@ _HOOK_REGISTRY: dict[str, tuple[str, str, str]] = {
     "budget-reminder": ("Stop", "", "command"),
     "session-tasks": ("SessionStart", "", "command"),
     "commit-gate": ("PreToolUse", "Bash", "command"),
+    "context-survival": ("PreCompact", "", "command"),
+    "session-telemetry": ("Stop", "", "command"),
 }
 
 
@@ -161,6 +163,10 @@ def generate_settings(
         active_hooks.append("session-tasks")
     if h.verification_gates and "commit-gate" not in active_hooks:
         active_hooks.append("commit-gate")
+    if h.context_awareness and "context-survival" not in active_hooks:
+        active_hooks.append("context-survival")
+    if h.session_telemetry and "session-telemetry" not in active_hooks:
+        active_hooks.append("session-telemetry")
 
     for hook_name in active_hooks:
         meta = _HOOK_REGISTRY.get(hook_name)
@@ -273,6 +279,8 @@ def _generate_hook_script(
         "budget-reminder": _script_budget_reminder,
         "session-tasks": _script_session_tasks,
         "commit-gate": _script_commit_gate,
+        "context-survival": _script_context_survival,
+        "session-telemetry": _script_session_telemetry,
     }
     generator = generators.get(hook_name)
     if generator is None:
@@ -534,6 +542,243 @@ def _script_memory_precompact(config: ProjectConfig) -> str:
         "\n"
         'echo "Context is about to be compacted."\n'
         'echo "Save key decisions and patterns to memory/ files."\n'
+        "\n"
+        "exit 0\n"
+    )
+
+
+def _script_context_survival(config: ProjectConfig) -> str:
+    """Generate context survival instructions for PreCompact hook.
+
+    Pure bash (echo statements only). All values baked in at generation time.
+    Output is injected into the compaction summary prompt by Claude Code.
+    """
+    lines = [
+        "#!/usr/bin/env bash",
+        "# cc-rig hook: context-survival -- project-specific compaction survival",
+        "# Event: PreCompact",
+        "set -euo pipefail",
+        "",
+        'echo "=== COMPACTION SURVIVAL INSTRUCTIONS ==="',
+        'echo ""',
+        'echo "PRESERVE the following project-critical context:"',
+        'echo ""',
+        f'echo "Project: {config.project_name}"',
+        f'echo "Stack: {config.language} / {config.framework}"',
+        f'echo "Workflow: {config.workflow}"',
+        'echo ""',
+        'echo "Key commands (ALWAYS preserve):"',
+    ]
+
+    if config.test_cmd:
+        lines.append(f'echo "  Test: {config.test_cmd}"')
+    if config.lint_cmd:
+        lines.append(f'echo "  Lint: {config.lint_cmd}"')
+    if config.format_cmd:
+        lines.append(f'echo "  Format: {config.format_cmd}"')
+    if config.typecheck_cmd:
+        lines.append(f'echo "  Typecheck: {config.typecheck_cmd}"')
+
+    lines.extend(
+        [
+            'echo ""',
+            'echo "Key file paths:"',
+            f'echo "  Source: {config.source_dir}/"',
+            f'echo "  Tests: {config.test_dir}/"',
+            'echo "  Agent docs: agent_docs/"',
+        ]
+    )
+
+    # Feature-conditional sections
+    feature_lines: list[str] = []
+    if config.features.memory:
+        feature_lines.append('echo "  - Team memory: memory/ (reload decisions.md)"')
+    if config.features.spec_workflow:
+        feature_lines.append('echo "  - Active specs: specs/"')
+    if config.features.gtd:
+        feature_lines.append('echo "  - GTD state: tasks/inbox.md, tasks/todo.md"')
+    h = config.harness
+    if h.autonomy_loop:
+        feature_lines.append('echo "  - Autonomy state: claude-progress.txt"')
+    if h.budget_awareness:
+        feature_lines.append('echo "  - Budget status and token usage"')
+
+    if feature_lines:
+        lines.append('echo ""')
+        lines.append('echo "Active features to remember:"')
+        lines.extend(feature_lines)
+
+    lines.extend(
+        [
+            'echo ""',
+            'echo "DISCARD: verbose tool output, file listings, exploration results."',
+            'echo "KEEP: decisions made, current task, blockers, branch name."',
+            'echo "=== END SURVIVAL INSTRUCTIONS ==="',
+            "",
+            "exit 0",
+        ]
+    )
+
+    return "\n".join(lines) + "\n"
+
+
+def _script_session_telemetry(config: ProjectConfig) -> str:
+    """Generate session telemetry collector for Stop hook.
+
+    Appends structured metrics to .claude/telemetry.jsonl after each session.
+    Uses inline Python (same pattern as budget-reminder) with graceful degradation.
+    """
+    return (
+        "#!/usr/bin/env bash\n"
+        "# cc-rig hook: session-telemetry -- append session metrics to telemetry file\n"
+        "# Event: Stop\n"
+        "set -euo pipefail\n"
+        "\n"
+        "# Session telemetry (requires python3, best-effort)\n"
+        "if command -v python3 >/dev/null 2>&1; then\n"
+        "  python3 << 'PYEOF'\n"
+        "import glob, json, os, sys, time\n"
+        "\n"
+        "def find_latest_jsonl():\n"
+        "    base = os.path.expanduser('~/.claude/projects')\n"
+        "    if not os.path.isdir(base):\n"
+        "        return None\n"
+        "    cwd = os.getcwd()\n"
+        "    project_dir = cwd.replace('/', '-')\n"
+        "    project_path = os.path.join(base, project_dir)\n"
+        "    if not os.path.isdir(project_path):\n"
+        "        return None\n"
+        "    files = glob.glob(os.path.join(project_path, '*.jsonl'))\n"
+        "    if not files:\n"
+        "        return None\n"
+        "    return max(files, key=os.path.getmtime)\n"
+        "\n"
+        "PRICING = {\n"
+        "    'opus': (15.0, 75.0, 18.75, 1.50),\n"
+        "    'sonnet': (3.0, 15.0, 3.75, 0.30),\n"
+        "    'haiku': (0.80, 4.0, 1.0, 0.08),\n"
+        "}\n"
+        "\n"
+        "def parse_session(path):\n"
+        "    turn_count = 0\n"
+        "    tool_call_count = 0\n"
+        "    model = 'sonnet'\n"
+        "    t_in, t_out, t_cc, t_cr = 0, 0, 0, 0\n"
+        "    compaction_count = 0\n"
+        "    first_ts = None\n"
+        "    last_ts = None\n"
+        "    try:\n"
+        "        with open(path) as f:\n"
+        "            for line in f:\n"
+        "                line = line.strip()\n"
+        "                if not line:\n"
+        "                    continue\n"
+        "                try:\n"
+        "                    msg = json.loads(line)\n"
+        "                except (json.JSONDecodeError, ValueError):\n"
+        "                    continue\n"
+        "                msg_type = msg.get('type', '')\n"
+        "                ts = msg.get('timestamp')\n"
+        "                if ts:\n"
+        "                    if first_ts is None:\n"
+        "                        first_ts = ts\n"
+        "                    last_ts = ts\n"
+        "                if msg_type == 'human':\n"
+        "                    turn_count += 1\n"
+        "                elif msg_type == 'assistant':\n"
+        "                    inner = msg.get('message', {})\n"
+        "                    m = inner.get('model', '')\n"
+        "                    if 'opus' in m:\n"
+        "                        model = 'opus'\n"
+        "                    elif 'haiku' in m:\n"
+        "                        model = 'haiku'\n"
+        "                    elif m:\n"
+        "                        model = 'sonnet'\n"
+        "                    usage = inner.get('usage', {})\n"
+        "                    t_in += usage.get('input_tokens', 0)\n"
+        "                    t_out += usage.get('output_tokens', 0)\n"
+        "                    t_cc += usage.get('cache_creation_input_tokens', 0)\n"
+        "                    t_cr += usage.get('cache_read_input_tokens', 0)\n"
+        "                    for block in inner.get('content', []):\n"
+        "                        if isinstance(block, dict) and block.get('type') == 'tool_use':\n"
+        "                            tool_call_count += 1\n"
+        "                elif msg_type == 'system' and 'compact' in str(msg).lower():\n"
+        "                    compaction_count += 1\n"
+        "    except (OSError, IOError):\n"
+        "        return None\n"
+        "    return {\n"
+        "        'turn_count': turn_count,\n"
+        "        'tool_call_count': tool_call_count,\n"
+        "        'model': model,\n"
+        "        'input_tokens': t_in,\n"
+        "        'output_tokens': t_out,\n"
+        "        'cache_creation_tokens': t_cc,\n"
+        "        'cache_read_tokens': t_cr,\n"
+        "        'compaction_count': compaction_count,\n"
+        "        'first_ts': first_ts,\n"
+        "        'last_ts': last_ts,\n"
+        "    }\n"
+        "\n"
+        "path = find_latest_jsonl()\n"
+        "if not path:\n"
+        "    sys.exit(0)\n"
+        "\n"
+        "metrics = parse_session(path)\n"
+        "if not metrics:\n"
+        "    sys.exit(0)\n"
+        "\n"
+        "# Calculate duration\n"
+        "duration_min = 0\n"
+        "if metrics['first_ts'] and metrics['last_ts']:\n"
+        "    try:\n"
+        "        # Timestamps may be ISO format or epoch\n"
+        "        ft = metrics['first_ts']\n"
+        "        lt = metrics['last_ts']\n"
+        "        if isinstance(ft, str) and isinstance(lt, str):\n"
+        "            from datetime import datetime\n"
+        "            t1 = datetime.fromisoformat(ft.replace('Z', '+00:00'))\n"
+        "            t2 = datetime.fromisoformat(lt.replace('Z', '+00:00'))\n"
+        "            duration_min = max(0, (t2 - t1).total_seconds() / 60)\n"
+        "        elif isinstance(ft, (int, float)) and isinstance(lt, (int, float)):\n"
+        "            duration_min = max(0, (lt - ft) / 60)\n"
+        "    except (ValueError, TypeError):\n"
+        "        pass\n"
+        "\n"
+        "# Calculate cost\n"
+        "p = PRICING[metrics['model']]\n"
+        "cost = (\n"
+        "    metrics['input_tokens'] * p[0]\n"
+        "    + metrics['output_tokens'] * p[1]\n"
+        "    + metrics['cache_creation_tokens'] * p[2]\n"
+        "    + metrics['cache_read_tokens'] * p[3]\n"
+        ") / 1_000_000\n"
+        "\n"
+        "record = {\n"
+        "    'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S%z'),\n"
+        "    'session_file': os.path.basename(path),\n"
+        "    'duration_minutes': round(duration_min, 1),\n"
+        "    'turn_count': metrics['turn_count'],\n"
+        "    'tool_call_count': metrics['tool_call_count'],\n"
+        "    'model': metrics['model'],\n"
+        "    'input_tokens': metrics['input_tokens'],\n"
+        "    'output_tokens': metrics['output_tokens'],\n"
+        "    'estimated_cost_usd': round(cost, 4),\n"
+        "    'compaction_count': metrics['compaction_count'],\n"
+        "}\n"
+        "\n"
+        "telemetry_path = os.path.join('.claude', 'telemetry.jsonl')\n"
+        "os.makedirs(os.path.dirname(telemetry_path), exist_ok=True)\n"
+        "with open(telemetry_path, 'a') as f:\n"
+        "    f.write(json.dumps(record) + '\\n')\n"
+        "\n"
+        "total_tokens = (\n"
+        "    metrics['input_tokens'] + metrics['output_tokens']\n"
+        "    + metrics['cache_creation_tokens'] + metrics['cache_read_tokens']\n"
+        ")\n"
+        "print(f'Session telemetry saved: {metrics[\"turn_count\"]} turns, '\n"
+        "      f'{total_tokens:,} tokens, ~${cost:.2f}')\n"
+        "PYEOF\n"
+        "fi\n"
         "\n"
         "exit 0\n"
     )

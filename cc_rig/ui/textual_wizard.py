@@ -1118,6 +1118,18 @@ class HarnessScreen(ModalScreen[Optional[dict]]):
                 id="harness-verification-gates",
                 classes="" if show_features else "hidden",
             )
+            yield Checkbox(
+                "Context awareness (compaction survival hook + context docs)",
+                value=self._state.get("harness_context_awareness", True),
+                id="harness-context-awareness",
+                classes="" if show_features else "hidden",
+            )
+            yield Checkbox(
+                "Session telemetry (session metrics + /health command)",
+                value=self._state.get("harness_session_telemetry", False),
+                id="harness-session-telemetry",
+                classes="" if show_features else "hidden",
+            )
         yield NavBar()
         yield KeyHintsBar()
 
@@ -1139,6 +1151,8 @@ class HarnessScreen(ModalScreen[Optional[dict]]):
                 "#harness-task-tracking",
                 "#harness-budget-awareness",
                 "#harness-verification-gates",
+                "#harness-context-awareness",
+                "#harness-session-telemetry",
             ):
                 widget = self.query_one(wid)
                 if show:
@@ -1162,6 +1176,12 @@ class HarnessScreen(ModalScreen[Optional[dict]]):
                 ).value
                 result["harness_verification_gates"] = self.query_one(
                     "#harness-verification-gates", Checkbox
+                ).value
+                result["harness_context_awareness"] = self.query_one(
+                    "#harness-context-awareness", Checkbox
+                ).value
+                result["harness_session_telemetry"] = self.query_one(
+                    "#harness-session-telemetry", Checkbox
                 ).value
             self.dismiss(result)
         elif event.button.id == "btn-back":
@@ -1523,6 +1543,8 @@ class WizardApp(App[Optional[dict]]):
                 task_tracking=state.get("harness_task_tracking", False),
                 budget_awareness=state.get("harness_budget_awareness", False),
                 verification_gates=state.get("harness_verification_gates", False),
+                context_awareness=state.get("harness_context_awareness", False),
+                session_telemetry=state.get("harness_session_telemetry", False),
             )
         else:
             config.harness = HarnessConfig(level=level)

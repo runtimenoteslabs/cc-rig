@@ -519,7 +519,7 @@ class TestHookRegistryConsistency:
 
     def test_hook_count(self):
         """Guard against accidental additions/removals."""
-        assert len(_HOOK_REGISTRY) == 16
+        assert len(_HOOK_REGISTRY) == 18
 
 
 class TestTeamMemoryPromptTexts:

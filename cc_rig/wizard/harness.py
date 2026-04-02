@@ -100,6 +100,16 @@ def _ask_custom_harness(io: IO) -> HarnessConfig:
         default=False,
         io=io,
     )
+    context_awareness = confirm(
+        "  Context awareness? (compaction survival hook + context docs)",
+        default=True,
+        io=io,
+    )
+    session_telemetry = confirm(
+        "  Session telemetry? (session metrics + /health command)",
+        default=False,
+        io=io,
+    )
     autonomy_loop = confirm(
         "  Autonomy loop? (PROMPT.md + loop.sh)",
         default=False,
@@ -126,6 +136,8 @@ def _ask_custom_harness(io: IO) -> HarnessConfig:
         task_tracking=task_tracking,
         budget_awareness=budget_awareness,
         verification_gates=verification_gates,
+        context_awareness=context_awareness,
+        session_telemetry=session_telemetry,
         autonomy_loop=autonomy_loop,
     )
 
@@ -162,11 +174,23 @@ def _ask_ralph_loop_harness(io: IO) -> HarnessConfig:
         default=False,
         io=io,
     )
+    context_awareness = confirm(
+        "  Context awareness? (compaction survival hook + context docs)",
+        default=True,
+        io=io,
+    )
+    session_telemetry = confirm(
+        "  Session telemetry? (session metrics + /health command)",
+        default=False,
+        io=io,
+    )
 
     return HarnessConfig(
         level="ralph-loop",
         task_tracking=task_tracking,
         budget_awareness=budget_awareness,
         verification_gates=verification_gates,
+        context_awareness=context_awareness,
+        session_telemetry=session_telemetry,
         ralph_loop_plugin=True,
     )

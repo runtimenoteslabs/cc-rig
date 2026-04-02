@@ -207,6 +207,21 @@ class TestS01FastapiStandardB0:
         assert "MEMORY-README.md" in mem_files
         assert len(mem_files) == 6
 
+    def test_compaction_survival_in_claude_md(self):
+        """All projects get the Compaction Survival section, even B0."""
+        content = (self.root / "CLAUDE.md").read_text()
+        assert "## Compaction Survival" in content
+        assert "Always Preserve" in content
+        assert "Always Discard" in content
+        assert "Custom /compact" in content
+
+    def test_no_harness_hooks_at_b0(self):
+        """B0 has no harness hooks."""
+        hooks = _list_dir(self.root, ".claude/hooks")
+        assert "context-survival.sh" not in hooks
+        assert "session-telemetry.sh" not in hooks
+        assert "budget-reminder.sh" not in hooks
+
     def test_no_specs(self):
         assert not (self.root / "specs").exists()
 
@@ -348,8 +363,8 @@ class TestS02FastapiVerifyHeavyB3:
 
     def test_command_count(self):
         commands = _list_dir(self.root, ".claude/commands")
-        # 19 - 3 gtd commands = 16
-        assert len(commands) == 16, f"Expected 16 commands, got {len(commands)}: {commands}"
+        # 16 base + health.md (session_telemetry) = 17
+        assert len(commands) == 17, f"Expected 17 commands, got {len(commands)}: {commands}"
 
     def test_memory_present(self):
         assert (self.root / "memory" / "decisions.md").exists()
@@ -397,6 +412,18 @@ class TestS02FastapiVerifyHeavyB3:
         assert "budget-reminder.sh" in hooks
         assert "session-tasks.sh" in hooks
         assert "commit-gate.sh" in hooks
+        assert "context-survival.sh" in hooks
+        assert "session-telemetry.sh" in hooks
+
+    def test_harness_context_awareness(self):
+        content = (self.root / "agent_docs" / "harness.md").read_text()
+        assert "Context Awareness" in content
+        assert "Cache-Break Vectors" in content
+
+    def test_harness_session_telemetry(self):
+        content = (self.root / "agent_docs" / "harness.md").read_text()
+        assert "Session Telemetry" in content
+        assert (self.root / ".claude" / "commands" / "health.md").exists()
 
     def test_hooks_executable(self):
         _assert_hooks_executable(self.root)
@@ -607,6 +634,14 @@ class TestS05NextjsStandardB2:
         assert "budget-reminder.sh" in hooks
         assert "session-tasks.sh" in hooks
         assert "commit-gate.sh" in hooks
+        assert "context-survival.sh" in hooks
+        assert "session-telemetry.sh" in hooks
+
+    def test_harness_context_and_telemetry(self):
+        content = (self.root / "agent_docs" / "harness.md").read_text()
+        assert "Context Awareness" in content
+        assert "Session Telemetry" in content
+        assert (self.root / ".claude" / "commands" / "health.md").exists()
 
     def test_memory_present(self):
         assert (self.root / "memory" / "decisions.md").exists()
@@ -1121,12 +1156,24 @@ def test_every_harness_level(tmp_path, level):
         assert (tmp_path / "tasks" / "todo.md").exists()
         assert (tmp_path / "agent_docs" / "harness.md").exists()
         assert not (tmp_path / ".claude" / "hooks" / "init-sh.sh").exists()
+        # Context awareness at lite+
+        harness_content = (tmp_path / "agent_docs" / "harness.md").read_text()
+        assert "Context Awareness" in harness_content
+        assert (tmp_path / ".claude" / "hooks" / "context-survival.sh").exists()
+        # No session telemetry at lite
+        assert not (tmp_path / ".claude" / "hooks" / "session-telemetry.sh").exists()
+        assert not (tmp_path / ".claude" / "commands" / "health.md").exists()
     elif level == "standard":
         assert (tmp_path / "tasks" / "todo.md").exists()
         assert (tmp_path / "agent_docs" / "harness.md").exists()
         harness_content = (tmp_path / "agent_docs" / "harness.md").read_text()
         assert "Verification Gates" in harness_content
+        assert "Context Awareness" in harness_content
+        assert "Session Telemetry" in harness_content
         assert (tmp_path / ".claude" / "hooks" / "init-sh.sh").exists()
+        assert (tmp_path / ".claude" / "hooks" / "context-survival.sh").exists()
+        assert (tmp_path / ".claude" / "hooks" / "session-telemetry.sh").exists()
+        assert (tmp_path / ".claude" / "commands" / "health.md").exists()
         assert not (tmp_path / "loop.sh").exists()
     elif level == "autonomy":
         assert (tmp_path / "tasks" / "todo.md").exists()
@@ -1136,6 +1183,10 @@ def test_every_harness_level(tmp_path, level):
         assert (tmp_path / "PROMPT.md").exists()
         assert (tmp_path / "claude-progress.txt").exists()
         assert (tmp_path / ".claude" / "harness-config.json").exists()
+        # Both context awareness and session telemetry at autonomy
+        assert (tmp_path / ".claude" / "hooks" / "context-survival.sh").exists()
+        assert (tmp_path / ".claude" / "hooks" / "session-telemetry.sh").exists()
+        assert (tmp_path / ".claude" / "commands" / "health.md").exists()
     elif level == "ralph-loop":
         # Plugin-based autonomy: no loop.sh or PROMPT.md (handled by ralph-loop plugin)
         assert not (tmp_path / "loop.sh").exists()

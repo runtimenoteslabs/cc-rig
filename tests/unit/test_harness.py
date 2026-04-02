@@ -134,9 +134,9 @@ class TestB2Standard:
     def test_b2_file_count(self, tmp_path):
         config = _make_config(level="standard")
         files = generate_harness(config, tmp_path)
-        # 2 from B1 (todo.md + harness.md) + init-sh.sh = 3
-        # B2 enhances harness.md in-place, no new files
-        assert len(files) == 3
+        # 2 B1 (todo.md + harness.md) + init-sh.sh + health.md (session_telemetry) = 4
+        # Context awareness + B2 gates enhance harness.md in-place, no new files
+        assert len(files) == 4
 
     def test_no_autonomy_doc(self, tmp_path):
         config = _make_config(level="standard")
@@ -320,8 +320,9 @@ class TestB3Autonomy:
     def test_b3_file_count(self, tmp_path):
         config = _make_config(level="autonomy")
         files = generate_harness(config, tmp_path)
-        # 2 B1 + init-sh.sh + 4 B3 (PROMPT.md, progress.txt, loop.sh, config.json)
-        assert len(files) == 7
+        # 2 B1 + init-sh.sh + 4 B3 + health.md (session_telemetry) = 8
+        # Context awareness enhances harness.md in-place, no new file
+        assert len(files) == 8
 
     def test_loop_sh_uses_output_format_json(self, tmp_path):
         config = _make_config(level="autonomy")

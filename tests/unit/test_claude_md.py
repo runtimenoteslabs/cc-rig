@@ -63,13 +63,13 @@ class TestConditionalSections:
 
 class TestLineCounts:
     _TARGETS = {
-        "speedrun": 65,
-        "standard": 100,
-        "gstack": 125,
-        "aihero": 140,
-        "spec-driven": 140,
-        "superpowers": 145,
-        "gtd": 145,
+        "speedrun": 84,
+        "standard": 123,
+        "gstack": 151,
+        "aihero": 164,
+        "spec-driven": 161,
+        "superpowers": 171,
+        "gtd": 162,
     }
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
@@ -237,3 +237,47 @@ class TestHarnessGuardrails:
         assert "gate-checked" in content
         assert "Autonomy mode" in content
         assert "PROMPT.md" in content
+
+
+class TestCacheGuardrails:
+    """Cache guardrails are unconditional (present in all workflows)."""
+
+    def test_cache_guardrails_in_standard(self, tmp_path):
+        content = _generate_claude_md("fastapi", "standard", tmp_path)
+        assert "Never edit CLAUDE.md during a session" in content
+        assert "Never toggle hooks" in content
+        assert "Never switch models mid-conversation" in content
+        assert "Load memory via Read tool" in content
+
+    def test_cache_guardrails_in_speedrun(self, tmp_path):
+        content = _generate_claude_md("fastapi", "speedrun", tmp_path)
+        assert "Never edit CLAUDE.md during a session" in content
+        assert "Never toggle hooks" in content
+
+    def test_cache_guardrails_in_superpowers(self, tmp_path):
+        content = _generate_claude_md("fastapi", "superpowers", tmp_path)
+        assert "Never edit CLAUDE.md during a session" in content
+
+    def test_fork_session_in_spec_driven(self, tmp_path):
+        content = _generate_claude_md("fastapi", "spec-driven", tmp_path)
+        assert "fork-session" in content
+
+    def test_fork_session_in_superpowers(self, tmp_path):
+        content = _generate_claude_md("fastapi", "superpowers", tmp_path)
+        assert "fork-session" in content
+
+    def test_fork_session_in_aihero(self, tmp_path):
+        content = _generate_claude_md("fastapi", "aihero", tmp_path)
+        assert "fork-session" in content
+
+    def test_no_fork_session_in_speedrun(self, tmp_path):
+        content = _generate_claude_md("fastapi", "speedrun", tmp_path)
+        assert "fork-session" not in content
+
+    def test_no_fork_session_in_standard(self, tmp_path):
+        content = _generate_claude_md("fastapi", "standard", tmp_path)
+        assert "fork-session" not in content
+
+    def test_no_fork_session_in_gtd(self, tmp_path):
+        content = _generate_claude_md("fastapi", "gtd", tmp_path)
+        assert "fork-session" not in content

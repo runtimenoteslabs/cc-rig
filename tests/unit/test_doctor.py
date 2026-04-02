@@ -145,6 +145,127 @@ class TestDoctorInvalidJSON:
         assert any("json" in e.lower() for e in result.errors)
 
 
+class TestDoctorCacheFriendliness:
+    """CLAUDE.md cache-friendliness check detects anti-patterns in static zone."""
+
+    def test_healthy_project_no_cache_warnings(self, tmp_path):
+        generate_project(tmp_path)
+        result = run_doctor(tmp_path)
+        # Generated CLAUDE.md should be cache-friendly by default
+        cache_warnings = [w for w in result.warnings if "static section" in w.lower()]
+        assert len(cache_warnings) == 0
+
+    def test_timestamp_in_static_section_warns(self, tmp_path):
+        generate_project(tmp_path)
+        claude_md = tmp_path / "CLAUDE.md"
+        content = claude_md.read_text()
+        # Inject a timestamp marker in the static section (before Current Context)
+        content = content.replace(
+            "## Guardrails",
+            "Updated: 2026-04-01\n\n## Guardrails",
+        )
+        claude_md.write_text(content)
+        result = run_doctor(tmp_path)
+        assert any("static section" in w.lower() for w in result.warnings)
+
+    def test_date_in_static_section_warns(self, tmp_path):
+        generate_project(tmp_path)
+        claude_md = tmp_path / "CLAUDE.md"
+        content = claude_md.read_text()
+        content = content.replace(
+            "## Guardrails",
+            "Last modified 2026-03-15\n\n## Guardrails",
+        )
+        claude_md.write_text(content)
+        result = run_doctor(tmp_path)
+        assert any("static section" in w.lower() for w in result.warnings)
+
+    def test_date_in_dynamic_section_ok(self, tmp_path):
+        generate_project(tmp_path)
+        claude_md = tmp_path / "CLAUDE.md"
+        content = claude_md.read_text()
+        # Date in Current Context (dynamic section) is fine
+        content = content.replace(
+            "- **Current task**: (none)",
+            "- **Current task**: Fix bug (2026-04-01)",
+        )
+        claude_md.write_text(content)
+        result = run_doctor(tmp_path)
+        cache_warnings = [w for w in result.warnings if "static section" in w.lower()]
+        assert len(cache_warnings) == 0
+
+
+class TestDoctorCacheHealth:
+    """Cache health check parses session JSONL files."""
+
+    def test_no_session_data_no_warning(self, tmp_path):
+        """No session data directory means no warning (graceful skip)."""
+        generate_project(tmp_path)
+        result = run_doctor(tmp_path)
+        assert not any("cache health" in w.lower() for w in result.warnings)
+
+    def test_low_cache_ratio_warns(self, tmp_path, monkeypatch):
+        """Session with poor cache hit ratio should warn."""
+        import json as json_mod
+
+        from cc_rig.doctor import _get_session_dir
+
+        generate_project(tmp_path)
+
+        # Create a fake session directory and JSONL file
+        session_dir = _get_session_dir(tmp_path)
+        session_dir.mkdir(parents=True, exist_ok=True)
+        jsonl = session_dir / "session.jsonl"
+
+        # Write entries with poor cache ratio (30% reads, 70% creation)
+        entries = [
+            {
+                "type": "assistant",
+                "message": {
+                    "role": "assistant",
+                    "usage": {
+                        "cache_read_input_tokens": 300,
+                        "cache_creation_input_tokens": 700,
+                    },
+                },
+            },
+        ]
+        jsonl.write_text("\n".join(json_mod.dumps(e) for e in entries) + "\n")
+
+        result = run_doctor(tmp_path)
+        assert any("cache health" in w.lower() for w in result.warnings)
+
+    def test_good_cache_ratio_no_warning(self, tmp_path):
+        """Session with healthy cache ratio should not warn."""
+        import json as json_mod
+
+        from cc_rig.doctor import _get_session_dir
+
+        generate_project(tmp_path)
+
+        session_dir = _get_session_dir(tmp_path)
+        session_dir.mkdir(parents=True, exist_ok=True)
+        jsonl = session_dir / "session.jsonl"
+
+        # Write entries with good cache ratio (90% reads)
+        entries = [
+            {
+                "type": "assistant",
+                "message": {
+                    "role": "assistant",
+                    "usage": {
+                        "cache_read_input_tokens": 9000,
+                        "cache_creation_input_tokens": 1000,
+                    },
+                },
+            },
+        ]
+        jsonl.write_text("\n".join(json_mod.dumps(e) for e in entries) + "\n")
+
+        result = run_doctor(tmp_path)
+        assert not any("cache health" in w.lower() for w in result.warnings)
+
+
 class TestDoctorCLI:
     def test_doctor_runs(self, capsys, tmp_path):
         generate_project(tmp_path)

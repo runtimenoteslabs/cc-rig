@@ -2,6 +2,25 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [2.2.0] - 2026-04-03
+
+### Added
+- **Context Intelligence**. New harness features that help Claude preserve state through compaction and track token spend:
+  - **Compaction Survival** (all projects). Generated CLAUDE.md now includes a "Compaction Survival" section with project-specific preserve/discard instructions so Claude retains critical context when the context window is compacted.
+  - **context_awareness flag** (B1+ lite). Generates a PreCompact hook (`context-survival.sh`) that outputs project essentials before compaction, plus cache-break vector documentation in `harness.md` and a guardrail line in CLAUDE.md.
+  - **session_telemetry flag** (B2+ standard). Generates a Stop hook (`session-telemetry.sh`) that writes turn count, token usage and estimated cost to `.claude/telemetry.jsonl`. Includes a `/health` command for quick session metrics.
+- **Cache guardrails** (all projects). 4 unconditional guardrails in generated CLAUDE.md: never edit CLAUDE.md mid-session, never toggle hooks/MCP/plugins, never switch models (use subagents), load memory via Read tool.
+- **Fork-session guidance** (spec-driven, aihero, superpowers). Workflow principles now include `--fork-session` tip for parallel investigations that share the prompt cache prefix (3 forks cost 1.55x vs 3.75x for 3 independent sessions).
+- **Doctor cache-friendliness check**. `cc-rig doctor` now scans CLAUDE.md's static zone for anti-patterns (dates, timestamp markers) that break prompt cache. Warning-only, with line number and fix suggestion.
+- **Doctor cache health check**. `cc-rig doctor` now parses the most recent Claude Code session JSONL to calculate cache hit ratio. Warns if ratio falls below 40%. Graceful skip when no session data exists.
+- **Expanded cache-friendly-workflow.md**. Agent doc expanded from 23 to 62 lines: 14 cache-break vectors (from CC internals), pricing impact table, TTL info (5-min Pro, 1-hr Max), session forking tip.
+
+### Changed
+- **HarnessConfig** now has 6-position level flags (was 4): `context_awareness` and `session_telemetry` added as boolean fields with level-based derivation.
+- **CLAUDE.md line counts** increased by 4 lines across all workflows (cache guardrails). Workflows with spec_workflow + worktrees get 2 additional lines (fork-session tip).
+
+---
+
 ## [2.1.0] - 2026-03-23
 
 ### Added

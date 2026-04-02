@@ -272,15 +272,15 @@ class TestCLAUDEmdSnapshot:
             )
 
     _LINE_CAPS = {
-        "speedrun": 65,
-        "standard": 100,
-        "spec-driven": 140,
-        "gtd-lite": 145,
-        "gtd": 145,
-        "verify-heavy": 145,
-        "superpowers": 145,
-        "gstack": 125,
-        "aihero": 140,
+        "speedrun": 84,
+        "standard": 123,
+        "spec-driven": 161,
+        "gtd-lite": 162,
+        "gtd": 162,
+        "verify-heavy": 171,
+        "superpowers": 171,
+        "gstack": 151,
+        "aihero": 164,
     }
 
     @pytest.mark.parametrize("template,workflow", _SNAPSHOT_COMBOS)

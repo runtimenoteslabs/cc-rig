@@ -141,6 +141,8 @@ VALID_HOOKS = {
     "autonomy-loop",
     "session-tasks",
     "commit-gate",
+    "context-survival",
+    "session-telemetry",
 }
 
 # Valid CC hook events (CC v2.1.70-2.1.81)

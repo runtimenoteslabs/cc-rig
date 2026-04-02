@@ -7,6 +7,7 @@ Supports --fix for safe auto-remediation of common issues.
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import stat
 from datetime import datetime, timezone
@@ -106,6 +107,12 @@ def run_doctor(
     # ── Check 10: Process skills installed ──────────────────
     if config.process_skills:
         _check_process_skills(config, project_dir, result)
+
+    # ── Check 11: CLAUDE.md cache-friendliness ────────────
+    _check_claude_md_cache_friendliness(project_dir, result)
+
+    # ── Check 12: Cache health from session JSONL ─────────
+    _check_cache_health(project_dir, result)
 
     return result
 
@@ -253,3 +260,108 @@ def _check_process_skills(config: ProjectConfig, output_dir: Path, result: Docto
                 f"Process skill {skill_name!r} (workflow={config.workflow}) "
                 f"not found at {skill_md}. Run cc-rig init to install."
             )
+
+
+# Patterns that indicate dynamic content in the static zone of CLAUDE.md.
+_DATE_RE = re.compile(r"\b20\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])\b")
+_TIMESTAMP_MARKER_RE = re.compile(r"(?i)(updated|modified|generated)\s*[:=]")
+
+
+def _check_claude_md_cache_friendliness(
+    project_dir: Path,
+    result: DoctorResult,
+) -> None:
+    """Warn if CLAUDE.md has dynamic content in its static (cacheable) zone."""
+    claude_md = project_dir / "CLAUDE.md"
+    if not claude_md.exists():
+        return
+
+    try:
+        lines = claude_md.read_text().splitlines()
+    except OSError:
+        return
+
+    # Find the boundary between static and dynamic zones.
+    boundary = len(lines)
+    for i, line in enumerate(lines):
+        if line.strip().startswith("## Current Context"):
+            boundary = i
+            break
+
+    # If no "## Current Context" found, treat the top 80% as the static zone.
+    if boundary == len(lines) and lines:
+        boundary = int(len(lines) * 0.8)
+
+    static_zone = lines[:boundary]
+
+    for i, line in enumerate(static_zone, start=1):
+        if _TIMESTAMP_MARKER_RE.search(line):
+            result.warnings.append(
+                f"CLAUDE.md line {i}: timestamp marker in static section. "
+                f"Move to Current Context or CLAUDE.local.md to avoid cache breaks."
+            )
+            break  # One warning is enough
+        if _DATE_RE.search(line):
+            result.warnings.append(
+                f"CLAUDE.md line {i}: date in static section. "
+                f"Move to Current Context or CLAUDE.local.md to avoid cache breaks."
+            )
+            break
+
+
+def _get_session_dir(project_dir: Path) -> Path:
+    """Derive the Claude Code session directory for a project.
+
+    Claude Code stores session JSONL files in ~/.claude/projects/<encoded-path>/.
+    The path encoding replaces '/' with '-' and strips the leading '/'.
+    """
+    encoded = str(project_dir.resolve()).replace("/", "-").lstrip("-")
+    return Path.home() / ".claude" / "projects" / f"-{encoded}"
+
+
+def _check_cache_health(
+    project_dir: Path,
+    result: DoctorResult,
+) -> None:
+    """Check prompt cache hit ratio from the most recent session JSONL."""
+    session_dir = _get_session_dir(project_dir)
+    if not session_dir.is_dir():
+        return
+
+    # Find the most recent JSONL file.
+    jsonl_files = sorted(session_dir.glob("*.jsonl"), key=lambda p: p.stat().st_mtime)
+    if not jsonl_files:
+        return
+
+    latest = jsonl_files[-1]
+    cache_read = 0
+    cache_creation = 0
+
+    try:
+        with open(latest) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if entry.get("type") != "assistant":
+                    continue
+                usage = (entry.get("message") or {}).get("usage") or {}
+                cache_read += usage.get("cache_read_input_tokens", 0)
+                cache_creation += usage.get("cache_creation_input_tokens", 0)
+    except OSError:
+        return
+
+    total = cache_read + cache_creation
+    if total == 0:
+        return
+
+    ratio = cache_read / total
+    if ratio < 0.40:
+        result.warnings.append(
+            f"Cache health: {ratio:.0%} cache hit ratio in most recent session "
+            f"(target: >40%). See agent_docs/cache-friendly-workflow.md."
+        )

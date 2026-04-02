@@ -133,13 +133,13 @@ class TestManifestCompleteness:
 
 class TestCLAUDEmdLineCounts:
     _TARGETS = {
-        "speedrun": 65,
-        "standard": 100,
-        "gstack": 125,
-        "aihero": 140,
-        "spec-driven": 140,
-        "superpowers": 145,
-        "gtd": 145,
+        "speedrun": 84,
+        "standard": 123,
+        "gstack": 151,
+        "aihero": 164,
+        "spec-driven": 161,
+        "superpowers": 171,
+        "gtd": 162,
     }
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)

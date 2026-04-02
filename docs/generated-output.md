@@ -28,7 +28,7 @@ Everything is tracked in a manifest, so `cc-rig clean` removes exactly what was 
 
 Targets under 100 lines. Static content first, dynamic content last. Claude Code's prompt cache is prefix-matched, so every wasted token costs money on every API call.
 
-Includes project identity, stack, tool commands, guardrails, framework-specific rules and `@import` references to deeper docs (auto-loaded by Claude Code). Not a wall of text. A tight brief that Claude actually reads.
+Includes project identity, stack, tool commands, guardrails (including 4 cache-specific rules), compaction survival instructions, framework-specific rules and `@import` references to deeper docs (auto-loaded by Claude Code). Not a wall of text. A tight brief that Claude actually reads.
 
 A companion `CLAUDE.local.md` is generated for personal preferences (not git-tracked). Use it for per-developer customization without affecting the shared config.
 
@@ -105,11 +105,13 @@ Shell scripts on Claude Code lifecycle events, configured in `settings.json`.
 | **PreToolUse** (Write/Bash) | Block `rm -rf /`, pushes to main, `.env` writes | Safety guards |
 | **Stop** | Save learnings to memory, remind about tests, show session cost | Preserve context, cost awareness |
 | **PreCompact** | Save context before compaction | Survive context loss |
+| **PreCompact** | Output project essentials for compaction survival (harness B1+) | Context intelligence |
+| **Stop** | Write session telemetry to `.claude/telemetry.jsonl` (harness B2+) | Token and cost tracking |
 | **SessionStart** | Load project context and active tasks | Continuity |
 | **SessionStart** | Print open/done task counts (harness B1+) | Quick orientation |
 | **PreToolUse** (Bash) | Lint gate on `git commit` (harness B2+) | Structural enforcement |
 
-Up to 14 hooks from your workflow preset, plus up to 3 more from the harness level.
+Up to 14 hooks from your workflow preset, plus up to 5 more from the harness level.
 
 ---
 
@@ -230,7 +232,7 @@ Framework-specific reference in `agent_docs/`. Real content, not placeholder tex
 - **conventions.md** - naming, file structure, import ordering and error handling
 - **testing.md** - test strategy, fixtures, mocking and coverage expectations
 - **deployment.md** - deployment workflow and infrastructure patterns for your stack
-- **cache-friendly-workflow.md** - practices for maximizing prompt cache hit rates
+- **cache-friendly-workflow.md** - 14 cache-break vectors, pricing impact, TTL info, practices for maximizing prompt cache hit rates
 
 CLAUDE.md references these via `@import` syntax, so Claude Code auto-loads them without Read tool calls. They're still outside the cached prefix to keep token costs low.
 
@@ -241,8 +243,8 @@ CLAUDE.md references these via `@import` syntax, so Claude Code auto-loads them 
 Claude works through a task list while you're away. Add a harness to any cc-rig project:
 
 ```bash
-cc-rig harness init --lite        # Task tracking + session-start summary
-cc-rig harness init               # + enforcement gates (lint blocks commits) + init-sh.sh
+cc-rig harness init --lite        # Task tracking + budget + context survival hook
+cc-rig harness init               # + enforcement gates + session telemetry + init-sh.sh
 cc-rig harness init --autonomy    # + loop script, 5-step PROMPT.md, progress ledger
 ```
 
@@ -260,6 +262,8 @@ The standard level generates `init-sh.sh` (wraps your test/lint/format commands)
 **Safety rails**: iteration limits, budget enforcement (stops the loop when token budget exceeded, warns at configurable threshold), checkpoint auto-commits (when Claude doesn't commit, the loop does), stuck detection, entropy management (tidy between iterations), per-iteration cost tracking in the progress ledger and a cost summary on exit (Ctrl+C, budget exceeded or completion).
 
 The `budget-reminder` Stop hook shows actual session token usage and estimated cost (parsed from Claude Code's JSONL session logs) every time a session ends. Works at all harness levels (B1+), degrades gracefully when python3 is unavailable.
+
+**Context intelligence** (v2.2): The B1+ harness adds a `context-survival.sh` PreCompact hook that outputs project essentials (name, stack, commands, directories, current task) before context compaction, ensuring Claude retains critical state. It also generates documentation of 14 cache-break vectors in `harness.md`. The B2+ harness adds `session-telemetry.sh`, a Stop hook that writes turn count, token usage, cache hit stats and estimated cost to `.claude/telemetry.jsonl` after every session. A `/health` command provides quick access to session metrics.
 
 ---
 

@@ -20,8 +20,8 @@ def generate_claude_md(
     """Generate CLAUDE.md with sections ordered for prompt-cache efficiency.
 
     Static sections first (rarely change), dynamic sections last.
-    Target line counts: speedrun ~56, standard ~93, spec-driven ~111,
-    gtd-lite ~114, verify-heavy ~114.
+    Target line counts: speedrun ~79, standard ~118, spec-driven ~156,
+    gtd ~157, superpowers ~166.
     """
     if skip:
         return []
@@ -37,9 +37,12 @@ def generate_claude_md(
     # ── Section 3: Guardrails (STATIC) ─────────────────────────────
     sections.append(_section_guardrails(config))
 
+    # ── Section 3.1: Compaction Survival (STATIC) ────────────────
+    sections.append(_section_compaction_survival(config))
+
     # ── Section 3.5: Workflow Principles (STATIC, non-speedrun) ──
     if config.workflow != "speedrun":
-        sections.append(_section_workflow_principles())
+        sections.append(_section_workflow_principles(config))
 
     # ── Section 3.6: Process Skills (STATIC, if community workflow) ──
     if config.process_skills:
@@ -129,6 +132,11 @@ def _section_guardrails(config: ProjectConfig) -> str:
         "- Never run destructive commands (rm -rf /, DROP TABLE).",
         "- Prefer editing existing files over creating new ones.",
         "- Keep commits small and focused. One concern per commit.",
+        # Cache-awareness (unconditional)
+        "- Never edit CLAUDE.md during a session. Use CLAUDE.local.md for notes.",
+        "- Never toggle hooks, MCP servers, or plugins mid-session.",
+        "- Never switch models mid-conversation. Use subagents for model escalation.",
+        "- Load memory via Read tool at runtime. Never paste memory into CLAUDE.md.",
     ]
 
     # Harness-aware guardrails (flag-based)
@@ -143,13 +151,69 @@ def _section_guardrails(config: ProjectConfig) -> str:
         )
     if h.autonomy_loop:
         lines.append("- Autonomy mode active. Follow PROMPT.md for iteration instructions.")
+    if h.context_awareness:
+        lines.append("- Context-aware: checkpoint decisions to memory before compaction.")
 
     lines.append("")
     return "\n".join(lines)
 
 
-def _section_workflow_principles() -> str:
-    return (
+def _section_compaction_survival(config: ProjectConfig) -> str:
+    """Project-specific instructions for surviving context compaction."""
+    lines = [
+        "## Compaction Survival\n",
+        "When context is compacted, preserve these project essentials:\n",
+        "### Always Preserve",
+        f"- Project: {config.project_name} ({config.language}/{config.framework})",
+    ]
+
+    # Commands (only non-empty ones)
+    cmds = []
+    if config.test_cmd:
+        cmds.append(f"test=`{config.test_cmd}`")
+    if config.lint_cmd:
+        cmds.append(f"lint=`{config.lint_cmd}`")
+    if config.format_cmd:
+        cmds.append(f"format=`{config.format_cmd}`")
+    if cmds:
+        lines.append(f"- Commands: {', '.join(cmds)}")
+
+    lines.append(f"- Source: `{config.source_dir}/`, Tests: `{config.test_dir}/`")
+    lines.append("- Current task, branch name, and decisions made this session")
+
+    # Feature-conditional items
+    if config.features.memory:
+        lines.append("- Team memory location: `memory/` (reload `decisions.md` after compaction)")
+    if config.features.spec_workflow:
+        lines.append("- Active spec and acceptance criteria from `specs/`")
+    if config.features.gtd:
+        lines.append("- GTD state: open task count, inbox items")
+    h = config.harness
+    if h.autonomy_loop:
+        lines.append("- Autonomy iteration number and progress from `claude-progress.txt`")
+    if h.budget_awareness:
+        lines.append("- Budget status and token usage so far")
+
+    lines.append("")
+    lines.append("### Always Discard")
+    lines.append("- Verbose tool output, file listings, and exploration results")
+    lines.append("- Resolved discussions and completed sub-tasks")
+    lines.append("- Full file contents (re-read after compaction if needed)")
+
+    lines.append("")
+    lines.append("### Custom /compact")
+    lines.append(
+        f'When using `/compact`, include: "Preserve {config.project_name} '
+        f"project context: {config.language}/{config.framework}, "
+        'commands, current task, and key decisions."'
+    )
+
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _section_workflow_principles(config: ProjectConfig) -> str:
+    text = (
         "## Workflow Principles\n"
         "\n"
         "- **Plan first.** Before writing any code, describe your "
@@ -182,6 +246,13 @@ def _section_workflow_principles() -> str:
         "continuity. Use `/remember` for team knowledge — "
         "decisions, patterns, and gotchas.\n"
     )
+    if config.features.spec_workflow and config.features.worktrees:
+        text += (
+            "- **Fork for parallel work.** Use `--fork-session` to share "
+            "the prompt cache across parallel investigations (3 forks "
+            "cost 1.55x vs 3.75x for 3 independent sessions).\n"
+        )
+    return text
 
 
 def _section_process_skills(config: ProjectConfig) -> str:
