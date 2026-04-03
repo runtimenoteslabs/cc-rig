@@ -62,6 +62,11 @@ def heading(msg: str) -> str:
     return f"\n{BOLD}{msg}{RESET}"
 
 
+def info(msg: str) -> str:
+    """Format an informational message."""
+    return f"{CYAN}i{RESET} {msg}"
+
+
 def dim(msg: str) -> str:
     """Format dimmed text."""
     return f"{DIM}{msg}{RESET}"

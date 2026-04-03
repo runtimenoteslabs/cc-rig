@@ -12,7 +12,7 @@ import shutil
 import stat
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from cc_rig.config.project import ProjectConfig
 from cc_rig.generators.memory import MEMORY_FILE_TEMPLATES
@@ -29,6 +29,7 @@ class DoctorResult:
         self.errors: list[str] = []
         self.warnings: list[str] = []
         self.fixes: list[str] = []
+        self.info: list[str] = []
 
     @property
     def passed(self) -> bool:
@@ -113,6 +114,9 @@ def run_doctor(
 
     # ── Check 12: Cache health from session JSONL ─────────
     _check_cache_health(project_dir, result)
+
+    # ── Check 13: JSONL accounting integrity ──────────────
+    _check_jsonl_accounting(project_dir, result)
 
     return result
 
@@ -365,3 +369,77 @@ def _check_cache_health(
             f"Cache health: {ratio:.0%} cache hit ratio in most recent session "
             f"(target: >40%). See agent_docs/cache-friendly-workflow.md."
         )
+
+
+def _check_jsonl_accounting(
+    project_dir: Path,
+    result: DoctorResult,
+) -> None:
+    """Report JSONL accounting integrity for the most recent session.
+
+    Detects duplicate PRELIM entries from extended thinking by looking for
+    consecutive assistant entries with identical cache token pairs.
+    Reports raw data as info (not a warning).
+    """
+    session_dir = _get_session_dir(project_dir)
+    if not session_dir.is_dir():
+        return
+
+    jsonl_files = sorted(session_dir.glob("*.jsonl"), key=lambda p: p.stat().st_mtime)
+    if not jsonl_files:
+        return
+
+    latest = jsonl_files[-1]
+
+    # Parse JSONL, tracking consecutive assistant cache key runs.
+    # Non-assistant entries break runs (they represent different API calls).
+    raw_count = 0
+    deduped_count = 0
+    prev_cache_key: Optional[tuple[int, int]] = None
+
+    try:
+        with open(latest) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if entry.get("type") != "assistant":
+                    # Non-assistant entry breaks the current run.
+                    if prev_cache_key is not None:
+                        deduped_count += 1
+                        prev_cache_key = None
+                    continue
+                usage = (entry.get("message") or {}).get("usage") or {}
+                cache_key = (
+                    usage.get("cache_creation_input_tokens", 0),
+                    usage.get("cache_read_input_tokens", 0),
+                )
+                raw_count += 1
+                if prev_cache_key is not None and cache_key == prev_cache_key:
+                    # Same run: this replaces the pending entry (skip).
+                    pass
+                else:
+                    # New run: flush previous, start new.
+                    if prev_cache_key is not None:
+                        deduped_count += 1
+                    prev_cache_key = cache_key
+        # Flush final pending entry.
+        if prev_cache_key is not None:
+            deduped_count += 1
+    except OSError:
+        return
+
+    if raw_count == 0:
+        return
+
+    ratio = raw_count / deduped_count if deduped_count > 0 else 0.0
+    skipped = raw_count - deduped_count
+
+    msg = f"JSONL accounting: {raw_count} entries, {deduped_count} after dedup ({ratio:.2f}x)."
+    if skipped > 0:
+        msg += f" {skipped} PRELIM entries detected."
+    result.info.append(msg)

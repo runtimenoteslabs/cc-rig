@@ -266,6 +266,120 @@ class TestDoctorCacheHealth:
         assert not any("cache health" in w.lower() for w in result.warnings)
 
 
+class TestDoctorJsonlAccounting:
+    """JSONL accounting integrity check detects PRELIM entry inflation."""
+
+    def test_no_session_data_no_info(self, tmp_path):
+        """No session data directory means no info entry."""
+        generate_project(tmp_path)
+        result = run_doctor(tmp_path)
+        assert not any("jsonl accounting" in n.lower() for n in result.info)
+
+    def test_no_duplicates_reports_ratio_1(self, tmp_path):
+        """Session with unique cache keys reports ratio 1.00x."""
+        import json as json_mod
+
+        from cc_rig.doctor import _get_session_dir
+
+        generate_project(tmp_path)
+
+        session_dir = _get_session_dir(tmp_path)
+        session_dir.mkdir(parents=True, exist_ok=True)
+        jsonl = session_dir / "session.jsonl"
+
+        entries = [
+            {
+                "type": "assistant",
+                "message": {
+                    "role": "assistant",
+                    "usage": {
+                        "cache_read_input_tokens": 1000,
+                        "cache_creation_input_tokens": 500,
+                    },
+                },
+            },
+            {
+                "type": "assistant",
+                "message": {
+                    "role": "assistant",
+                    "usage": {
+                        "cache_read_input_tokens": 2000,
+                        "cache_creation_input_tokens": 100,
+                    },
+                },
+            },
+        ]
+        jsonl.write_text("\n".join(json_mod.dumps(e) for e in entries) + "\n")
+
+        result = run_doctor(tmp_path)
+        info_msgs = [n for n in result.info if "jsonl accounting" in n.lower()]
+        assert len(info_msgs) == 1
+        assert "1.00x" in info_msgs[0]
+        assert "PRELIM" not in info_msgs[0]
+
+    def test_duplicates_reports_inflation(self, tmp_path):
+        """Consecutive entries with identical cache keys report inflation."""
+        import json as json_mod
+
+        from cc_rig.doctor import _get_session_dir
+
+        generate_project(tmp_path)
+
+        session_dir = _get_session_dir(tmp_path)
+        session_dir.mkdir(parents=True, exist_ok=True)
+        jsonl = session_dir / "session.jsonl"
+
+        # 3 consecutive entries with same cache key (1 FINAL + 2 PRELIM)
+        same_usage = {
+            "cache_read_input_tokens": 5000,
+            "cache_creation_input_tokens": 200,
+        }
+        entries = [
+            {"type": "assistant", "message": {"role": "assistant", "usage": same_usage}},
+            {"type": "assistant", "message": {"role": "assistant", "usage": same_usage}},
+            {"type": "assistant", "message": {"role": "assistant", "usage": same_usage}},
+        ]
+        jsonl.write_text("\n".join(json_mod.dumps(e) for e in entries) + "\n")
+
+        result = run_doctor(tmp_path)
+        info_msgs = [n for n in result.info if "jsonl accounting" in n.lower()]
+        assert len(info_msgs) == 1
+        assert "3.00x" in info_msgs[0]
+        assert "2 PRELIM" in info_msgs[0]
+
+    def test_mixed_entries_correct_counting(self, tmp_path):
+        """Non-assistant entries break dedup runs."""
+        import json as json_mod
+
+        from cc_rig.doctor import _get_session_dir
+
+        generate_project(tmp_path)
+
+        session_dir = _get_session_dir(tmp_path)
+        session_dir.mkdir(parents=True, exist_ok=True)
+        jsonl = session_dir / "session.jsonl"
+
+        same_usage = {
+            "cache_read_input_tokens": 1000,
+            "cache_creation_input_tokens": 100,
+        }
+        entries = [
+            {"type": "assistant", "message": {"role": "assistant", "usage": same_usage}},
+            {"type": "assistant", "message": {"role": "assistant", "usage": same_usage}},
+            {"type": "human", "message": {"role": "human"}},
+            {"type": "assistant", "message": {"role": "assistant", "usage": same_usage}},
+        ]
+        jsonl.write_text("\n".join(json_mod.dumps(e) for e in entries) + "\n")
+
+        result = run_doctor(tmp_path)
+        info_msgs = [n for n in result.info if "jsonl accounting" in n.lower()]
+        assert len(info_msgs) == 1
+        # 3 raw assistant entries, but human breaks the run:
+        # run1: 2 entries -> 1 deduped, run2: 1 entry -> 1 deduped = 2 deduped total
+        assert "3 entries" in info_msgs[0]
+        assert "2 after dedup" in info_msgs[0]
+
+
 class TestDoctorCLI:
     def test_doctor_runs(self, capsys, tmp_path):
         generate_project(tmp_path)

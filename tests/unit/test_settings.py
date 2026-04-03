@@ -697,6 +697,65 @@ class TestBudgetReminderHook:
         content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
         assert "Session tokens" in content
 
+    def test_script_has_dedup_logic(self, tmp_path):
+        self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
+        content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
+        assert "entries_deduped" in content
+        assert "cache_creation_input_tokens" in content
+
+    def test_script_has_dedup_display(self, tmp_path):
+        self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
+        content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
+        assert "PRELIM" in content
+
+
+class TestSessionTelemetryHook:
+    """Verify session-telemetry hook dedup and enrichment."""
+
+    def _generate_with_harness(self, tmp_path, level):
+        from cc_rig.config.project import HarnessConfig
+
+        config = compute_defaults("fastapi", "standard", project_name="test")
+        config.harness = HarnessConfig(level=level)
+        generate_settings(config, tmp_path)
+        return config
+
+    def test_not_generated_for_lite(self, tmp_path):
+        self._generate_with_harness(tmp_path, "lite")
+        script = tmp_path / ".claude" / "hooks" / "session-telemetry.sh"
+        assert not script.exists()
+
+    def test_generated_for_standard(self, tmp_path):
+        self._generate_with_harness(tmp_path, "standard")
+        script = tmp_path / ".claude" / "hooks" / "session-telemetry.sh"
+        assert script.exists()
+
+    def test_script_has_dedup_logic(self, tmp_path):
+        self._generate_with_harness(tmp_path, "standard")
+        content = (tmp_path / ".claude" / "hooks" / "session-telemetry.sh").read_text()
+        assert "entries_deduped" in content
+        assert "cache_creation_input_tokens" in content
+
+    def test_script_has_cache_read_ratio(self, tmp_path):
+        self._generate_with_harness(tmp_path, "standard")
+        content = (tmp_path / ".claude" / "hooks" / "session-telemetry.sh").read_text()
+        assert "cache_read_ratio" in content
+
+    def test_script_writes_new_telemetry_fields(self, tmp_path):
+        self._generate_with_harness(tmp_path, "standard")
+        content = (tmp_path / ".claude" / "hooks" / "session-telemetry.sh").read_text()
+        # Both new fields appear in the record construction
+        assert "'cache_read_ratio'" in content
+        assert "'entries_deduped'" in content
+
+    def test_script_passes_bash_syntax(self, tmp_path):
+        import subprocess
+
+        self._generate_with_harness(tmp_path, "standard")
+        script = tmp_path / ".claude" / "hooks" / "session-telemetry.sh"
+        result = subprocess.run(["bash", "-n", str(script)], capture_output=True, text=True)
+        assert result.returncode == 0, f"Syntax error:\n{result.stderr}"
+
 
 # ---------------------------------------------------------------------------
 # enabledPlugins in settings.json

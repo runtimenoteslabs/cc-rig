@@ -74,6 +74,11 @@ class TestB1Lite:
         generate_harness(config, tmp_path)
         assert not (tmp_path / "agent_docs" / "autonomy-loop.md").exists()
 
+    def test_no_session_health_at_lite(self, tmp_path):
+        config = _make_config(level="lite")
+        generate_harness(config, tmp_path)
+        assert not (tmp_path / ".claude" / "commands" / "session-health.md").exists()
+
 
 class TestB2Standard:
     def test_includes_b1_files(self, tmp_path):
@@ -134,14 +139,42 @@ class TestB2Standard:
     def test_b2_file_count(self, tmp_path):
         config = _make_config(level="standard")
         files = generate_harness(config, tmp_path)
-        # 2 B1 (todo.md + harness.md) + init-sh.sh + health.md (session_telemetry) = 4
+        # 2 B1 (todo.md + harness.md) + init-sh.sh + health.md + session-health.md = 5
         # Context awareness + B2 gates enhance harness.md in-place, no new files
-        assert len(files) == 4
+        assert len(files) == 5
 
     def test_no_autonomy_doc(self, tmp_path):
         config = _make_config(level="standard")
         generate_harness(config, tmp_path)
         assert not (tmp_path / "agent_docs" / "autonomy-loop.md").exists()
+
+    def test_session_health_command_generated(self, tmp_path):
+        config = _make_config(level="standard")
+        files = generate_harness(config, tmp_path)
+        assert ".claude/commands/session-health.md" in files
+        assert (tmp_path / ".claude" / "commands" / "session-health.md").exists()
+
+    def test_session_health_command_content(self, tmp_path):
+        config = _make_config(level="standard")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / ".claude" / "commands" / "session-health.md").read_text()
+        assert "dedup" in content.lower()
+        assert "cache_read" in content
+        assert "Opus" in content
+
+    def test_health_command_mentions_cache_ratio(self, tmp_path):
+        config = _make_config(level="standard")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / ".claude" / "commands" / "health.md").read_text()
+        assert "cache_read_ratio" in content
+
+    def test_harness_md_has_new_metrics(self, tmp_path):
+        config = _make_config(level="standard")
+        generate_harness(config, tmp_path)
+        content = (tmp_path / "agent_docs" / "harness.md").read_text()
+        assert "Cache read ratio" in content
+        assert "Entries deduped" in content
+        assert "/session-health" in content
 
 
 class TestB3Autonomy:
@@ -320,9 +353,9 @@ class TestB3Autonomy:
     def test_b3_file_count(self, tmp_path):
         config = _make_config(level="autonomy")
         files = generate_harness(config, tmp_path)
-        # 2 B1 + init-sh.sh + 4 B3 + health.md (session_telemetry) = 8
+        # 2 B1 + init-sh.sh + 4 B3 + health.md + session-health.md = 9
         # Context awareness enhances harness.md in-place, no new file
-        assert len(files) == 8
+        assert len(files) == 9
 
     def test_loop_sh_uses_output_format_json(self, tmp_path):
         config = _make_config(level="autonomy")

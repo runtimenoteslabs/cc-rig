@@ -828,6 +828,8 @@ def _generate_session_telemetry(
         "| Token usage | input_tokens, output_tokens from usage |\n"
         "| Estimated cost | Per-million pricing by model family |\n"
         "| Compaction count | System messages indicating compaction |\n"
+        "| Cache read ratio | cache_read / (cache_read + cache_creation) |\n"
+        "| Entries deduped | PRELIM entries removed from token accounting |\n"
         "\n"
         "### /health Command\n"
         "\n"
@@ -836,6 +838,14 @@ def _generate_session_telemetry(
         "- Average session length\n"
         "- Most common model\n"
         "- Compaction frequency\n"
+        "- Cache read ratio per session\n"
+        "\n"
+        "### /session-health Command\n"
+        "\n"
+        "Run `/session-health` to analyze the current session:\n"
+        "- Token breakdown and cache read ratio\n"
+        "- Dedup ratio (detects PRELIM entry inflation)\n"
+        "- Estimated cost\n"
     )
 
     if harness_md.exists():
@@ -866,6 +876,8 @@ def _generate_session_telemetry(
         "5. Most common model used\n"
         "6. Total compactions across all sessions\n"
         "7. Last 5 session summaries (date, duration, cost, compactions)\n"
+        "8. Cache read ratio per session (from cache_read_ratio field)\n"
+        "9. Dedup activity (sessions where entries_deduped > 0)\n"
         "\n"
         "Format as a clear summary table. If the file does not exist or is empty,\n"
         'report "No telemetry data yet. Complete a session to start collecting '
@@ -873,6 +885,35 @@ def _generate_session_telemetry(
     )
     _write(health_path, health_content, tracker, health_rel)
     files.append(health_rel)
+
+    # Generate /session-health command
+    sh_rel = ".claude/commands/session-health.md"
+    sh_path = output_dir / ".claude" / "commands" / "session-health.md"
+    sh_content = (
+        "---\n"
+        "description: Analyze current session for token accounting and cache health\n"
+        "allowed-tools: Bash, Read\n"
+        "---\n"
+        "\n"
+        "Find the most recent JSONL session file for this project in\n"
+        "~/.claude/projects/ and analyze it:\n"
+        "\n"
+        "1. Total assistant entries (raw count)\n"
+        "2. Entries after dedup (consecutive entries with identical\n"
+        "   cache_creation and cache_read token pairs, keep last only)\n"
+        "3. Dedup ratio (raw / deduped, 1.0 = no duplicates)\n"
+        "4. Token breakdown: input, output, cache_creation, cache_read\n"
+        "5. Cache read ratio: cache_read / (cache_read + cache_creation)\n"
+        "6. Estimated cost using per-million pricing:\n"
+        "   - Opus: ($15, $75, $18.75, $1.50)\n"
+        "   - Sonnet: ($3, $15, $3.75, $0.30)\n"
+        "   - Haiku: ($0.80, $4, $1.0, $0.08)\n"
+        "7. Turn count and tool call count\n"
+        "\n"
+        "Display as a clear summary with raw numbers.\n"
+    )
+    _write(sh_path, sh_content, tracker, sh_rel)
+    files.append(sh_rel)
 
     return files
 

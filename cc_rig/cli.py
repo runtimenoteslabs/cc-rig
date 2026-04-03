@@ -794,32 +794,80 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
     from pathlib import Path
 
     from cc_rig.doctor import run_doctor
+    from cc_rig.ui.display import (
+        BOLD,
+        CYAN,
+        GREEN,
+        RED,
+        RESET,
+        YELLOW,
+        heading,
+    )
+    from cc_rig.ui.display import (
+        error as fmt_error,
+    )
+    from cc_rig.ui.display import (
+        info as fmt_info,
+    )
+    from cc_rig.ui.display import (
+        success as fmt_success,
+    )
+    from cc_rig.ui.display import (
+        warning as fmt_warning,
+    )
 
     project_dir = Path(args.dir).resolve()
     check_compat = getattr(args, "check_compat", False)
     result = run_doctor(project_dir, fix=args.fix, check_compat=check_compat)
 
+    print(f"\n{BOLD}cc-rig doctor{RESET}  {project_dir.name}")
+    print(f"{CYAN}{'─' * 50}{RESET}")
+
     if result.fixes:
-        print("\nFixes applied:")
+        print(heading("Fixes applied"))
         for fix in result.fixes:
-            print(f"  + {fix}")
+            print(f"  {fmt_success(fix)}")
 
     if result.errors:
-        print("\nErrors:")
+        print(heading("Errors"))
         for err in result.errors:
-            print(f"  x {err}")
+            print(f"  {fmt_error(err)}")
 
     if result.warnings:
-        print("\nWarnings:")
+        print(heading("Warnings"))
         for warn in result.warnings:
-            print(f"  ! {warn}")
+            print(f"  {fmt_warning(warn)}")
 
-    if result.passed and not result.warnings:
-        print("\nAll checks passed.")
+    if result.info:
+        print(heading("Info"))
+        for note in result.info:
+            print(f"  {fmt_info(note)}")
+
+    # Summary box
+    n_err = len(result.errors)
+    n_warn = len(result.warnings)
+    n_info = len(result.info)
+    n_fix = len(result.fixes)
+
+    print(f"\n{CYAN}{'─' * 50}{RESET}")
+    parts = []
+    if n_err:
+        parts.append(f"{RED}{n_err} error(s){RESET}")
+    if n_warn:
+        parts.append(f"{YELLOW}{n_warn} warning(s){RESET}")
+    if n_info:
+        parts.append(f"{CYAN}{n_info} info{RESET}")
+    if n_fix:
+        parts.append(f"{GREEN}{n_fix} fix(es){RESET}")
+
+    if result.passed and not n_warn and not n_info:
+        print(f"  {GREEN}All checks passed.{RESET}")
     elif result.passed:
-        print(f"\nPassed with {len(result.warnings)} warning(s).")
+        status = f"{GREEN}Passed{RESET}"
+        print(f"  {status}  {' | '.join(parts)}")
     else:
-        print(f"\n{len(result.errors)} error(s), {len(result.warnings)} warning(s).")
+        status = f"{RED}Failed{RESET}"
+        print(f"  {status}  {' | '.join(parts)}")
 
     return 0 if result.passed else 1
 
