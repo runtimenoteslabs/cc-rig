@@ -2,6 +2,25 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [2.4.1] - 2026-04-04
+
+### Added
+- **Output hygiene guardrails**. Every generated CLAUDE.md now includes 2 framework-specific compact command hints in the guardrails section (e.g., "Use `pytest -q --tb=short` for exploration"). Covers all 16 templates with framework-aware advice for test runners, dependency tools, and git commands. Reduces context token usage from verbose tool output.
+- **Output hygiene in agent docs** (B1+ context_awareness). Projects with context awareness get an "Output Hygiene" section in `agent_docs/harness.md` covering general best practices: git diff stat, quiet test flags, dependency depth limits, large file handling, and RTK as a complementary tool.
+- **Doctor Check 14: RTK detection**. Detects RTK (rtk-ai/rtk, tool output compression) binary in PATH and checks if its Bash auto-rewrite hook is configured in settings.json (project or global). Info-level only, never a warning. Reports version and configuration status.
+- **JSONL deduplication**. Budget-reminder and session-telemetry hooks now collapse consecutive assistant entries with identical cache token pairs, filtering PRELIM entries from extended thinking. Fixes 2-3x token inflation in sessions with extended thinking enabled. Safe by construction: no-op when no duplicates exist.
+- **`/session-health` command** (B2+ standard). Live current-session analysis: raw entry count, dedup ratio, token breakdown, cache read ratio, estimated cost. Reports raw data without thresholds.
+- **Doctor Check 13: JSONL accounting**. Reports raw vs deduplicated entry count from the most recent session JSONL. Uses new `DoctorResult.info` field for informational (non-warning) output.
+- **`cache_read_ratio` and `entries_deduped`** added to session telemetry records. `/health` command now shows cache ratio per session and dedup activity.
+
+### Changed
+- **Doctor CLI output**. Color-coded sections (green/yellow/red/cyan), project name header, horizontal rules, summary line with counts. Respects `NO_COLOR` and TTY detection.
+- **Budget-reminder hook output**. Structured token breakdown (input, output, cache create, cache read), cache ratio percentage, ANSI color with `NO_COLOR` support.
+- **Session-telemetry hook output**. Compact one-liner with turns, tokens, cost, cache ratio and dedup count.
+- **CLAUDE.md line counts**. All per-workflow targets increased by 2 lines (compact command guardrails).
+
+---
+
 ## [2.3.0] - 2026-04-03
 
 ### Added

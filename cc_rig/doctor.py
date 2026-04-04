@@ -10,6 +10,7 @@ import json
 import re
 import shutil
 import stat
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
@@ -117,6 +118,9 @@ def run_doctor(
 
     # ── Check 13: JSONL accounting integrity ──────────────
     _check_jsonl_accounting(project_dir, result)
+
+    # ── Check 14: RTK output compression ─────────────────
+    _check_rtk(project_dir, result)
 
     return result
 
@@ -443,3 +447,69 @@ def _check_jsonl_accounting(
     if skipped > 0:
         msg += f" {skipped} PRELIM entries detected."
     result.info.append(msg)
+
+
+def _check_rtk(
+    project_dir: Path,
+    result: DoctorResult,
+) -> None:
+    """Check if RTK (tool output compression) is installed and configured.
+
+    RTK is optional and complementary. Info-level only, never a warning.
+    """
+    rtk_path = shutil.which("rtk")
+    if not rtk_path:
+        return  # Optional tool, skip silently
+
+    # Get version
+    version = "unknown"
+    try:
+        proc = subprocess.run(
+            ["rtk", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if proc.returncode == 0 and proc.stdout.strip():
+            version = proc.stdout.strip()
+    except (subprocess.TimeoutExpired, OSError):
+        pass
+
+    # Check if hook is wired in project or global settings.json
+    hook_configured = _rtk_hook_configured(project_dir)
+
+    if hook_configured:
+        result.info.append(f"RTK ({version}) detected, Bash output compression active.")
+    else:
+        result.info.append(
+            f"RTK ({version}) installed but hook not configured. "
+            "Run `rtk init -g` to enable Bash output compression."
+        )
+
+
+def _rtk_hook_configured(project_dir: Path) -> bool:
+    """Check if RTK's PreToolUse hook is registered in settings.json."""
+    candidates = [
+        project_dir / ".claude" / "settings.json",
+        Path.home() / ".claude" / "settings.json",
+    ]
+    for settings_path in candidates:
+        if not settings_path.exists():
+            continue
+        try:
+            data = json.loads(settings_path.read_text())
+            hooks = data.get("hooks", {}).get("PreToolUse", [])
+            for entry in hooks:
+                if isinstance(entry, dict):
+                    # New format: {"matcher": "Bash", "hooks": [...]}
+                    for h in entry.get("hooks", []):
+                        cmd = h.get("command", "") if isinstance(h, dict) else ""
+                        if "rtk" in cmd:
+                            return True
+                    # Also check top-level command
+                    cmd = entry.get("command", "")
+                    if "rtk" in cmd:
+                        return True
+        except (json.JSONDecodeError, OSError):
+            continue
+    return False

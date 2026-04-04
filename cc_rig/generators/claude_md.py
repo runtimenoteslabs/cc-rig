@@ -139,6 +139,15 @@ def _section_guardrails(config: ProjectConfig) -> str:
         "- Load memory via Read tool at runtime. Never paste memory into CLAUDE.md.",
     ]
 
+    # Output hygiene (unconditional, template-specific)
+    compact = _COMPACT_COMMANDS.get(
+        config.template_preset, _COMPACT_COMMANDS.get(config.framework, [])
+    )
+    if not compact:
+        compact = _COMPACT_COMMANDS.get("generic", [])
+    for hint in compact:
+        lines.append(f"- {hint}")
+
     # Harness-aware guardrails (flag-based)
     h = config.harness
     if h.budget_awareness:
@@ -156,6 +165,78 @@ def _section_guardrails(config: ProjectConfig) -> str:
 
     lines.append("")
     return "\n".join(lines)
+
+
+# ── Output hygiene: compact command hints per template ───────────
+# These are appended to the guardrails section unconditionally.
+# Each template gets 2 framework-specific hints for output-efficient CLI usage.
+
+_COMPACT_COMMANDS: dict[str, list[str]] = {
+    "generic": [
+        "Prefer `--quiet` or `--short` flags when exploring. Full output only for debugging.",
+        "Use `git diff --stat` before full diff on large changesets.",
+    ],
+    "fastapi": [
+        "Use `pytest -q --tb=short` for exploration. Full output only when debugging a failure.",
+        "Use `git diff --stat` before full diff on large changesets.",
+    ],
+    "django": [
+        "Use `python manage.py test --verbosity=1` for exploration runs.",
+        "Use `git diff --stat` before full diff on large changesets.",
+    ],
+    "flask": [
+        "Use `pytest -q --tb=short` for exploration. Full output only when debugging a failure.",
+        "Use `git diff --stat` before full diff on large changesets.",
+    ],
+    "nextjs": [
+        "Use `npm ls --depth=0`, never unbounded `npm ls`.",
+        "Use `npx jest --silent` or `npx vitest --reporter=dot` for exploration runs.",
+    ],
+    "express": [
+        "Use `npm ls --depth=0`, never unbounded `npm ls`.",
+        "Use `npx jest --silent` for exploration runs.",
+    ],
+    "gin": [
+        "Use `go test -short ./...` for quick validation, `-run TestName` to target one test.",
+        "Use `git diff --stat` before full diff on large changesets.",
+    ],
+    "echo": [
+        "Use `go test -short ./...` for quick validation, `-run TestName` to target one test.",
+        "Use `git diff --stat` before full diff on large changesets.",
+    ],
+    "go-std": [
+        "Use `go test -short ./...` for quick validation, `-run TestName` to target one test.",
+        "Use `git diff --stat` before full diff on large changesets.",
+    ],
+    "rust-cli": [
+        "Use `cargo test -- --quiet` for exploration. Full output only when debugging.",
+        "Use `git diff --stat` before full diff on large changesets.",
+    ],
+    "rust-web": [
+        "Use `cargo test -- --quiet` for exploration. Full output only when debugging.",
+        "Use `git diff --stat` before full diff on large changesets.",
+    ],
+    "rails": [
+        "Use `rails test --verbose=false` for exploration runs.",
+        "Use `bundle list` for dependency overview, not `bundle show` (verbose).",
+    ],
+    "spring": [
+        "Use `./mvnw test -q` or `./gradlew test --quiet` for exploration.",
+        "Use `git diff --stat` before full diff on large changesets.",
+    ],
+    "dotnet": [
+        "Use `dotnet test --verbosity=minimal` for exploration runs.",
+        "Use `git diff --stat` before full diff on large changesets.",
+    ],
+    "laravel": [
+        "Use `php artisan test --compact` for exploration runs.",
+        "Use `composer show --direct` for dependency overview.",
+    ],
+    "phoenix": [
+        "Use `mix test --trace` only when debugging. Default `mix test` is compact.",
+        "Use `mix deps` for dependency overview, not `mix deps.tree` (verbose).",
+    ],
+}
 
 
 def _section_compaction_survival(config: ProjectConfig) -> str:

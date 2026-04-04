@@ -353,7 +353,7 @@ Export portable configs, lock configs to prevent modification, compare configs a
 ### Health check and cleanup
 
 ```bash
-cc-rig doctor                 # Check project health (files, hooks, permissions, cache, manifest)
+cc-rig doctor                 # Check project health (files, hooks, permissions, cache, RTK, manifest)
 cc-rig doctor --fix           # Auto-fix safe issues
 cc-rig clean                  # Remove generated files using the manifest
 ```
@@ -369,7 +369,9 @@ cc-rig optimizes for this automatically:
 - **CLAUDE.md is static-first.** Project identity, commands and guardrails at the top (never change). Current context at the bottom (changes every session). Only the tail breaks cache.
 - **4 cache guardrails** tell Claude not to edit CLAUDE.md mid-session, not to toggle hooks/plugins, not to switch models (use subagents instead), and to load memory via Read tool rather than pasting it inline.
 - **Compaction survival.** A dedicated CLAUDE.md section tells Claude what to preserve when the context window is compacted. The B1+ harness adds a PreCompact hook that outputs project essentials before the wipe.
-- **`cc-rig doctor` checks your cache health.** It scans CLAUDE.md for dates and timestamps in the static zone (cache-breaking anti-patterns) and parses your most recent session JSONL to warn if your cache hit ratio drops below 40%.
+- **Output hygiene guardrails.** Every generated CLAUDE.md includes framework-specific compact command hints (e.g., "Use `pytest -q --tb=short` for exploration"). The B1+ harness adds an Output Hygiene section to `harness.md` with general best practices for reducing verbose tool output. `cc-rig doctor` detects [RTK](https://github.com/rtk-ai/rtk) if installed and checks whether its Bash output compression hook is configured.
+- **`cc-rig doctor` checks your cache health.** It scans CLAUDE.md for dates and timestamps in the static zone (cache-breaking anti-patterns), parses your most recent session JSONL to warn if your cache hit ratio drops below 40%, reports JSONL accounting integrity (detecting PRELIM entry inflation from extended thinking), and detects RTK installation status.
+- **JSONL deduplication.** Extended thinking can log 2-3x duplicate PRELIM entries to your session JSONL. The budget-reminder and session-telemetry hooks automatically deduplicate before accounting, so your cost estimates are accurate. The `/session-health` command shows the dedup ratio for your current session.
 
 [Full guide: saving tokens with cc-rig](docs/saving-tokens.md)
 

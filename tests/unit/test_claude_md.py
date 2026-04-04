@@ -63,13 +63,13 @@ class TestConditionalSections:
 
 class TestLineCounts:
     _TARGETS = {
-        "speedrun": 84,
-        "standard": 123,
-        "gstack": 151,
-        "aihero": 164,
-        "spec-driven": 161,
-        "superpowers": 171,
-        "gtd": 162,
+        "speedrun": 86,
+        "standard": 125,
+        "gstack": 153,
+        "aihero": 166,
+        "spec-driven": 163,
+        "superpowers": 173,
+        "gtd": 164,
     }
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)

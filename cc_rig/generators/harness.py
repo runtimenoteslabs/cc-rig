@@ -788,6 +788,26 @@ def _generate_context_awareness(
         "- Keep CLAUDE.md stable during a session to maximize cache hits\n"
     )
 
+    # Output hygiene section (appended to context awareness)
+    content += (
+        "\n"
+        "### Output Hygiene\n"
+        "\n"
+        "Tool output consumes context tokens. Prefer compact commands during exploration:\n"
+        "\n"
+        "- **Git**: `git diff --stat` before full diff. `git log --oneline -20` not `git log`.\n"
+        "- **Tests**: Use `--quiet`/`--short` flags for exploration. "
+        "Full output only when debugging a specific failure.\n"
+        "- **Dependencies**: Use `--depth=0` or `--direct` equivalents. "
+        "Never dump full dependency trees.\n"
+        "- **Build output**: Redirect to file if > 50 lines, "
+        "then read relevant sections.\n"
+        "- **Large files**: Use `head`/`tail` with line limits, not full `cat`.\n"
+        "\n"
+        "If RTK is installed (`rtk --version`), it handles output compression "
+        "automatically via Bash auto-rewrite.\n"
+    )
+
     if harness_md.exists():
         existing = harness_md.read_text()
         _write(harness_md, existing + content, tracker, rel)
