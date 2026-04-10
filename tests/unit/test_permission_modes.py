@@ -104,3 +104,49 @@ class TestDenyList:
         default_perms = _get_permissions(default_dir, "speedrun")
         permissive_perms = _get_permissions(permissive_dir, "standard")
         assert default_perms["deny"] == permissive_perms["deny"]
+
+
+class TestDenyReadWrite:
+    """Validate denyRead/denyWrite security rules."""
+
+    def test_deny_read_present(self, tmp_path):
+        perms = _get_permissions(tmp_path, "standard")
+        assert "denyRead" in perms
+        assert len(perms["denyRead"]) >= 5
+
+    def test_deny_read_covers_ssh(self, tmp_path):
+        perms = _get_permissions(tmp_path, "standard")
+        assert "~/.ssh/**" in perms["denyRead"]
+
+    def test_deny_read_covers_aws(self, tmp_path):
+        perms = _get_permissions(tmp_path, "standard")
+        assert "~/.aws/**" in perms["denyRead"]
+
+    def test_deny_read_covers_env(self, tmp_path):
+        perms = _get_permissions(tmp_path, "standard")
+        assert "**/.env" in perms["denyRead"]
+
+    def test_deny_read_covers_credentials(self, tmp_path):
+        perms = _get_permissions(tmp_path, "standard")
+        assert "**/credentials*" in perms["denyRead"]
+
+    def test_deny_read_covers_secrets(self, tmp_path):
+        perms = _get_permissions(tmp_path, "standard")
+        assert "**/*secret*" in perms["denyRead"]
+
+    def test_deny_write_present(self, tmp_path):
+        perms = _get_permissions(tmp_path, "standard")
+        assert "denyWrite" in perms
+        assert len(perms["denyWrite"]) >= 3
+
+    def test_deny_write_covers_ssh(self, tmp_path):
+        perms = _get_permissions(tmp_path, "standard")
+        assert "~/.ssh/**" in perms["denyWrite"]
+
+    def test_deny_read_identical_across_modes(self, tmp_path):
+        default_dir = tmp_path / "default"
+        permissive_dir = tmp_path / "permissive"
+        default_perms = _get_permissions(default_dir, "speedrun")
+        permissive_perms = _get_permissions(permissive_dir, "standard")
+        assert default_perms["denyRead"] == permissive_perms["denyRead"]
+        assert default_perms["denyWrite"] == permissive_perms["denyWrite"]

@@ -63,13 +63,13 @@ class TestConditionalSections:
 
 class TestLineCounts:
     _TARGETS = {
-        "speedrun": 86,
-        "standard": 125,
-        "gstack": 153,
-        "aihero": 166,
-        "spec-driven": 163,
-        "superpowers": 173,
-        "gtd": 164,
+        "speedrun": 87,
+        "standard": 126,
+        "gstack": 154,
+        "aihero": 167,
+        "spec-driven": 164,
+        "superpowers": 174,
+        "gtd": 165,
     }
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
@@ -241,6 +241,11 @@ class TestHarnessGuardrails:
 
 class TestCacheGuardrails:
     """Cache guardrails are unconditional (present in all workflows)."""
+
+    def test_security_guardrail_in_all_workflows(self, tmp_path):
+        content = _generate_claude_md("fastapi", "standard", tmp_path)
+        assert "API keys" in content or "private keys" in content
+        assert "seed phrases" in content
 
     def test_cache_guardrails_in_standard(self, tmp_path):
         content = _generate_claude_md("fastapi", "standard", tmp_path)

@@ -30,7 +30,7 @@ _WORKFLOW_EFFORT: dict[str, str] = {
 
 # ── Hook metadata registry ─────────────────────────────────────────
 # Maps hook name -> (event, matcher, hook_type, if_condition)
-# hook_type is "command", "prompt", or "agent".
+# hook_type is "command", "prompt", "agent", or "http".
 # if_condition uses CC permission rule syntax (v2.1.85+), empty = no condition.
 
 
@@ -119,6 +119,25 @@ _DEFAULT_PERMISSIONS = {
         "Bash(rm -rf ~)",
     ],
 }
+
+# Paths that should never be read or written by Claude Code.
+# Applied unconditionally to all generated settings.
+_DENY_READ_PATHS = [
+    "~/.ssh/**",
+    "~/.aws/**",
+    "~/.gnupg/**",
+    "**/.env",
+    "**/.env.*",
+    "**/.env.local",
+    "**/credentials*",
+    "**/*secret*",
+]
+
+_DENY_WRITE_PATHS = [
+    "~/.ssh/**",
+    "~/.aws/**",
+    "~/.gnupg/**",
+]
 
 _PERMISSIVE_ADDITIONS = [
     "Bash",
@@ -266,11 +285,13 @@ def generate_settings(
 # ── Internal helpers ───────────────────────────────────────────────
 
 
-def _build_permissions(config: ProjectConfig) -> dict[str, list[str]]:
+def _build_permissions(config: ProjectConfig) -> dict[str, Any]:
     """Build permission rules based on config.permission_mode."""
-    perms: dict[str, list[str]] = {
+    perms: dict[str, Any] = {
         "allow": list(_DEFAULT_PERMISSIONS["allow"]),
         "deny": list(_DEFAULT_PERMISSIONS["deny"]),
+        "denyRead": list(_DENY_READ_PATHS),
+        "denyWrite": list(_DENY_WRITE_PATHS),
     }
     if config.permission_mode in ("permissive", "auto"):
         for tool in _PERMISSIVE_ADDITIONS:

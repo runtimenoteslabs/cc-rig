@@ -128,6 +128,7 @@ def _section_guardrails(config: ProjectConfig) -> str:
         "## Guardrails\n",
         "- Run tests before committing. Run lint before pushing.",
         "- Never commit .env, credentials, or secrets.",
+        "- Never read, output, or log API keys, private keys, tokens, or seed phrases.",
         "- Never push directly to main/master.",
         "- Never run destructive commands (rm -rf /, DROP TABLE).",
         "- Prefer editing existing files over creating new ones.",
