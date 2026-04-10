@@ -19,25 +19,17 @@ class TestFeatures:
         assert f.spec_workflow is False
         assert f.gtd is False
         assert f.worktrees is False
-        assert f.agents_md is False
 
     def test_to_dict(self):
         f = Features(memory=True, worktrees=True)
         d = f.to_dict()
-        assert d == {
-            "memory": True,
-            "spec_workflow": False,
-            "gtd": False,
-            "worktrees": True,
-            "agents_md": False,
-        }
+        assert d == {"memory": True, "spec_workflow": False, "gtd": False, "worktrees": True}
 
     def test_from_dict(self):
         f = Features.from_dict({"memory": True, "gtd": True})
         assert f.memory is True
         assert f.gtd is True
         assert f.spec_workflow is False
-        assert f.agents_md is False
 
     def test_round_trip(self):
         f = Features(memory=True, spec_workflow=True, gtd=False, worktrees=True)
