@@ -234,7 +234,7 @@ def _check_settings_hooks(output_dir: Path, result: ValidationResult) -> None:
             for hook in matcher.get("hooks", []):
                 # V7: Valid hook types
                 hook_type = hook.get("type", "")
-                if hook_type not in ("command", "prompt", "agent"):
+                if hook_type not in ("command", "prompt", "agent", "http"):
                     result.issues.append(
                         ValidationIssue(
                             "V7",

@@ -347,6 +347,7 @@ class TestV21SchemaExpansion:
             "ElicitationResult",
             "TeammateIdle",
             "TaskCompleted",
+            "SubagentStart",
         }
         for event in new_events:
             assert event in VALID_CC_EVENTS, f"{event} not in VALID_CC_EVENTS"
@@ -354,7 +355,7 @@ class TestV21SchemaExpansion:
     def test_cc_events_count(self):
         from cc_rig.config.schema import VALID_CC_EVENTS
 
-        assert len(VALID_CC_EVENTS) == 25
+        assert len(VALID_CC_EVENTS) == 26
 
     def test_lsp_tool_accepted(self):
         from cc_rig.config.schema import VALID_CC_TOOLS

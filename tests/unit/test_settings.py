@@ -58,7 +58,7 @@ class TestHookSchema:
         for event, matchers in data.get("hooks", {}).items():
             for matcher in matchers:
                 for hook in matcher.get("hooks", []):
-                    assert hook["type"] in ("command", "prompt", "agent"), (
+                    assert hook["type"] in ("command", "prompt", "agent", "http"), (
                         f"Invalid type {hook['type']} in {event}"
                     )
 

@@ -169,7 +169,8 @@ VALID_CC_EVENTS = {
     "ElicitationResult",
     "TeammateIdle",
     "TaskCompleted",
-    # Added in CC v2.1.83-2.1.89
+    # Added in CC v2.1.78-2.1.89
+    "SubagentStart",  # v2.1.78: fires when subagent spawned
     "CwdChanged",  # v2.1.83: working directory change
     "FileChanged",  # v2.1.83: watched file modifications
     "TaskCreated",  # v2.1.84: TaskCreate tool used
