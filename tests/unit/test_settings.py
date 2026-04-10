@@ -212,20 +212,11 @@ class TestHookScriptContent:
         script = (tmp_path / ".claude" / "hooks" / "typecheck.sh").read_text()
         assert "go vet" in script
 
-    def test_stop_validator_uses_test_command(self, tmp_path):
+    def test_stop_validator_checks_uncommitted(self, tmp_path):
         _generate_settings("fastapi", "standard", tmp_path)
         script = (tmp_path / ".claude" / "hooks" / "stop-validator.sh").read_text()
-        assert "pytest" in script
-
-    def test_stop_validator_nextjs_uses_npm_test(self, tmp_path):
-        _generate_settings("nextjs", "standard", tmp_path)
-        script = (tmp_path / ".claude" / "hooks" / "stop-validator.sh").read_text()
-        assert "npm test" in script
-
-    def test_stop_validator_go_uses_go_test(self, tmp_path):
-        _generate_settings("gin", "standard", tmp_path)
-        script = (tmp_path / ".claude" / "hooks" / "stop-validator.sh").read_text()
-        assert "go test" in script
+        assert "uncommitted" in script
+        assert "git diff" in script
 
     def test_lint_hook_axum_uses_clippy(self, tmp_path):
         _generate_settings("rust-web", "standard", tmp_path)
@@ -607,16 +598,11 @@ class TestBudgetReminderHook:
         script = tmp_path / ".claude" / "hooks" / "budget-reminder.sh"
         assert script.exists()
 
-    def test_shows_token_limit(self, tmp_path):
+    def test_script_has_cost_calculation(self, tmp_path):
         self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
         content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
-        assert "BUDGET=500000" in content
-        assert "80" in content
-
-    def test_shows_unlimited_when_no_limit(self, tmp_path):
-        self._generate_with_harness(tmp_path, "lite", budget_tokens=None)
-        content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
-        assert "unlimited" in content
+        assert "PRICING" in content
+        assert "cost" in content
 
     def test_script_passes_bash_syntax(self, tmp_path):
         import subprocess
@@ -685,17 +671,12 @@ class TestBudgetReminderHook:
         self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
         content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
         assert "command -v python3" in content
-        assert "unavailable" in content
 
-    def test_script_has_estimated_cost_display(self, tmp_path):
+    def test_script_has_compact_budget_display(self, tmp_path):
         self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
         content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
-        assert "Est. cost" in content
-
-    def test_script_has_session_tokens_display(self, tmp_path):
-        self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
-        content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
-        assert "Session tokens" in content
+        assert "Budget" in content
+        assert "tokens" in content
 
     def test_script_has_dedup_logic(self, tmp_path):
         self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
@@ -706,7 +687,7 @@ class TestBudgetReminderHook:
     def test_script_has_dedup_display(self, tmp_path):
         self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
         content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
-        assert "PRELIM" in content
+        assert "deduped" in content
 
 
 class TestSessionTelemetryHook:

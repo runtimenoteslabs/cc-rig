@@ -777,9 +777,9 @@ class TestS07RustCliStandardB3:
         content = _read_claude_md(self.root)
         assert "rust" in content.lower()
 
-    def test_stop_validator_uses_cargo_test(self):
+    def test_stop_validator_checks_uncommitted(self):
         content = (self.root / ".claude" / "hooks" / "stop-validator.sh").read_text()
-        assert "cargo test" in content
+        assert "uncommitted" in content
 
     def test_hooks_executable(self):
         _assert_hooks_executable(self.root)

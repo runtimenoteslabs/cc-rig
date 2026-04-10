@@ -12,9 +12,12 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from cc_rig.generators.fileops import FileTracker
 from cc_rig.skills.registry import SkillSpec
+
+if TYPE_CHECKING:
+    from cc_rig.generators.fileops import FileTracker
 
 # GitHub raw content URL pattern
 _RAW_URL = "https://raw.githubusercontent.com/{repo}/{branch}/{path}"

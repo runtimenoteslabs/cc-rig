@@ -350,7 +350,11 @@ def _script_format(config: ProjectConfig) -> str:
 
 
 def _script_check_on_commit(tool_name: str, cmd: str) -> str:
-    """Generate a hook script that runs a check tool before git commit."""
+    """Generate a hook script that runs a check tool before git commit.
+
+    Output hygiene: suppress stdout on success (exit 0 silently).
+    On failure, truncate to first 20 lines to limit token drain.
+    """
     safe_cmd = _safe_cmd(cmd, f"echo 'No {tool_name} configured'")
     return (
         "#!/usr/bin/env bash\n"
@@ -363,8 +367,16 @@ def _script_check_on_commit(tool_name: str, cmd: str) -> str:
         "\n"
         "# Only run on git commit commands\n"
         'if echo "$INPUT" | grep -q "git commit"; then\n'
-        f"  {safe_cmd}\n"
-        "  exit $?\n"
+        f"  OUTPUT=$({safe_cmd} 2>&1) && exit 0\n"
+        "  RC=$?\n"
+        '  LINES=$(echo "$OUTPUT" | wc -l)\n'
+        '  if [ "$LINES" -gt 20 ]; then\n'
+        '    echo "$OUTPUT" | head -20\n'
+        f'    echo "... ($LINES total lines, showing first 20)"\n'
+        "  else\n"
+        '    echo "$OUTPUT"\n'
+        "  fi\n"
+        "  exit $RC\n"
         "fi\n"
         "\n"
         "exit 0\n"
@@ -504,24 +516,17 @@ def _script_block_main(config: ProjectConfig) -> str:
 
 
 def _script_stop_validator(config: ProjectConfig) -> str:
-    test_cmd = _safe_cmd(config.test_cmd, "echo 'No test command configured'")
     return (
         "#!/usr/bin/env bash\n"
         "# cc-rig hook: stop-validator — check work before stopping\n"
         "# Event: Stop\n"
         "set -euo pipefail\n"
         "\n"
-        "# Check for uncommitted changes\n"
-        "if git diff --quiet 2>/dev/null && "
-        "git diff --cached --quiet 2>/dev/null; then\n"
-        '  echo "All changes committed."\n'
-        "else\n"
-        '  echo "WARNING: There are uncommitted changes."\n'
+        "# Only warn if there are uncommitted changes\n"
+        "if ! git diff --quiet 2>/dev/null || "
+        "! git diff --cached --quiet 2>/dev/null; then\n"
+        '  echo "WARNING: uncommitted changes."\n'
         "fi\n"
-        "\n"
-        "# Remind about tests — don't run the full suite on every stop\n"
-        f'echo "Reminder: run \\"{test_cmd}\\" before committing '
-        'if you have not already."\n'
         "\n"
         "exit 0\n"
     )
@@ -835,19 +840,6 @@ def _script_session_telemetry(config: ProjectConfig) -> str:
 
 
 def _script_budget_reminder(config: ProjectConfig) -> str:
-    h = config.harness
-    if h.budget_per_run_tokens is not None:
-        budget_line = f"BUDGET={h.budget_per_run_tokens}"
-        warn_line = f"WARN_AT=$(( BUDGET * {h.budget_warn_at_percent} / 100 ))"
-        display = (
-            '  echo "Budget: $BUDGET tokens '
-            f'(warn at {h.budget_warn_at_percent}%: $WARN_AT tokens)"\n'
-        )
-    else:
-        budget_line = 'BUDGET="unlimited"'
-        warn_line = ""
-        display = '  echo "Budget: unlimited"\n'
-
     # Session cost parsing via inline Python (graceful degradation)
     cost_section = (
         "# Session cost tracking (requires python3, best-effort)\n"
@@ -939,14 +931,10 @@ def _script_budget_reminder(config: ProjectConfig) -> str:
         "\n"
         "path = find_latest_jsonl()\n"
         "if not path:\n"
-        "    print('Session tokens: unavailable')\n"
-        "    print('Est. cost: unavailable')\n"
         "    sys.exit(0)\n"
         "\n"
         "result = parse_session_tokens(path)\n"
         "if not result:\n"
-        "    print('Session tokens: unavailable')\n"
-        "    print('Est. cost: unavailable')\n"
         "    sys.exit(0)\n"
         "\n"
         "t_in, t_out, t_cc, t_cr, n_deduped, n_raw = result\n"
@@ -965,18 +953,16 @@ def _script_budget_reminder(config: ProjectConfig) -> str:
         "D = '\\033[2m' if use_color else ''\n"
         "B = '\\033[1m' if use_color else ''\n"
         "R = '\\033[0m' if use_color else ''\n"
-        "print(f'{B}Tokens{R}  {C}{total_tokens:,}{R}')\n"
-        "print(f'  input        {t_in:,}')\n"
-        "print(f'  output       {t_out:,}')\n"
-        "print(f'  cache create {t_cc:,}')\n"
-        "print(f'  cache read   {G}{t_cr:,}{R}')\n"
-        "print(f'{B}Cache ratio{R}  {G}{cache_ratio:.0f}%{R}')\n"
-        "print(f'{B}Est. cost{R}    {G}{label}: ~${cost:.2f}{R}')\n"
+        "dedup_note = ''\n"
         "if n_deduped > 0:\n"
-        "    print(f'{B}JSONL dedup{R}  {Y}{n_deduped} PRELIM skipped{R} {D}({n_raw} raw){R}')\n"
+        "    dedup_note = f' | deduped {n_deduped}'\n"
+        "print(f'{B}{C}Budget{R}  '\n"
+        "      f'{total_tokens:,} tokens, '\n"
+        "      f'{G}~${cost:.2f}{R} ({label}) | '\n"
+        "      f'cache {G}{cache_ratio:.0f}%{R}{dedup_note}')\n"
         "PYEOF\n"
-        "  ) 2>/dev/null || COST_OUTPUT='Session tokens: unavailable\\nEst. cost: unavailable'\n"
-        '  echo "$COST_OUTPUT"\n'
+        "  ) 2>/dev/null || true\n"
+        '  [ -n "$COST_OUTPUT" ] && echo "$COST_OUTPUT"\n'
         "fi\n"
     )
 
@@ -985,21 +971,7 @@ def _script_budget_reminder(config: ProjectConfig) -> str:
         "# cc-rig hook: budget-reminder — display budget status on stop\n"
         "# Event: Stop\n"
         "set -euo pipefail\n"
-        "\n"
-        "# Color support\n"
-        'if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then\n'
-        '  _B="\\033[1m"; _C="\\033[36m"; _R="\\033[0m"\n'
-        "else\n"
-        '  _B=""; _C=""; _R=""\n'
-        "fi\n"
-        "\n"
-        "# Read budget from harness config if available\n"
-        f"{budget_line}\n" + (f"{warn_line}\n" if warn_line else "") + "\n"
-        'echo ""\n'
-        'printf "${_B}${_C}── Budget Reminder ──${_R}\\n"\n' + display + "\n" + cost_section + "\n"
-        'printf "${_C}─────────────────────${_R}\\n"\n'
-        'echo ""\n'
-        "\n"
+        "\n" + cost_section + "\n"
         "exit 0\n"
     )
 
@@ -1060,15 +1032,18 @@ def _script_commit_gate(config: ProjectConfig) -> str:
         "  exit 0",
         "fi",
         "",
-        "# Always run lint — block (exit 2) on failure",
-        f"if ! {lint_cmd}; then",
+        "# Always run lint — block (exit 2) on failure, silent on success",
+        f"LINT_OUT=$({lint_cmd} 2>&1) || " + "{",
+        '  LINES=$(echo "$LINT_OUT" | wc -l)',
+        '  if [ "$LINES" -gt 20 ]; then',
+        '    echo "$LINT_OUT" | head -20',
+        '    echo "... ($LINES total lines, showing first 20)"',
+        "  else",
+        '    echo "$LINT_OUT"',
+        "  fi",
         '  echo "Commit gate: lint failed. Fix lint errors before committing." >&2',
         "  exit 2",
-        "fi",
-        "",
-        "# Lint passed — prompt about tests",
-        'echo "Commit gate: lint passed. Did you run tests? '
-        'If not, run ./init-sh.sh verify first." >&2',
+        "}",
         "",
         "exit 0",
     ]
