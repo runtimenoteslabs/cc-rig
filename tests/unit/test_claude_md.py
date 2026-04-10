@@ -63,13 +63,13 @@ class TestConditionalSections:
 
 class TestLineCounts:
     _TARGETS = {
-        "speedrun": 87,
-        "standard": 126,
-        "gstack": 154,
-        "aihero": 167,
+        "speedrun": 88,
+        "standard": 127,
+        "gstack": 155,
+        "aihero": 168,
         "spec-driven": 164,
         "superpowers": 174,
-        "gtd": 165,
+        "gtd": 166,
     }
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
@@ -246,6 +246,19 @@ class TestCacheGuardrails:
         content = _generate_claude_md("fastapi", "standard", tmp_path)
         assert "API keys" in content or "private keys" in content
         assert "seed phrases" in content
+
+    def test_output_style_terse_in_speedrun(self, tmp_path):
+        content = _generate_claude_md("fastapi", "speedrun", tmp_path)
+        assert "terse" in content.lower() or "No preamble" in content
+
+    def test_output_style_concise_in_standard(self, tmp_path):
+        content = _generate_claude_md("fastapi", "standard", tmp_path)
+        assert "1-2 sentences" in content
+
+    def test_no_output_style_in_spec_driven(self, tmp_path):
+        content = _generate_claude_md("fastapi", "spec-driven", tmp_path)
+        assert "No preamble" not in content
+        assert "1-2 sentences" not in content
 
     def test_cache_guardrails_in_standard(self, tmp_path):
         content = _generate_claude_md("fastapi", "standard", tmp_path)

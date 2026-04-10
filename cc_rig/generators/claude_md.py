@@ -149,6 +149,11 @@ def _section_guardrails(config: ProjectConfig) -> str:
     for hint in compact:
         lines.append(f"- {hint}")
 
+    # Output style (workflow-specific)
+    style = _OUTPUT_STYLE.get(config.workflow)
+    if style:
+        lines.append(f"- {style}")
+
     # Harness-aware guardrails (flag-based)
     h = config.harness
     if h.budget_awareness:
@@ -166,6 +171,20 @@ def _section_guardrails(config: ProjectConfig) -> str:
 
     lines.append("")
     return "\n".join(lines)
+
+
+# ── Output style per workflow ─────────────────────────────────────
+# Controls verbosity of Claude's responses. Workflows not listed get no
+# directive (default Claude behavior).
+
+_OUTPUT_STYLE: dict[str, str] = {
+    "speedrun": "Be terse. No preamble, no recaps, no trailing summaries. Code and actions only.",
+    "standard": "Keep explanations to 1-2 sentences. Lead with the answer, not the reasoning.",
+    "gstack": "Keep explanations to 1-2 sentences. Lead with the answer, not the reasoning.",
+    "aihero": "Keep explanations to 1-2 sentences. Lead with the answer, not the reasoning.",
+    "gtd": "Keep explanations to 1-2 sentences. Lead with the answer, not the reasoning.",
+}
+# spec-driven, superpowers, verify-heavy: no style constraint (reasoning visibility valued)
 
 
 # ── Output hygiene: compact command hints per template ───────────

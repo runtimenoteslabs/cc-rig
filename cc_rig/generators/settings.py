@@ -53,6 +53,7 @@ _HOOK_REGISTRY: dict[str, tuple[str, str, str, str]] = {
     "commit-gate": ("PreToolUse", "Bash", "command", "Bash(git commit*)"),
     "context-survival": ("PreCompact", "", "command", ""),
     "session-telemetry": ("Stop", "", "command", ""),
+    "compress-output": ("PostToolUse", "Bash", "command", ""),
 }
 
 
@@ -166,7 +167,9 @@ def generate_settings(
     hooks_dir.mkdir(parents=True, exist_ok=True)
 
     # Build the settings structure
-    settings: dict[str, Any] = {}
+    settings: dict[str, Any] = {
+        "$schema": "https://json.schemastore.org/claude-code-settings.json",
+    }
 
     # Permissions
     settings["permissions"] = _build_permissions(config)
@@ -187,6 +190,8 @@ def generate_settings(
         active_hooks.append("context-survival")
     if h.session_telemetry and "session-telemetry" not in active_hooks:
         active_hooks.append("session-telemetry")
+    if h.output_compression and "compress-output" not in active_hooks:
+        active_hooks.append("compress-output")
 
     for hook_name in active_hooks:
         meta = _HOOK_REGISTRY.get(hook_name)
@@ -250,6 +255,12 @@ def generate_settings(
     # Effort level per workflow (V2.1)
     effort = _WORKFLOW_EFFORT.get(config.workflow, "medium")
     settings["effortLevel"] = effort
+
+    # Thinking summaries: show for high-rigor workflows where reasoning
+    # visibility matters, suppress for speed-focused workflows (CC v2.1.89+,
+    # defaults to false).
+    if config.workflow in ("superpowers", "verify-heavy", "spec-driven"):
+        settings["showThinkingSummaries"] = True
 
     # Suppress built-in git instructions for high-rigor workflows (V2.1)
     # These workflows have comprehensive guardrails in CLAUDE.md already.
@@ -320,6 +331,7 @@ def _generate_hook_script(
         "commit-gate": _script_commit_gate,
         "context-survival": _script_context_survival,
         "session-telemetry": _script_session_telemetry,
+        "compress-output": _script_compress_output,
     }
     generator = generators.get(hook_name)
     if generator is None:
@@ -855,6 +867,52 @@ def _script_session_telemetry(config: ProjectConfig) -> str:
         "      f'cache {G}{cache_pct}{R}{dedup_note}')\n"
         "PYEOF\n"
         "fi\n"
+        "\n"
+        "exit 0\n"
+    )
+
+
+def _script_compress_output(config: ProjectConfig) -> str:
+    """Generate a PostToolUse hook that compresses verbose Bash output.
+
+    Strips ANSI codes, collapses duplicate lines, and truncates to a
+    reasonable length.  Skips compression when RTK or squeez is detected
+    (they handle this better).  Outputs replacement JSON so the model
+    sees the compressed version.
+    """
+    return (
+        "#!/usr/bin/env bash\n"
+        "# cc-rig hook: compress-output — reduce Bash tool output tokens\n"
+        "# Event: PostToolUse (Bash)\n"
+        "#\n"
+        "# Skip if RTK or squeez is handling compression.\n"
+        "if command -v rtk >/dev/null 2>&1 || command -v squeez >/dev/null 2>&1; then\n"
+        "  exit 0\n"
+        "fi\n"
+        "\n"
+        "# Read tool result from CC hook input.\n"
+        "INPUT=$(cat)\n"
+        'RESULT=$(echo "$INPUT" | grep -oE \'"stdout" *: *"[^"]*"\''
+        " | head -1 | cut -d'\"' -f4 2>/dev/null || true)\n"
+        '[ -z "$RESULT" ] && exit 0\n'
+        "\n"
+        "# Decode escaped newlines, strip ANSI, collapse duplicate lines.\n"
+        'CLEAN=$(echo -e "$RESULT" \\\n'
+        "  | sed 's/\\x1b\\[[0-9;]*[mGKHJ]//g' \\\n"
+        "  | awk '!seen[$0]++ || NR<=5')\n"
+        "\n"
+        "# Count lines.\n"
+        'LINES=$(echo "$CLEAN" | wc -l)\n'
+        "MAX=50\n"
+        "\n"
+        "# If within limit, no modification needed.\n"
+        '[ "$LINES" -le "$MAX" ] && exit 0\n'
+        "\n"
+        "# Truncate: first 30 lines + last 10 lines + count.\n"
+        'HEAD=$(echo "$CLEAN" | head -30)\n'
+        'TAIL=$(echo "$CLEAN" | tail -10)\n'
+        "printf '%s\\n... (%d lines total, compressed to 40)\\n%s\\n'"
+        ' "$HEAD" "$LINES" "$TAIL"\n'
         "\n"
         "exit 0\n"
     )

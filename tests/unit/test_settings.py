@@ -44,6 +44,32 @@ class TestSettingsJson:
         data = json.loads((tmp_path / ".claude" / "settings.json").read_text())
         assert "permissions" in data
 
+    def test_has_schema_reference(self, tmp_path):
+        _generate_settings("fastapi", "standard", tmp_path)
+        data = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        assert "$schema" in data
+        assert "schemastore.org" in data["$schema"]
+
+    def test_thinking_summaries_true_for_spec_driven(self, tmp_path):
+        _generate_settings("fastapi", "spec-driven", tmp_path)
+        data = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        assert data.get("showThinkingSummaries") is True
+
+    def test_thinking_summaries_true_for_superpowers(self, tmp_path):
+        _generate_settings("fastapi", "superpowers", tmp_path)
+        data = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        assert data.get("showThinkingSummaries") is True
+
+    def test_thinking_summaries_absent_for_speedrun(self, tmp_path):
+        _generate_settings("fastapi", "speedrun", tmp_path)
+        data = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        assert "showThinkingSummaries" not in data
+
+    def test_thinking_summaries_absent_for_standard(self, tmp_path):
+        _generate_settings("fastapi", "standard", tmp_path)
+        data = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        assert "showThinkingSummaries" not in data
+
 
 class TestHookSchema:
     def test_all_events_valid(self, tmp_path):
@@ -510,7 +536,7 @@ class TestHookRegistryConsistency:
 
     def test_hook_count(self):
         """Guard against accidental additions/removals."""
-        assert len(_HOOK_REGISTRY) == 18
+        assert len(_HOOK_REGISTRY) == 19
 
 
 class TestTeamMemoryPromptTexts:
