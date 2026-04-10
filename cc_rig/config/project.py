@@ -15,6 +15,7 @@ class Features:
     spec_workflow: bool = False
     gtd: bool = False
     worktrees: bool = False
+    agents_md: bool = False  # Generate cross-agent AGENTS.md
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -22,6 +23,7 @@ class Features:
             "spec_workflow": self.spec_workflow,
             "gtd": self.gtd,
             "worktrees": self.worktrees,
+            "agents_md": self.agents_md,
         }
 
     @classmethod
@@ -31,6 +33,7 @@ class Features:
             spec_workflow=data.get("spec_workflow", False),
             gtd=data.get("gtd", False),
             worktrees=data.get("worktrees", False),
+            agents_md=data.get("agents_md", False),
         )
 
 
@@ -115,6 +118,7 @@ class HarnessConfig:
     ralph_loop_plugin: bool = False  # Alternative to autonomy_loop (official plugin)
     context_awareness: bool = False  # B1+: PreCompact survival hook + context docs
     session_telemetry: bool = False  # B2+: Stop telemetry hook + /health command
+    output_compression: bool = False  # B1+: PostToolUse Bash output compression
 
     # Budget (B1+)
     budget_per_run_tokens: int | None = None
@@ -142,19 +146,20 @@ class HarnessConfig:
             return
 
         # Derive flags from level
-        _LEVEL_FLAGS: dict[str, tuple[bool, bool, bool, bool, bool, bool]] = {
-            "none": (False, False, False, False, False, False),
-            "lite": (True, True, False, False, True, False),
-            "standard": (True, True, True, False, True, True),
-            "autonomy": (True, True, True, True, True, True),
+        _LEVEL_FLAGS: dict[str, tuple[bool, bool, bool, bool, bool, bool, bool]] = {
+            "none": (False, False, False, False, False, False, False),
+            "lite": (True, True, False, False, True, False, True),
+            "standard": (True, True, True, False, True, True, True),
+            "autonomy": (True, True, True, True, True, True, True),
         }
-        flags = _LEVEL_FLAGS.get(self.level, (False, False, False, False, False, False))
+        flags = _LEVEL_FLAGS.get(self.level, (False, False, False, False, False, False, False))
         self.task_tracking = flags[0]
         self.budget_awareness = flags[1]
         self.verification_gates = flags[2]
         self.autonomy_loop = flags[3]
         self.context_awareness = flags[4]
         self.session_telemetry = flags[5]
+        self.output_compression = flags[6]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -166,6 +171,7 @@ class HarnessConfig:
             "ralph_loop_plugin": self.ralph_loop_plugin,
             "context_awareness": self.context_awareness,
             "session_telemetry": self.session_telemetry,
+            "output_compression": self.output_compression,
             "budget_per_run_tokens": self.budget_per_run_tokens,
             "budget_warn_at_percent": self.budget_warn_at_percent,
             "require_tests_pass": self.require_tests_pass,
@@ -196,6 +202,7 @@ class HarnessConfig:
             kwargs["autonomy_loop"] = data.get("autonomy_loop", False)
             kwargs["context_awareness"] = data.get("context_awareness", False)
             kwargs["session_telemetry"] = data.get("session_telemetry", False)
+            kwargs["output_compression"] = data.get("output_compression", False)
         if "ralph_loop_plugin" in data:
             kwargs["ralph_loop_plugin"] = data["ralph_loop_plugin"]
         return cls(**kwargs)
