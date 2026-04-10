@@ -20,6 +20,7 @@ class TestFeatures:
         assert f.gtd is False
         assert f.worktrees is False
         assert f.agents_md is False
+        assert f.github_actions is False
 
     def test_to_dict(self):
         f = Features(memory=True, worktrees=True)
@@ -30,6 +31,7 @@ class TestFeatures:
             "gtd": False,
             "worktrees": True,
             "agents_md": False,
+            "github_actions": False,
         }
 
     def test_from_dict(self):
@@ -38,9 +40,19 @@ class TestFeatures:
         assert f.gtd is True
         assert f.spec_workflow is False
         assert f.agents_md is False
+        assert f.github_actions is False
+
+    def test_from_dict_github_actions(self):
+        f = Features.from_dict({"github_actions": True})
+        assert f.github_actions is True
+        assert f.memory is False
 
     def test_round_trip(self):
         f = Features(memory=True, spec_workflow=True, gtd=False, worktrees=True)
+        assert Features.from_dict(f.to_dict()) == f
+
+    def test_round_trip_github_actions(self):
+        f = Features(github_actions=True, memory=True)
         assert Features.from_dict(f.to_dict()) == f
 
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cc-rig"
-version = "2.4.1"
+version = "2.5.0"
 description = "Project setup generator for Claude Code"
 readme = "README.md"
 license = "MIT"

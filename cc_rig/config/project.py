@@ -16,6 +16,7 @@ class Features:
     gtd: bool = False
     worktrees: bool = False
     agents_md: bool = False  # Generate cross-agent AGENTS.md
+    github_actions: bool = False  # Generate .github/workflows/claude.yml
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -24,6 +25,7 @@ class Features:
             "gtd": self.gtd,
             "worktrees": self.worktrees,
             "agents_md": self.agents_md,
+            "github_actions": self.github_actions,
         }
 
     @classmethod
@@ -34,6 +36,7 @@ class Features:
             gtd=data.get("gtd", False),
             worktrees=data.get("worktrees", False),
             agents_md=data.get("agents_md", False),
+            github_actions=data.get("github_actions", False),
         )
 
 

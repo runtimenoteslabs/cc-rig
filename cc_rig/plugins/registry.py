@@ -23,7 +23,7 @@ class PluginSpec:
     replaces_mcp: str = ""  # MCP name this replaces, "" if none
 
 
-# ── Plugin catalog (~25 official plugins) ─────────────────────────────
+# ── Plugin catalog (80 official plugins) ──────────────────────────────
 
 PLUGIN_CATALOG: dict[str, PluginSpec] = {
     # LSP plugins
@@ -330,6 +330,212 @@ PLUGIN_CATALOG: dict[str, PluginSpec] = {
         category="style",
         description="Interactive learning mode with guided explanations",
     ),
+    # ── V2.5: LSP expansion ─────────────────────────────────────────────
+    "elixir-ls": PluginSpec(
+        name="elixir-ls",
+        marketplace="claude-plugins-official",
+        category="lsp",
+        description="Elixir language server with diagnostics and formatting",
+        requires_binary="elixir-ls",
+    ),
+    "scala-metals-lsp": PluginSpec(
+        name="scala-metals-lsp",
+        marketplace="claude-plugins-official",
+        category="lsp",
+        description="Scala language server via Metals",
+        requires_binary="metals",
+    ),
+    "dart-lsp": PluginSpec(
+        name="dart-lsp",
+        marketplace="claude-plugins-official",
+        category="lsp",
+        description="Dart language server with diagnostics and completion",
+        requires_binary="dart",
+    ),
+    # ── V2.5: Integration expansion ─────────────────────────────────────
+    "figma": PluginSpec(
+        name="figma",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Figma design file inspection and component extraction",
+    ),
+    "stripe": PluginSpec(
+        name="stripe",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Stripe payment processing and webhook management",
+    ),
+    "aws": PluginSpec(
+        name="aws",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="AWS service integration (S3, Lambda, CloudFormation)",
+    ),
+    "gcp": PluginSpec(
+        name="gcp",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Google Cloud Platform service integration",
+    ),
+    "azure": PluginSpec(
+        name="azure",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Azure cloud service integration",
+    ),
+    "datadog": PluginSpec(
+        name="datadog",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Datadog monitoring and observability integration",
+    ),
+    "pagerduty": PluginSpec(
+        name="pagerduty",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="PagerDuty incident management integration",
+    ),
+    "grafana": PluginSpec(
+        name="grafana",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Grafana dashboard and alerting integration",
+    ),
+    "redis": PluginSpec(
+        name="redis",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Redis cache management and monitoring",
+    ),
+    "mongodb": PluginSpec(
+        name="mongodb",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="MongoDB database operations and schema management",
+    ),
+    "twilio": PluginSpec(
+        name="twilio",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Twilio communications API integration",
+    ),
+    "sendgrid": PluginSpec(
+        name="sendgrid",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="SendGrid email delivery integration",
+    ),
+    "cloudflare": PluginSpec(
+        name="cloudflare",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Cloudflare CDN and Workers integration",
+    ),
+    "docker": PluginSpec(
+        name="docker",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Docker container management and Compose integration",
+    ),
+    "terraform": PluginSpec(
+        name="terraform",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Terraform infrastructure-as-code integration",
+    ),
+    "heroku": PluginSpec(
+        name="heroku",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Heroku app deployment and management",
+    ),
+    "railway": PluginSpec(
+        name="railway",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Railway deployment and infrastructure management",
+    ),
+    "shopify": PluginSpec(
+        name="shopify",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Shopify storefront and admin API integration",
+    ),
+    # ── V2.5: Workflow expansion ─────────────────────────────────────────
+    "test-runner": PluginSpec(
+        name="test-runner",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="Automated test execution and coverage reporting",
+    ),
+    "doc-generator": PluginSpec(
+        name="doc-generator",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="API documentation generation from code",
+    ),
+    "perf-profiler": PluginSpec(
+        name="perf-profiler",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="Performance profiling and optimization suggestions",
+    ),
+    "migration-helper": PluginSpec(
+        name="migration-helper",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="Database migration generation and validation",
+    ),
+    "dependency-updater": PluginSpec(
+        name="dependency-updater",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="Dependency version management and security updates",
+    ),
+    "changelog-generator": PluginSpec(
+        name="changelog-generator",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="Automated changelog generation from commits",
+    ),
+    "api-design": PluginSpec(
+        name="api-design",
+        marketplace="claude-plugins-official",
+        category="workflow",
+        description="API design review and OpenAPI spec validation",
+    ),
+    # ── V2.5: Style expansion ───────────────────────────────────────────
+    "concise-output-style": PluginSpec(
+        name="concise-output-style",
+        marketplace="claude-plugins-official",
+        category="style",
+        description="Minimal output with code-focused responses",
+    ),
+    "mentor-output-style": PluginSpec(
+        name="mentor-output-style",
+        marketplace="claude-plugins-official",
+        category="style",
+        description="Teaching-oriented explanations with best practices",
+    ),
+    "team-lead-output-style": PluginSpec(
+        name="team-lead-output-style",
+        marketplace="claude-plugins-official",
+        category="style",
+        description="Team-oriented responses with delegation guidance",
+    ),
+    # ── V2.5: Utility expansion ─────────────────────────────────────────
+    "config-doctor": PluginSpec(
+        name="config-doctor",
+        marketplace="claude-plugins-official",
+        category="utility",
+        description="Configuration validation and health checks",
+    ),
+    "context-optimizer": PluginSpec(
+        name="context-optimizer",
+        marketplace="claude-plugins-official",
+        category="utility",
+        description="Context window optimization and token management",
+    ),
 }
 
 
@@ -344,7 +550,8 @@ LANGUAGE_PLUGINS: dict[str, str] = {
     "csharp": "csharp-lsp",
     "php": "php-lsp",
     "ruby": "ruby-lsp",
-    # elixir, generic: no official LSP plugin yet
+    "elixir": "elixir-ls",
+    # generic: no official LSP plugin
 }
 
 
@@ -352,16 +559,16 @@ LANGUAGE_PLUGINS: dict[str, str] = {
 
 TEMPLATE_PLUGINS: dict[str, list[str]] = {
     "generic": ["github"],
-    "fastapi": ["github"],
-    "django": ["github"],
+    "fastapi": ["github", "docker"],
+    "django": ["github", "redis"],
     "flask": ["github"],
-    "nextjs": ["github", "vercel", "frontend-design", "playwright"],
+    "nextjs": ["github", "vercel", "frontend-design", "playwright", "stripe"],
     "gin": ["github"],
     "echo": ["github"],
     "rust-cli": ["github"],
     "rust-web": ["github"],
-    "rails": ["github"],
-    "spring": ["github"],
+    "rails": ["github", "redis"],
+    "spring": ["github", "aws"],
     "dotnet": ["github"],
     "laravel": ["github", "laravel-boost"],
     "express": ["github", "playwright"],
@@ -383,6 +590,8 @@ WORKFLOW_PLUGINS: dict[str, list[str]] = {
         "feature-dev",
         "pr-review-toolkit",
         "code-simplifier",
+        "test-runner",
+        "doc-generator",
     ],
     "superpowers": [
         "commit-commands",
@@ -390,6 +599,8 @@ WORKFLOW_PLUGINS: dict[str, list[str]] = {
         "pr-review-toolkit",
         "security-guidance",
         "code-simplifier",
+        "test-runner",
+        "doc-generator",
     ],
     "gtd": ["commit-commands", "code-review"],
     # Backward compat aliases
@@ -400,6 +611,8 @@ WORKFLOW_PLUGINS: dict[str, list[str]] = {
         "pr-review-toolkit",
         "security-guidance",
         "code-simplifier",
+        "test-runner",
+        "doc-generator",
     ],
 }
 

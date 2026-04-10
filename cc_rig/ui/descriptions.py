@@ -349,20 +349,36 @@ FEATURE_DETAILS: list[dict[str, str]] = [
         ),
         "adds": "Parallel worker agent + /worktree command + cc-rig worktree CLI",
     },
+    {
+        "key": "github_actions",
+        "widget_id": "feat-github-actions",
+        "label": "GitHub Actions - Claude reviews your PRs",
+        "description": (
+            "Generates a GitHub Actions workflow that runs Claude Code on\n"
+            "every pull request using anthropics/claude-code-action@v1.\n"
+            "Claude reviews changes, responds to @claude mentions in PR\n"
+            "comments, and flags issues before human reviewers look at it.\n"
+            "\n"
+            "High-rigor workflows (verify-heavy, superpowers) add a\n"
+            "separate security-review job that checks for auth issues,\n"
+            "injection risks, and credentials in code."
+        ),
+        "adds": ".github/workflows/claude.yml with PR review + @claude triggers",
+    },
 ]
 
 # Which features each workflow enables by default
 WORKFLOW_FEATURE_DEFAULTS: dict[str, set[str]] = {
     "speedrun": set(),
-    "standard": {"memory"},
-    "gstack": {"memory", "worktrees"},
-    "aihero": {"memory", "spec_workflow", "worktrees"},
-    "spec-driven": {"memory", "spec_workflow", "worktrees"},
-    "superpowers": {"memory", "spec_workflow", "worktrees"},
-    "gtd": {"memory", "gtd", "worktrees"},
+    "standard": {"memory", "github_actions"},
+    "gstack": {"memory", "worktrees", "github_actions"},
+    "aihero": {"memory", "spec_workflow", "worktrees", "github_actions"},
+    "spec-driven": {"memory", "spec_workflow", "worktrees", "github_actions"},
+    "superpowers": {"memory", "spec_workflow", "worktrees", "github_actions"},
+    "gtd": {"memory", "gtd", "worktrees", "github_actions"},
     # Backward compat aliases
-    "gtd-lite": {"memory", "gtd", "worktrees"},
-    "verify-heavy": {"memory", "spec_workflow", "worktrees"},
+    "gtd-lite": {"memory", "gtd", "worktrees", "github_actions"},
+    "verify-heavy": {"memory", "spec_workflow", "worktrees", "github_actions"},
 }
 
 # Features incompatible with specific workflows.

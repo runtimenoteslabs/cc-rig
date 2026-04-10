@@ -140,7 +140,8 @@ class TestB2Standard:
     def test_b2_file_count(self, tmp_path):
         config = _make_config(level="standard")
         files = generate_harness(config, tmp_path)
-        # 3 B1 (todo.md + harness.md + quota-anchor.sh) + init-sh.sh + health.md + session-health.md = 6
+        # B1 (todo.md + harness.md + quota-anchor.sh) + init-sh.sh + health.md + session-health.md
+
         # Context awareness + B2 gates enhance harness.md in-place, no new files
         assert len(files) == 6
 

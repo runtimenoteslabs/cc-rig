@@ -24,7 +24,7 @@ class TestPluginCatalog:
 
     def test_catalog_has_expected_count(self):
         """Guard: update count when adding/removing plugins."""
-        assert len(PLUGIN_CATALOG) == 47
+        assert len(PLUGIN_CATALOG) == 80
 
     def test_all_plugins_have_name(self):
         for name, spec in PLUGIN_CATALOG.items():
@@ -118,8 +118,8 @@ class TestLanguagePlugins:
     def test_ruby_has_ruby_lsp(self):
         assert LANGUAGE_PLUGINS["ruby"] == "ruby-lsp"
 
-    def test_elixir_has_no_lsp(self):
-        assert "elixir" not in LANGUAGE_PLUGINS
+    def test_elixir_has_elixir_ls(self):
+        assert LANGUAGE_PLUGINS["elixir"] == "elixir-ls"
 
     def test_generic_has_no_lsp(self):
         assert "generic" not in LANGUAGE_PLUGINS
@@ -331,6 +331,116 @@ class TestV21PluginExpansion:
         names = {p.name for p in plugins}
         assert "ruby-lsp" in names
 
-    def test_elixir_phoenix_no_lsp(self):
+    def test_elixir_phoenix_has_lsp(self):
         plugins, _ = resolve_plugins("phoenix", "standard", "elixir")
-        assert not any(p.category == "lsp" for p in plugins)
+        names = {p.name for p in plugins}
+        assert "elixir-ls" in names
+
+
+# ── V2.5 Plugin Expansion Tests ──────────────────────────────────────
+
+
+class TestV25PluginExpansion:
+    """V2.5: LSP, integration, workflow, style, and utility expansion."""
+
+    def test_new_lsp_plugins_exist(self):
+        new_lsp = ["elixir-ls", "scala-metals-lsp", "dart-lsp"]
+        for name in new_lsp:
+            assert name in PLUGIN_CATALOG, f"Missing LSP plugin {name!r}"
+            assert PLUGIN_CATALOG[name].category == "lsp"
+
+    def test_new_lsp_plugins_have_binary(self):
+        new_lsp = ["elixir-ls", "scala-metals-lsp", "dart-lsp"]
+        for name in new_lsp:
+            assert PLUGIN_CATALOG[name].requires_binary, f"{name} missing requires_binary"
+
+    def test_new_integration_plugins_exist(self):
+        new_integ = [
+            "figma",
+            "stripe",
+            "aws",
+            "gcp",
+            "azure",
+            "datadog",
+            "pagerduty",
+            "grafana",
+            "redis",
+            "mongodb",
+            "twilio",
+            "sendgrid",
+            "cloudflare",
+            "docker",
+            "terraform",
+            "heroku",
+            "railway",
+            "shopify",
+        ]
+        for name in new_integ:
+            assert name in PLUGIN_CATALOG, f"Missing integration plugin {name!r}"
+            assert PLUGIN_CATALOG[name].category == "integration"
+
+    def test_new_workflow_plugins_exist(self):
+        new_wf = [
+            "test-runner",
+            "doc-generator",
+            "perf-profiler",
+            "migration-helper",
+            "dependency-updater",
+            "changelog-generator",
+            "api-design",
+        ]
+        for name in new_wf:
+            assert name in PLUGIN_CATALOG, f"Missing workflow plugin {name!r}"
+            assert PLUGIN_CATALOG[name].category == "workflow"
+
+    def test_new_style_plugins_exist(self):
+        new_style = [
+            "concise-output-style",
+            "mentor-output-style",
+            "team-lead-output-style",
+        ]
+        for name in new_style:
+            assert name in PLUGIN_CATALOG, f"Missing style plugin {name!r}"
+            assert PLUGIN_CATALOG[name].category == "style"
+
+    def test_new_utility_plugins_exist(self):
+        new_util = ["config-doctor", "context-optimizer"]
+        for name in new_util:
+            assert name in PLUGIN_CATALOG, f"Missing utility plugin {name!r}"
+            assert PLUGIN_CATALOG[name].category == "utility"
+
+    def test_elixir_language_mapping(self):
+        assert LANGUAGE_PLUGINS["elixir"] == "elixir-ls"
+
+    def test_nextjs_has_stripe(self):
+        assert "stripe" in TEMPLATE_PLUGINS["nextjs"]
+
+    def test_spring_has_aws(self):
+        assert "aws" in TEMPLATE_PLUGINS["spring"]
+
+    def test_django_has_redis(self):
+        assert "redis" in TEMPLATE_PLUGINS["django"]
+
+    def test_fastapi_has_docker(self):
+        assert "docker" in TEMPLATE_PLUGINS["fastapi"]
+
+    def test_rails_has_redis(self):
+        assert "redis" in TEMPLATE_PLUGINS["rails"]
+
+    def test_spec_driven_has_test_runner(self):
+        assert "test-runner" in WORKFLOW_PLUGINS["spec-driven"]
+
+    def test_superpowers_has_doc_generator(self):
+        assert "doc-generator" in WORKFLOW_PLUGINS["superpowers"]
+
+    def test_verify_heavy_has_test_runner_and_doc_generator(self):
+        assert "test-runner" in WORKFLOW_PLUGINS["verify-heavy"]
+        assert "doc-generator" in WORKFLOW_PLUGINS["verify-heavy"]
+
+    def test_speedrun_no_test_runner(self):
+        assert "test-runner" not in WORKFLOW_PLUGINS["speedrun"]
+
+    def test_phoenix_resolve_includes_elixir_ls(self):
+        plugins, _ = resolve_plugins("phoenix", "standard", "elixir")
+        names = {p.name for p in plugins}
+        assert "elixir-ls" in names

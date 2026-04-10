@@ -151,7 +151,7 @@ class TestS01FastapiStandardB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 45, f"Expected 45 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 46, f"Expected 46 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")

@@ -51,7 +51,8 @@
     "memory": true,
     "spec_workflow": true,
     "gtd": false,
-    "worktrees": true
+    "worktrees": true,
+    "github_actions": true
   },
   "permission_mode": "permissive"
 }

@@ -2,6 +2,15 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [2.5.0] - 2026-04-11
+
+### Added
+- **Plugin catalog expansion** (47 to 80 plugins). 3 new LSP plugins (elixir-ls, scala-metals-lsp, dart-lsp), 18 integration (figma, stripe, aws, gcp, azure, datadog, pagerduty, grafana, redis, mongodb, twilio, sendgrid, cloudflare, docker, terraform, heroku, railway, shopify), 7 workflow (test-runner, doc-generator, perf-profiler, migration-helper, dependency-updater, changelog-generator, api-design), 3 style (concise-output-style, mentor-output-style, team-lead-output-style), 2 utility (config-doctor, context-optimizer). Elixir now has LSP support via elixir-ls.
+- **Template plugin enrichment**. FastAPI gets docker, Django and Rails get redis, Next.js gets stripe, Spring gets aws. Spec-driven, superpowers, and verify-heavy workflows get test-runner and doc-generator.
+- **GitHub Actions workflow generation**. New `github_actions` feature flag generates `.github/workflows/claude.yml` using `anthropics/claude-code-action@v1`. Triggers on pull_request (opened, synchronize) and issue_comment (created, filtered to @claude mentions). verify-heavy and superpowers workflows add a separate security-review job that checks for auth issues, injection risks, and credentials. Enabled by default for all workflows except speedrun. Toggleable in the features screen and expert mode.
+
+---
+
 ## [2.4.1] - 2026-04-04
 
 ### Added

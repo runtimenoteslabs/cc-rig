@@ -41,11 +41,12 @@ After `cc-rig init` (one command, two questions, ~30 seconds):
 ```
 CLAUDE.md                    # Cache-aware, framework-tuned, under 100 lines
 CLAUDE.local.md              # Personal preferences (gitignored)
-.claude/settings.json        # Permissions, hooks, 47 curated plugins
+.claude/settings.json        # Permissions, hooks, 80 curated plugins
 .claude/agents/              # 3-19 specialized agents with YAML frontmatter
 .claude/commands/            # 6-19 slash commands matched to your workflow
 .claude/hooks/               # Auto-format, lint gates, safety blocks
 .claude/skills/              # Community skills from 17 repos
+.github/workflows/claude.yml # Claude reviews your PRs (opt-out for speedrun)
 agent_docs/                  # Framework-specific guides (auto-loaded via @import)
 memory/                      # Git-tracked team knowledge across sessions
 ```
@@ -279,16 +280,16 @@ Browse the full ecosystem: [skills.sh](https://skills.sh/) · [awesome-claude-sk
 
 ### Plugins
 
-cc-rig curates 47 official Anthropic marketplace plugins and writes them into `settings.json` as `enabledPlugins`. Your language gets its LSP plugin, your template gets relevant integrations (Next.js gets Playwright, Laravel gets Laravel Boost), your workflow gets workflow plugins. Plugins are self-contained: no manual MCP setup or binary downloads.
+cc-rig curates 80 official Anthropic marketplace plugins and writes them into `settings.json` as `enabledPlugins`. Your language gets its LSP plugin (15 languages including Elixir, Scala, Dart), your template gets relevant integrations (Next.js gets Playwright + Stripe, Django gets Redis, Spring gets AWS), your workflow gets workflow plugins. Plugins are self-contained: no manual MCP setup or binary downloads.
 
 | Category | Count | Examples |
 |----------|-------|---------|
-| **LSP** | 12 | pyright-lsp, typescript-lsp, gopls-lsp, rust-analyzer-lsp, jdtls-lsp, ruby-lsp |
-| **Integration** | 18 | github, vercel, supabase, sentry, slack, linear, notion, firebase, playwright |
-| **Workflow** | 13 | commit-commands, code-review, code-simplifier, frontend-design, agent-sdk-dev |
-| **Style** | 2 | explanatory-output-style, learning-output-style |
+| **LSP** | 15 | pyright-lsp, typescript-lsp, gopls-lsp, rust-analyzer-lsp, ruby-lsp, elixir-ls |
+| **Integration** | 36 | github, vercel, supabase, stripe, aws, docker, redis, datadog, terraform, figma |
+| **Workflow** | 20 | commit-commands, code-review, test-runner, doc-generator, api-design, perf-profiler |
+| **Style** | 5 | concise-output-style, mentor-output-style, explanatory-output-style |
 | **Autonomy** | 1 | ralph-loop (official Anthropic autonomous iteration loop) |
-| **Utility** | 1 | hookify (visual hook builder) |
+| **Utility** | 3 | hookify, config-doctor, context-optimizer |
 
 ### Memory, permissions, MCP, agent docs
 
@@ -301,6 +302,8 @@ cc-rig generates a **team memory layer** (`memory/`): 5 git-tracked files for de
 **MCP servers** are configured in `.mcp.json` per template (PostgreSQL, Playwright). GitHub is now an official plugin, no MCP setup needed.
 
 **Agent docs** in `agent_docs/` provide framework-specific reference (architecture, conventions, testing, deployment, cache-friendly workflow) loaded via `@import` syntax.
+
+**GitHub Actions** (v2.5). The `github_actions` feature generates `.github/workflows/claude.yml` using [anthropics/claude-code-action@v1](https://github.com/anthropics/claude-code-action). Claude reviews every PR and responds to `@claude` mentions in comments. High-rigor workflows (superpowers, verify-heavy) add a second security-review job. Enabled by default for all workflows except speedrun.
 
 [Full details for all of the above](docs/generated-output.md#memory).
 
@@ -400,7 +403,7 @@ Yes. Everything is plain text. Edit whatever you want. cc-rig won't overwrite yo
 <details>
 <summary><strong>What about Claude Code plugins and skills?</strong></summary>
 
-cc-rig handles both community skills and official Anthropic plugins. For skills, cc-rig downloads from 17 community repos at init time, with 6 optional packs for deeper coverage. For plugins, cc-rig curates 47 official marketplace plugins across 6 categories (LSP, integration, workflow, style, autonomy, utility) and writes <code>enabledPlugins</code> into <code>settings.json</code> with defaults resolved by language, template and workflow. You can install any additional skill from <a href="https://skills.sh/">skills.sh</a>, <a href="https://github.com/ComposioHQ/awesome-claude-skills">awesome-claude-skills</a> or any GitHub repo.
+cc-rig handles both community skills and official Anthropic plugins. For skills, cc-rig downloads from 17 community repos at init time, with 6 optional packs for deeper coverage. For plugins, cc-rig curates 80 official marketplace plugins across 6 categories (LSP, integration, workflow, style, autonomy, utility) and writes <code>enabledPlugins</code> into <code>settings.json</code> with defaults resolved by language, template and workflow. You can install any additional skill from <a href="https://skills.sh/">skills.sh</a>, <a href="https://github.com/ComposioHQ/awesome-claude-skills">awesome-claude-skills</a> or any GitHub repo.
 </details>
 
 <details>

@@ -1008,11 +1008,12 @@ class TestPluginResolution:
         config = compute_defaults("fastapi", "standard", project_name="test")
         names = [p.name for p in config.recommended_plugins]
         # language: python -> pyright-lsp
-        # template: fastapi -> github
+        # template: fastapi -> github, docker
         # workflow: standard -> commit-commands, code-review
-        assert len(names) == 4, f"Expected 4 plugins, got {len(names)}: {names}"
+        assert len(names) == 5, f"Expected 5 plugins, got {len(names)}: {names}"
         assert "pyright-lsp" in names
         assert "github" in names
+        assert "docker" in names
         assert "commit-commands" in names
         assert "code-review" in names
 

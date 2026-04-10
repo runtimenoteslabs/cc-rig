@@ -935,6 +935,7 @@ class FeaturesScreen(ModalScreen[Optional[dict]]):
                         "spec_workflow": self.query_one("#feat-spec", Checkbox).value,
                         "gtd": self.query_one("#feat-gtd", Checkbox).value,
                         "worktrees": self.query_one("#feat-worktrees", Checkbox).value,
+                        "github_actions": self.query_one("#feat-github-actions", Checkbox).value,
                     },
                 }
             )

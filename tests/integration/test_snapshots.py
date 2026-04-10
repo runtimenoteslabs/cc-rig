@@ -277,8 +277,8 @@ class TestCLAUDEmdSnapshot:
         "spec-driven": 163,
         "gtd-lite": 164,
         "gtd": 164,
-        "verify-heavy": 173,
-        "superpowers": 173,
+        "verify-heavy": 174,
+        "superpowers": 174,
         "gstack": 153,
         "aihero": 166,
     }

@@ -126,11 +126,18 @@ def run_expert(config: ProjectConfig, io: IO) -> ProjectConfig:
             io=io,
         )
 
+        github_actions = confirm(
+            "  Enable GitHub Actions (Claude reviews PRs automatically)?",
+            default=f.github_actions,
+            io=io,
+        )
+
         config.features = Features(
             memory=memory,
             spec_workflow=(task_choice == "spec"),
             gtd=(task_choice == "gtd"),
             worktrees=worktrees,
+            github_actions=github_actions,
         )
 
     if "permissions" in categories:
