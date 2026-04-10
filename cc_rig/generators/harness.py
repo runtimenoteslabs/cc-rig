@@ -71,6 +71,10 @@ def generate_harness(
     if h.session_telemetry:
         files.extend(_generate_session_telemetry(config, output_dir, tracker))
 
+    # Quota anchor: generate standalone trigger script (B1+)
+    if h.budget_awareness:
+        files.extend(_generate_quota_anchor(output_dir, tracker))
+
     return files
 
 
@@ -936,6 +940,68 @@ def _generate_session_telemetry(
     files.append(sh_rel)
 
     return files
+
+
+def _generate_quota_anchor(
+    output_dir: Path,
+    tracker: FileTracker | None = None,
+) -> list[str]:
+    """Generate a quota-anchor script that triggers a minimal Claude API call.
+
+    Users schedule this via cron or launchd to anchor the 5-hour rolling
+    quota window so resets align with their productive hours.
+    """
+    script = (
+        "#!/usr/bin/env bash\n"
+        "# cc-rig: quota-anchor — anchor the 5-hour rolling quota window\n"
+        "#\n"
+        "# Claude Code (Max/Pro) resets usage on a 5-hour rolling window\n"
+        "# from first use. This script triggers a minimal API call at a\n"
+        "# scheduled time so the reset lands during your peak hours.\n"
+        "#\n"
+        "# Schedule with cron (Linux/macOS):\n"
+        "#   crontab -e\n"
+        "#   0 4 * * 1-5 /path/to/project/.claude/scripts/quota-anchor.sh\n"
+        "#\n"
+        "# Or launchd (macOS):\n"
+        "#   See https://developer.apple.com/library/archive/documentation/"
+        "MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html\n"
+        "#\n"
+        "set -euo pipefail\n"
+        "\n"
+        "# Wait for network (up to 30s)\n"
+        "for i in $(seq 1 30); do\n"
+        "  nslookup api.anthropic.com >/dev/null 2>&1 && break\n"
+        "  sleep 1\n"
+        "done\n"
+        "\n"
+        "# Check if a session is already active (skip if so)\n"
+        "if pgrep -f 'claude' >/dev/null 2>&1; then\n"
+        '  echo "Claude already running, skipping anchor trigger."\n'
+        "  exit 0\n"
+        "fi\n"
+        "\n"
+        "# Minimal Haiku call to start the quota window\n"
+        "claude -p --model haiku --no-session-persistence "
+        "--tools '' --no-chrome 'Reply with exactly OK.' "
+        ">/dev/null 2>&1 || true\n"
+        "\n"
+        'echo "Quota window anchored at $(date)"\n'
+    )
+
+    scripts_dir = output_dir / ".claude" / "scripts"
+    scripts_dir.mkdir(parents=True, exist_ok=True)
+
+    rel = ".claude/scripts/quota-anchor.sh"
+    if tracker is not None:
+        tracker.write_text(rel, script)
+        tracker.chmod(rel, 0o755)
+    else:
+        path = scripts_dir / "quota-anchor.sh"
+        path.write_text(script)
+        path.chmod(0o755)
+
+    return [rel]
 
 
 def _write(

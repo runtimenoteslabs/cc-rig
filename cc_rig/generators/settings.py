@@ -54,6 +54,7 @@ _HOOK_REGISTRY: dict[str, tuple[str, str, str, str]] = {
     "context-survival": ("PreCompact", "", "command", ""),
     "session-telemetry": ("Stop", "", "command", ""),
     "compress-output": ("PostToolUse", "Bash", "command", ""),
+    "session-warmup": ("SessionStart", "", "command", ""),
 }
 
 
@@ -192,6 +193,8 @@ def generate_settings(
         active_hooks.append("session-telemetry")
     if h.output_compression and "compress-output" not in active_hooks:
         active_hooks.append("compress-output")
+    if h.session_telemetry and "session-warmup" not in active_hooks:
+        active_hooks.append("session-warmup")
 
     for hook_name in active_hooks:
         meta = _HOOK_REGISTRY.get(hook_name)
@@ -267,6 +270,11 @@ def generate_settings(
     if config.workflow in ("superpowers", "verify-heavy", "spec-driven"):
         settings["includeGitInstructions"] = False
 
+    # Require sandbox for high-rigor workflows (CC v2.1.83+).
+    # Exit if sandbox is unavailable rather than running unprotected.
+    if config.workflow in ("superpowers", "verify-heavy"):
+        settings.setdefault("sandbox", {})["failIfUnavailable"] = True
+
     # Auto mode (V2.3, CC v2.1.89+)
     if config.permission_mode == "auto":
         settings.setdefault("permissions", {})["defaultMode"] = "auto"
@@ -332,6 +340,7 @@ def _generate_hook_script(
         "context-survival": _script_context_survival,
         "session-telemetry": _script_session_telemetry,
         "compress-output": _script_compress_output,
+        "session-warmup": _script_session_warmup,
     }
     generator = generators.get(hook_name)
     if generator is None:
@@ -913,6 +922,68 @@ def _script_compress_output(config: ProjectConfig) -> str:
         'TAIL=$(echo "$CLEAN" | tail -10)\n'
         "printf '%s\\n... (%d lines total, compressed to 40)\\n%s\\n'"
         ' "$HEAD" "$LINES" "$TAIL"\n'
+        "\n"
+        "exit 0\n"
+    )
+
+
+def _script_session_warmup(config: ProjectConfig) -> str:
+    """Generate a SessionStart hook that summarizes the previous session.
+
+    Reads the most recent Claude Code session JSONL file, extracts turn
+    count, files modified, and estimated cost, then prints a one-liner
+    so Claude has immediate context about where the user left off.
+    """
+    return (
+        "#!/usr/bin/env bash\n"
+        "# cc-rig hook: session-warmup — inject previous session summary\n"
+        "# Event: SessionStart\n"
+        "set -euo pipefail\n"
+        "\n"
+        "# Find the most recent session JSONL for this project.\n"
+        "PROJECT_DIR=$(echo \"$PWD\" | tr '/' '-')\n"
+        'JSONL_DIR="$HOME/.claude/projects/$PROJECT_DIR"\n'
+        '[ -d "$JSONL_DIR" ] || exit 0\n'
+        "\n"
+        'LATEST=$(ls -t "$JSONL_DIR"/*.jsonl 2>/dev/null | head -1)\n'
+        '[ -n "$LATEST" ] || exit 0\n'
+        "\n"
+        "# Extract summary via Python (graceful skip if no python3).\n"
+        "command -v python3 >/dev/null 2>&1 || exit 0\n"
+        "\n"
+        "python3 - \"$LATEST\" <<'PYEOF'\n"
+        "import json, sys\n"
+        "path = sys.argv[1]\n"
+        "turns = 0\n"
+        "files = set()\n"
+        "total_input = 0\n"
+        "total_output = 0\n"
+        "try:\n"
+        "    for line in open(path):\n"
+        "        try:\n"
+        "            entry = json.loads(line)\n"
+        "        except json.JSONDecodeError:\n"
+        "            continue\n"
+        "        if entry.get('type') == 'assistant':\n"
+        "            turns += 1\n"
+        "            usage = entry.get('message', {}).get('usage', {})\n"
+        "            total_input += usage.get('input_tokens', 0)\n"
+        "            total_output += usage.get('output_tokens', 0)\n"
+        "        elif entry.get('type') == 'tool_result':\n"
+        "            name = entry.get('tool', '')\n"
+        "            if name in ('Write', 'Edit'):\n"
+        "                inp = entry.get('tool_input', {})\n"
+        "                fp = inp.get('file_path', '')\n"
+        "                if fp:\n"
+        "                    files.add(fp.split('/')[-1])\n"
+        "except Exception:\n"
+        "    sys.exit(0)\n"
+        "if turns == 0:\n"
+        "    sys.exit(0)\n"
+        "cost = (total_input * 3 + total_output * 15) / 1_000_000\n"
+        "file_str = f', {len(files)} files' if files else ''\n"
+        "print(f'Previous session: {turns} turns{file_str}, ~${cost:.2f}')\n"
+        "PYEOF\n"
         "\n"
         "exit 0\n"
     )

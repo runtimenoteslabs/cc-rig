@@ -64,12 +64,12 @@ class TestConditionalSections:
 class TestLineCounts:
     _TARGETS = {
         "speedrun": 88,
-        "standard": 127,
-        "gstack": 155,
-        "aihero": 168,
-        "spec-driven": 164,
-        "superpowers": 174,
-        "gtd": 166,
+        "standard": 130,
+        "gstack": 158,
+        "aihero": 171,
+        "spec-driven": 167,
+        "superpowers": 177,
+        "gtd": 169,
     }
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)
@@ -259,6 +259,14 @@ class TestCacheGuardrails:
         content = _generate_claude_md("fastapi", "spec-driven", tmp_path)
         assert "No preamble" not in content
         assert "1-2 sentences" not in content
+
+    def test_edit_dont_restart_in_standard(self, tmp_path):
+        content = _generate_claude_md("fastapi", "standard", tmp_path)
+        assert "Edit, don't restart" in content or "edit the previous message" in content
+
+    def test_no_edit_dont_restart_in_speedrun(self, tmp_path):
+        content = _generate_claude_md("fastapi", "speedrun", tmp_path)
+        assert "Edit, don't restart" not in content
 
     def test_cache_guardrails_in_standard(self, tmp_path):
         content = _generate_claude_md("fastapi", "standard", tmp_path)

@@ -346,6 +346,9 @@ def _section_workflow_principles(config: ProjectConfig) -> str:
         "- **Save learnings.** Auto-memory handles personal "
         "continuity. Use `/remember` for team knowledge — "
         "decisions, patterns, and gotchas.\n"
+        "- **Edit, don't restart.** When refining a prompt or approach, "
+        "edit the previous message instead of starting a new conversation. "
+        "Batch related questions into a single message.\n"
     )
     if config.features.spec_workflow and config.features.worktrees:
         text += (
