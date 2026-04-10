@@ -11,6 +11,7 @@ from cc_rig.config.project import ProjectConfig
 from cc_rig.generators.addons import generate_addons
 from cc_rig.generators.agent_docs import generate_agent_docs
 from cc_rig.generators.agents import generate_agents
+from cc_rig.generators.agents_md import generate_agents_md
 from cc_rig.generators.claude_local import generate_claude_local
 from cc_rig.generators.claude_md import generate_claude_md
 from cc_rig.generators.commands import generate_commands
@@ -58,6 +59,7 @@ def generate_all(
     all_files.extend(generate_misc(config, output_dir, tracker=tracker))
     all_files.extend(generate_settings_local(output_dir, tracker=tracker))
     all_files.extend(generate_claude_local(output_dir, tracker=tracker))
+    all_files.extend(generate_agents_md(config, output_dir, tracker=tracker))
 
     # Include the manifest file itself in the file list
     manifest_rel = ".claude/.cc-rig-manifest.json"
