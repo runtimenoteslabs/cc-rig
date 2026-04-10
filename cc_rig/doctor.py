@@ -122,6 +122,9 @@ def run_doctor(
     # ── Check 14: RTK output compression ─────────────────
     _check_rtk(project_dir, result)
 
+    # ── Check 15: Squeez output compression ─────────────
+    _check_squeez(project_dir, result)
+
     return result
 
 
@@ -489,6 +492,48 @@ def _check_rtk(
 
 def _rtk_hook_configured(project_dir: Path) -> bool:
     """Check if RTK's PreToolUse hook is registered in settings.json."""
+    return _hook_command_contains(project_dir, "PreToolUse", "rtk")
+
+
+def _check_squeez(
+    project_dir: Path,
+    result: DoctorResult,
+) -> None:
+    """Check if squeez (token compression) is installed and configured.
+
+    Squeez is optional and complementary. Info-level only, never a warning.
+    """
+    squeez_path = shutil.which("squeez")
+    if not squeez_path:
+        return  # Optional tool, skip silently
+
+    # Get version
+    version = "unknown"
+    try:
+        proc = subprocess.run(
+            ["squeez", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if proc.returncode == 0 and proc.stdout.strip():
+            version = proc.stdout.strip()
+    except (subprocess.TimeoutExpired, OSError):
+        pass
+
+    hook_configured = _hook_command_contains(project_dir, "PreToolUse", "squeez")
+
+    if hook_configured:
+        result.info.append(f"squeez ({version}) detected, Bash output compression active.")
+    else:
+        result.info.append(
+            f"squeez ({version}) installed but hook not configured. "
+            "Run `squeez install` to enable Bash output compression."
+        )
+
+
+def _hook_command_contains(project_dir: Path, event: str, needle: str) -> bool:
+    """Check if any hook command for the given event contains the needle string."""
     candidates = [
         project_dir / ".claude" / "settings.json",
         Path.home() / ".claude" / "settings.json",
@@ -498,17 +543,15 @@ def _rtk_hook_configured(project_dir: Path) -> bool:
             continue
         try:
             data = json.loads(settings_path.read_text())
-            hooks = data.get("hooks", {}).get("PreToolUse", [])
+            hooks = data.get("hooks", {}).get(event, [])
             for entry in hooks:
                 if isinstance(entry, dict):
-                    # New format: {"matcher": "Bash", "hooks": [...]}
                     for h in entry.get("hooks", []):
                         cmd = h.get("command", "") if isinstance(h, dict) else ""
-                        if "rtk" in cmd:
+                        if needle in cmd:
                             return True
-                    # Also check top-level command
                     cmd = entry.get("command", "")
-                    if "rtk" in cmd:
+                    if needle in cmd:
                         return True
         except (json.JSONDecodeError, OSError):
             continue

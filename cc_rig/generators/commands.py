@@ -32,6 +32,15 @@ def _load_command_defs() -> dict[str, tuple[str, str, str]]:
 
 _COMMAND_DEFS: dict[str, tuple[str, str, str]] = _load_command_defs()
 
+# Effort level per workflow for command frontmatter (CC v2.1.80+).
+# Only emit for workflows with a non-default effort.
+_WORKFLOW_EFFORT: dict[str, str] = {
+    "speedrun": "low",
+    "spec-driven": "high",
+    "superpowers": "high",
+    "verify-heavy": "high",
+}
+
 
 def generate_commands(
     config: ProjectConfig,
@@ -60,9 +69,12 @@ def generate_commands(
             continue
 
         defn = CommandDef(*raw)
+        effort = _WORKFLOW_EFFORT.get(config.workflow)
+        effort_line = f"effort: {effort}\n" if effort else ""
         content = (
             f"---\ndescription: {defn.description}\n"
-            f"allowed-tools: {defn.allowed_tools}\n---\n\n{defn.body}\n"
+            f"allowed-tools: {defn.allowed_tools}\n"
+            f"{effort_line}---\n\n{defn.body}\n"
         )
 
         filename = f"{cmd_name}.md"

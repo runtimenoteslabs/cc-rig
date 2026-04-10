@@ -35,8 +35,8 @@ class TestCCVersionResult:
     def test_meets_minimum_when_installed(self):
         r = CCVersionResult(
             installed=True,
-            version=(2, 1, 83),
-            version_str="2.1.83",
+            version=(2, 1, 94),
+            version_str="2.1.94",
             warnings=[],
         )
         assert r.meets_minimum is True
@@ -81,12 +81,12 @@ class TestDetectCCVersion:
 
     @patch("cc_rig.config.cc_version.subprocess.run")
     def test_claude_current_version(self, mock_run):
-        mock_run.return_value.stdout = "claude 2.1.90\n"
+        mock_run.return_value.stdout = "claude 2.1.100\n"
         mock_run.return_value.stderr = ""
         result = detect_cc_version()
         assert result.installed is True
-        assert result.version == (2, 1, 90)
-        assert result.version_str == "2.1.90"
+        assert result.version == (2, 1, 100)
+        assert result.version_str == "2.1.100"
         assert result.warnings == []
 
     @patch("cc_rig.config.cc_version.subprocess.run")
@@ -106,7 +106,7 @@ class TestDetectCCVersion:
         assert result.installed is True
         assert result.version == (2, 0, 5)
         assert len(result.warnings) == 1
-        assert "2.1.83" in result.warnings[0]
+        assert "2.1.94" in result.warnings[0]
 
     @patch("cc_rig.config.cc_version.subprocess.run")
     def test_unparseable_output(self, mock_run):

@@ -11,9 +11,10 @@ import re
 import subprocess
 from dataclasses import dataclass
 
-# Minimum CC version for full feature support (worktrees, etc.)
-MIN_CC_VERSION = (2, 1, 83)
-MIN_CC_VERSION_STR = "2.1.83"
+# Minimum CC version for full feature support.
+# v2.1.94: default effort changed to high, keep-coding-instructions frontmatter.
+MIN_CC_VERSION = (2, 1, 94)
+MIN_CC_VERSION_STR = "2.1.94"
 
 
 @dataclass
