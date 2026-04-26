@@ -1,0 +1,60 @@
+{
+  "name": "rigorous",
+  "version": 2,
+  "description": "Plan-first, maximum quality. Teams, critical systems, compliance.",
+  "source": "cc-rig",
+  "source_url": "",
+  "process_skills": [],
+  "agents": [
+    "code-reviewer",
+    "test-writer",
+    "explorer",
+    "architect",
+    "refactorer",
+    "pr-reviewer",
+    "implementer",
+    "pm-spec",
+    "security-auditor",
+    "doc-writer"
+  ],
+  "commands": [
+    "fix-issue",
+    "review",
+    "test",
+    "plan",
+    "research",
+    "learn",
+    "assumptions",
+    "remember",
+    "refactor",
+    "spec-create",
+    "spec-execute",
+    "techdebt",
+    "security",
+    "document",
+    "worktree"
+  ],
+  "hooks": [
+    "format",
+    "lint",
+    "typecheck",
+    "block-rm-rf",
+    "block-env",
+    "block-main",
+    "session-context",
+    "stop-validator",
+    "memory-precompact",
+    "push-review",
+    "subagent-review",
+    "commit-message",
+    "doc-review"
+  ],
+  "features": {
+    "memory": true,
+    "spec_workflow": true,
+    "gtd": false,
+    "worktrees": true,
+    "github_actions": true
+  },
+  "permission_mode": "permissive"
+}

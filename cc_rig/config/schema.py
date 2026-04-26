@@ -43,14 +43,17 @@ VALID_FRAMEWORKS_BY_LANGUAGE: dict[str, set[str]] = {
 VALID_FRAMEWORKS = {fw for fws in VALID_FRAMEWORKS_BY_LANGUAGE.values() for fw in fws}
 
 VALID_WORKFLOWS = {
-    "speedrun",
+    # Tiers (v3.0)
+    "quick",
     "standard",
+    "rigorous",
+    # Legacy workflow names (still valid for backward compat)
+    "speedrun",
     "gstack",
     "aihero",
     "spec-driven",
     "superpowers",
     "gtd",
-    # Backward compat aliases (old names still valid)
     "gtd-lite",
     "verify-heavy",
 }

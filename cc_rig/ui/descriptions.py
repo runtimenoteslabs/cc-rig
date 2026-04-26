@@ -59,6 +59,31 @@ def get_hook_descriptions() -> dict[str, str]:
 # ── Educational workflow details ─────────────────────────────────────
 
 WORKFLOW_DETAILS: dict[str, str] = {
+    # ── Tiers (v3.0) ──────────────────────────────────────────────────
+    "quick": (
+        "Best for: Side projects, prototypes, hackathons, scripts\n"
+        "Philosophy: Ship fast, minimal ceremony. Get something working first.\n"
+        "Includes:\n"
+        "  Agents:   explorer, code-reviewer, test-writer\n"
+        "  Commands: fix-issue, review, test, plan, learn, assumptions\n"
+        "  Hooks:    format, lint, block-rm-rf, block-env, block-main\n"
+        "  Plugins:  commit-commands + LSP for your language\n"
+        "  Features: none enabled by default"
+    ),
+    # "standard" is both a tier and the original workflow name (same entry below)
+    "rigorous": (
+        "Best for: Teams, critical systems, compliance, production code\n"
+        "Philosophy: Plan-first, maximum quality. Every phase covered.\n"
+        "Includes:\n"
+        "  Agents:   10 agents (reviewer, architect, pm-spec, security-auditor, ...)\n"
+        "  Commands: 15 commands (spec-create, spec-execute, security, worktree, ...)\n"
+        "  Hooks:    format, lint, typecheck, safety blocks, push-review,\n"
+        "            subagent-review, commit-message, doc-review\n"
+        "  Plugins:  commit-commands, code-review, pr-review-toolkit,\n"
+        "            security-guidance, code-simplifier + LSP\n"
+        "  Features: memory, spec-workflow, worktrees, GitHub Actions"
+    ),
+    # ── Legacy workflow names (kept for backward compat) ──────────────
     "speedrun": (
         "Best for: Quick prototypes, hackathons, solo experiments\n"
         "Philosophy: Move fast, minimal guardrails. Get something working first.\n"
@@ -369,30 +394,34 @@ FEATURE_DETAILS: list[dict[str, str]] = [
 
 # Which features each workflow enables by default
 WORKFLOW_FEATURE_DEFAULTS: dict[str, set[str]] = {
-    "speedrun": set(),
+    # Tiers
+    "quick": set(),
     "standard": {"memory", "github_actions"},
+    "rigorous": {"memory", "spec_workflow", "worktrees", "github_actions"},
+    # Legacy workflow names
+    "speedrun": set(),
     "gstack": {"memory", "worktrees", "github_actions"},
     "aihero": {"memory", "spec_workflow", "worktrees", "github_actions"},
     "spec-driven": {"memory", "spec_workflow", "worktrees", "github_actions"},
     "superpowers": {"memory", "spec_workflow", "worktrees", "github_actions"},
     "gtd": {"memory", "gtd", "worktrees", "github_actions"},
-    # Backward compat aliases
     "gtd-lite": {"memory", "gtd", "worktrees", "github_actions"},
     "verify-heavy": {"memory", "spec_workflow", "worktrees", "github_actions"},
 }
 
 # Features incompatible with specific workflows.
-# Workflows with process_skills that cover planning/review should not
-# allow adding conflicting features on top.
 WORKFLOW_FEATURE_CONFLICTS: dict[str, set[str]] = {
-    "speedrun": set(),
+    # Tiers
+    "quick": set(),
     "standard": set(),
-    "gstack": {"spec_workflow", "gtd"},  # own plan/review/ship process
-    "aihero": {"gtd"},  # PRD-driven process, gtd conflicts
-    "spec-driven": {"gtd"},  # uses spec_workflow, gtd conflicts
-    "superpowers": {"gtd"},  # full SDLC coverage, gtd conflicts
-    "gtd": {"spec_workflow"},  # uses gtd, spec conflicts
-    # Backward compat aliases
+    "rigorous": set(),
+    # Legacy workflow names
+    "speedrun": set(),
+    "gstack": {"spec_workflow", "gtd"},
+    "aihero": {"gtd"},
+    "spec-driven": {"gtd"},
+    "superpowers": {"gtd"},
+    "gtd": {"spec_workflow"},
     "gtd-lite": {"spec_workflow"},
     "verify-heavy": {"gtd"},
 }

@@ -17,7 +17,7 @@ from cc_rig.config.project import (
     SkillRecommendation,
 )
 from cc_rig.plugins.registry import resolve_plugins as _plugin_resolve
-from cc_rig.presets.manager import load_template, load_workflow
+from cc_rig.presets.manager import load_pack, load_template, load_workflow, resolve_workflow
 from cc_rig.skills.registry import resolve_skills as _registry_resolve
 
 # Hooks that require a specific tool command to be present.
@@ -249,32 +249,48 @@ def compute_defaults(
     output_dir: str = ".",
     claude_plan: str = "pro",
     skill_packs: list[str] | None = None,
+    process_pack: str | None = None,
 ) -> ProjectConfig:
     """Map template + workflow → fully resolved ProjectConfig.
 
     Args:
         template: Template preset name (e.g. "fastapi", "nextjs").
-        workflow: Workflow preset name (e.g. "standard", "speedrun").
+        workflow: Workflow or tier name. Accepts new tiers ("quick", "standard",
+            "rigorous") and old workflow names ("speedrun", "gstack", etc.).
+            Old names are resolved to their tier + auto-pack.
         project_name: Project name (can be filled in later by wizard).
         project_desc: Project description.
         output_dir: Output directory for generated files.
         claude_plan: User's Claude plan tier.
+        process_pack: Optional community process pack name ("gstack", "aihero",
+            "superpowers", "gtd"). Overrides auto-pack from old workflow names.
 
     Returns:
         A fully resolved ProjectConfig ready for generators.
     """
+    # Step 0: Resolve workflow name to tier + optional pack
+    resolved = resolve_workflow(workflow)
+    tier = resolved.tier
+    effective_pack = process_pack if process_pack is not None else resolved.pack
+
     # Step 1: Load template preset → stack data
     tmpl = load_template(template)
     tool_cmds = tmpl["tool_commands"]
 
-    # Step 2: Load workflow preset → process data
-    wf = load_workflow(workflow)
+    # Step 2: Load tier preset → process data (agents, commands, hooks, features)
+    wf = load_workflow(tier)
     features = Features.from_dict(wf["features"])
 
-    # Step 2b: Extract v2 process skill metadata (graceful defaults for v1 presets)
-    process_skill_names: list[str] = list(wf.get("process_skills", []))
-    workflow_source: str = wf.get("source", "cc-rig")
-    workflow_source_url: str = wf.get("source_url", "")
+    # Step 2b: Load process pack for community skills, or use tier defaults
+    if effective_pack:
+        pack_data = load_pack(effective_pack)
+        process_skill_names: list[str] = list(pack_data.get("process_skills", []))
+        workflow_source: str = pack_data.get("source", "cc-rig")
+        workflow_source_url: str = pack_data.get("source_url", "")
+    else:
+        process_skill_names = list(wf.get("process_skills", []))
+        workflow_source = wf.get("source", "cc-rig")
+        workflow_source_url = wf.get("source_url", "")
 
     # Step 3: Build agent list from workflow
     agents = list(wf["agents"])
@@ -287,7 +303,7 @@ def compute_defaults(
     # Step 3c: Add cross-cutting agents (build-fixer for all, e2e-runner for web)
     if "build-fixer" not in agents:
         agents.append("build-fixer")
-    if tmpl.get("project_type") != "cli" and workflow != "speedrun" and "e2e-runner" not in agents:
+    if tmpl.get("project_type") != "cli" and tier != "quick" and "e2e-runner" not in agents:
         agents.append("e2e-runner")
 
     # Step 4: Build command list from workflow
@@ -350,7 +366,7 @@ def compute_defaults(
     # Step 7: Build recommended_skills from registry resolver
     default_mcps = list(tmpl.get("default_mcps", []))
     resolved_packs = list(skill_packs or [])
-    specs = _registry_resolve(template, workflow, default_mcps, packs=resolved_packs)
+    specs = _registry_resolve(template, tier, default_mcps, packs=resolved_packs)
     recommended_skills = [
         SkillRecommendation(
             name=s.name,
@@ -370,7 +386,7 @@ def compute_defaults(
 
     # Step 8: Resolve plugins from language/template/workflow
     language = tmpl["language"]
-    plugin_specs, mcps_to_remove = _plugin_resolve(template, workflow, language, default_mcps)
+    plugin_specs, mcps_to_remove = _plugin_resolve(template, tier, language, default_mcps)
     recommended_plugins = [
         PluginRecommendation(
             name=p.name,
@@ -401,7 +417,7 @@ def compute_defaults(
         build_cmd=tool_cmds.get("build", ""),
         source_dir=tmpl.get("source_dir", "."),
         test_dir=tmpl.get("test_dir", "tests"),
-        workflow=wf["name"],
+        workflow=tier,
         agents=agents,
         commands=commands,
         hooks=hooks,
@@ -414,12 +430,13 @@ def compute_defaults(
         claude_plan=claude_plan,
         model_overrides=_compute_model_overrides(claude_plan),
         process_skills=process_skill_names,
+        process_pack=effective_pack or "",
         workflow_source=workflow_source,
         workflow_source_url=workflow_source_url,
         cc_rig_version=__version__,
         created_at=datetime.now(timezone.utc).isoformat(),
         template_preset=tmpl["name"],
-        workflow_preset=wf["name"],
+        workflow_preset=f"{tier}+{effective_pack}" if effective_pack else tier,
     )
 
 

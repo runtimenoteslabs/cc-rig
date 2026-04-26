@@ -844,14 +844,17 @@ _VERIFY_HEAVY_SKILLS = [
 ]
 
 WORKFLOW_SKILLS: dict[str, list[str]] = {
-    "speedrun": [],
+    # Tiers
+    "quick": [],
     "standard": _STANDARD_SKILLS,
+    "rigorous": _VERIFY_HEAVY_SKILLS,
+    # Legacy workflow names
+    "speedrun": [],
     "gstack": _STANDARD_SKILLS,
     "aihero": _SPEC_DRIVEN_SKILLS,
     "spec-driven": _SPEC_DRIVEN_SKILLS,
     "superpowers": _VERIFY_HEAVY_SKILLS,
     "gtd": _SPEC_DRIVEN_SKILLS,
-    # Backward compat aliases
     "gtd-lite": _SPEC_DRIVEN_SKILLS,
     "verify-heavy": _VERIFY_HEAVY_SKILLS,
 }
@@ -862,8 +865,12 @@ WORKFLOW_SKILLS: dict[str, list[str]] = {
 # These are ADDITIONAL to WORKFLOW_SKILLS (cross-cutting security/review skills).
 
 WORKFLOW_PROCESS_SKILLS: dict[str, list[str]] = {
-    "speedrun": [],
+    # Tiers (no process skills by default; packs provide them)
+    "quick": [],
     "standard": [],
+    "rigorous": [],
+    # Legacy workflow names (kept for backward compat in skill resolution)
+    "speedrun": [],
     "gstack": [
         "plan-ceo-review",
         "plan-eng-review",
@@ -905,7 +912,6 @@ WORKFLOW_PROCESS_SKILLS: dict[str, list[str]] = {
         "writing-plans",
         "executing-plans",
     ],
-    # Backward compat aliases
     "gtd-lite": [],
     "verify-heavy": [],
 }
@@ -926,7 +932,8 @@ _ALL_PHASES_ON = {
 }
 
 WORKFLOW_PHASES: dict[str, dict[str, Any]] = {
-    "speedrun": {
+    # Tiers
+    "quick": {
         "coding": True,
         "testing": "bundled_only",
         "review": False,
@@ -944,6 +951,17 @@ WORKFLOW_PHASES: dict[str, dict[str, Any]] = {
         "devops": True,
         "planning": False,
     },
+    "rigorous": dict(_ALL_PHASES_ON),
+    # Legacy workflow names
+    "speedrun": {
+        "coding": True,
+        "testing": "bundled_only",
+        "review": False,
+        "security": False,
+        "database": "if_applicable",
+        "devops": False,
+        "planning": False,
+    },
     "gstack": {
         "coding": True,
         "testing": True,
@@ -957,7 +975,6 @@ WORKFLOW_PHASES: dict[str, dict[str, Any]] = {
     "spec-driven": dict(_ALL_PHASES_ON),
     "superpowers": dict(_ALL_PHASES_ON),
     "gtd": dict(_ALL_PHASES_ON),
-    # Backward compat aliases
     "gtd-lite": dict(_ALL_PHASES_ON),
     "verify-heavy": dict(_ALL_PHASES_ON),
 }

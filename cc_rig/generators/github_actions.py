@@ -14,7 +14,7 @@ from pathlib import Path
 from cc_rig.config.project import ProjectConfig
 from cc_rig.generators.fileops import FileTracker
 
-_SECURITY_REVIEW_WORKFLOWS = {"verify-heavy", "superpowers"}
+_SECURITY_REVIEW_WORKFLOWS = {"rigorous", "verify-heavy", "superpowers"}
 
 
 def generate_github_actions(

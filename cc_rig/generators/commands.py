@@ -35,6 +35,10 @@ _COMMAND_DEFS: dict[str, tuple[str, str, str]] = _load_command_defs()
 # Effort level per workflow for command frontmatter (CC v2.1.80+).
 # Only emit for workflows with a non-default effort.
 _WORKFLOW_EFFORT: dict[str, str] = {
+    # Tiers
+    "quick": "low",
+    "rigorous": "high",
+    # Legacy workflow names
     "speedrun": "low",
     "spec-driven": "high",
     "superpowers": "high",

@@ -33,7 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     init_parser.add_argument(
         "--workflow",
-        help="Workflow preset (e.g. standard, speedrun)",
+        help="Workflow tier (quick, standard, rigorous) or legacy name (gstack, superpowers, ...)",
     )
     init_parser.add_argument(
         "--name",

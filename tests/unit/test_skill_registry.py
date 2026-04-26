@@ -281,7 +281,7 @@ class TestWorkflowSkillsCompleteness:
     """WORKFLOW_SKILLS must have entries for all 5 workflows."""
 
     def test_has_all_5_workflows(self):
-        assert len(WORKFLOW_SKILLS) == 9
+        assert len(WORKFLOW_SKILLS) == 11
 
     @pytest.mark.parametrize("workflow", ALL_WORKFLOWS)
     def test_workflow_is_present(self, workflow):
@@ -382,7 +382,7 @@ class TestWorkflowPhasesCompleteness:
     _EXPECTED_PHASES = {"coding", "testing", "review", "security", "database", "devops", "planning"}
 
     def test_has_all_workflows(self):
-        assert len(WORKFLOW_PHASES) == 9
+        assert len(WORKFLOW_PHASES) == 11
 
     @pytest.mark.parametrize("workflow", ALL_WORKFLOWS)
     def test_workflow_is_present(self, workflow):

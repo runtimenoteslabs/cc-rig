@@ -71,6 +71,23 @@ def _read_command(tmp_path, name):
     return (tmp_path / ".claude" / "commands" / f"{name}.md").read_text()
 
 
+def _generate_commands_with_gtd(tmp_path):
+    """Generate commands with GTD features enabled explicitly."""
+    from cc_rig.generators.commands import generate_commands
+
+    config = compute_defaults("fastapi", "standard", project_name="test-project")
+    config.features.gtd = True
+    config.features.worktrees = True
+    config.commands = list(config.commands) + [
+        "gtd-capture",
+        "gtd-process",
+        "daily-plan",
+        "worktree",
+    ]
+    files = generate_commands(config, tmp_path)
+    return config, files
+
+
 class TestSpecCommandContent:
     """Validate spec-create and spec-execute command content."""
 
@@ -131,15 +148,19 @@ class TestSpecCommandContent:
 
 
 class TestGtdCommandContent:
-    """Validate gtd-capture, gtd-process, and daily-plan command content."""
+    """Validate gtd-capture, gtd-process, and daily-plan command content.
+
+    GTD commands are only generated when features.gtd is explicitly enabled.
+    gtd-lite now maps to the standard tier without enabling gtd by default.
+    """
 
     def test_gtd_capture_body_references_inbox(self, tmp_path):
-        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        _generate_commands_with_gtd(tmp_path)
         content = _read_command(tmp_path, "gtd-capture")
         assert "tasks/inbox.md" in content
 
     def test_gtd_capture_tools_exclude_bash(self, tmp_path):
-        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        _generate_commands_with_gtd(tmp_path)
         content = _read_command(tmp_path, "gtd-capture")
         for line in content.splitlines():
             if line.startswith("allowed-tools:"):
@@ -147,32 +168,32 @@ class TestGtdCommandContent:
                 break
 
     def test_gtd_capture_has_arguments(self, tmp_path):
-        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        _generate_commands_with_gtd(tmp_path)
         content = _read_command(tmp_path, "gtd-capture")
         assert "$ARGUMENTS" in content
 
     def test_gtd_process_references_inbox(self, tmp_path):
-        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        _generate_commands_with_gtd(tmp_path)
         content = _read_command(tmp_path, "gtd-process")
         assert "tasks/inbox.md" in content
 
     def test_gtd_process_references_todo(self, tmp_path):
-        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        _generate_commands_with_gtd(tmp_path)
         content = _read_command(tmp_path, "gtd-process")
         assert "tasks/todo.md" in content
 
     def test_gtd_process_references_someday(self, tmp_path):
-        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        _generate_commands_with_gtd(tmp_path)
         content = _read_command(tmp_path, "gtd-process")
         assert "tasks/someday.md" in content
 
     def test_daily_plan_references_todo(self, tmp_path):
-        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        _generate_commands_with_gtd(tmp_path)
         content = _read_command(tmp_path, "daily-plan")
         assert "todo.md" in content
 
     def test_daily_plan_references_session_log(self, tmp_path):
-        _generate_commands("fastapi", "gtd-lite", tmp_path)
+        _generate_commands_with_gtd(tmp_path)
         content = _read_command(tmp_path, "daily-plan")
         assert "session-log.md" in content
 

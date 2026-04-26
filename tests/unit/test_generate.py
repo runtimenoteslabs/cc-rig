@@ -49,10 +49,10 @@ class TestNextSteps:
         lines = _run_and_capture(config, tmp_path)
         assert not any("Memory files" in line for line in lines)
 
-    def test_team_sharing_shown(self, tmp_path):
+    def test_playbook_pointer_shown(self, tmp_path):
         config = make_valid_config()
         lines = _run_and_capture(config, tmp_path)
-        assert any("cc-rig init --config" in line for line in lines)
+        assert any("/cc-rig" in line for line in lines)
 
     def test_log_saved_message_shown(self, tmp_path):
         config = make_valid_config()

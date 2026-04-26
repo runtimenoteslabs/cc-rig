@@ -9,6 +9,7 @@ from cc_rig.clean import _remove_empty_dirs, cleanup_files, load_manifest
 from cc_rig.config.project import ProjectConfig
 from cc_rig.config.schema import validate_config_warnings
 from cc_rig.generators.orchestrator import generate_all
+from cc_rig.generators.playbook import WORKFLOW_CHAINS
 from cc_rig.ui.display import format_file_list, heading, strip_ansi, success, warning
 from cc_rig.ui.prompts import IO, confirm
 from cc_rig.validator import validate_output
@@ -144,42 +145,42 @@ def run_generation(
             tee.say(f"  {warning(item)}")
         tee.say("")
 
-    # Summary
-    tee.say(heading("Done!"))
+    # Value summary
+    chain = WORKFLOW_CHAINS.get(config.workflow, "/plan -> implement -> /review -> commit")
+    agent_count = len(config.agents)
+    plugin_count = len(config.recommended_plugins)
+    hook_count = len(config.hooks)
+    command_count = len(config.commands)
+
+    tee.say(heading(f"Generated {len(files)} files for {config.workflow} + {config.framework}"))
     tee.say("")
-    tee.say(f"  Output: {output_dir}")
-    tee.say(f"  Config: {output_dir / '.cc-rig.json'}")
+    tee.say(f"  Your workflow:  {chain}")
+    tee.say(f"  Your agents:    {agent_count}")
+    tee.say(f"  Your plugins:   {plugin_count}")
+    tee.say(f"  Your hooks:     {hook_count}")
+    tee.say(f"  Your commands:  {command_count}")
+    tee.say("  Cache savings:  static-first CLAUDE.md + 4 cache guardrails")
     tee.say("")
+    tee.say("  In any session, /cc-rig guides you:")
+    tee.say("    /cc-rig          dashboard with your workflow and quick recipes")
+    tee.say("    /cc-rig recipes  step-by-step guides for bugs, features, refactors")
+    tee.say("    /cc-rig savings  how much cc-rig saved you on tokens")
+    tee.say("")
+
+    # Next steps
     tee.say("  Next steps:")
     tee.say(f"    cd {output_dir}")
     git_files = [".claude/"]
     if not skip_claude_md:
         git_files.append("CLAUDE.md")
+    git_files.append("PLAYBOOK.md")
     if config.default_mcps:
         git_files.append(".mcp.json")
     git_files.append(".cc-rig.json")
-    file_list = " ".join(git_files)
-    tee.say(f"    git add {file_list} && git commit -m 'Add Claude Code config'")
+    file_list_str = " ".join(git_files)
+    tee.say(f"    git add {file_list_str} && git commit -m 'Add Claude Code config'")
     tee.say("    claude          # start Claude Code")
     tee.say("    cc-rig doctor   # check project health")
-
-    if config.features.memory:
-        tee.say("")
-        tee.say(
-            "  Memory files (memory/) accumulate project knowledge over time "
-            "and are preserved during clean if you've edited them."
-        )
-
-    if config.recommended_skills:
-        tee.say("")
-        tee.say(
-            f"  {len(config.recommended_skills)} skills auto-installed for your stack."
-            " Manage with: cc-rig skills list | cc-rig skills catalog"
-        )
-
-    tee.say("")
-    tee.say("  Share with teammates:")
-    tee.say("    cc-rig init --config .cc-rig.json")
     tee.say("")
 
     # Save generation log

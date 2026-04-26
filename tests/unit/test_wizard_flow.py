@@ -51,17 +51,18 @@ class TestZeroConfigFlow:
 class TestGuidedFlow:
     def test_full_guided_generates(self, tmp_path):
         output = tmp_path / "out"
-        # Inputs: launcher, workflow pick, template pick, name, description,
-        # no-skill-packs, no-customize, no-harness, yes-generate
+        # Inputs: launcher, workflow pick, pack pick, template pick, name, description,
+        # no-customize, no-skill-packs, no-harness, yes-generate
         io = _make_io(
             [
                 "1",  # launcher: fresh project
                 "2",  # workflow: standard (index 2)
+                "1",  # pack: none (index 1, standard shows pack screen)
                 "2",  # template: fastapi (index 2, after generic)
                 "my-project",  # project name
                 "A test project",  # description
-                "n",  # add optional skill packs? no
                 "n",  # customize? no
+                "n",  # add optional skill packs? no
                 "n",  # add runtime harness? no
                 "y",  # generate? yes
             ]
@@ -115,11 +116,12 @@ class TestQuickFlow:
 class TestExpertFlow:
     def test_expert_with_no_customization(self, tmp_path):
         output = tmp_path / "out"
-        # Guided flow + expert mode: workflow, template, name, desc, expert, ...
+        # Guided flow + expert mode: workflow, pack, template, name, desc, expert, ...
         io = _make_io(
             [
                 "1",  # launcher: fresh project
                 "2",  # workflow: standard
+                "1",  # pack: none (standard shows pack screen)
                 "2",  # template: fastapi (after generic)
                 "expert-proj",  # name
                 "",  # description
@@ -143,6 +145,7 @@ class TestExpertFlow:
             [
                 "1",  # launcher: fresh project
                 "2",  # workflow: standard
+                "1",  # pack: none (standard shows pack screen)
                 "2",  # template: fastapi (after generic)
                 "plugin-proj",  # name
                 "",  # description

@@ -1,0 +1,19 @@
+{
+  "name": "superpowers",
+  "description": "obra's full SDLC skill suite. Maximum process rigor.",
+  "source": "obra/superpowers",
+  "source_url": "https://github.com/obra/superpowers",
+  "process_skills": [
+    "brainstorming",
+    "writing-plans",
+    "executing-plans",
+    "test-driven-development",
+    "systematic-debugging",
+    "requesting-code-review",
+    "receiving-code-review",
+    "verification-before-completion",
+    "subagent-driven-development",
+    "using-git-worktrees",
+    "finishing-a-development-branch"
+  ]
+}

@@ -125,6 +125,9 @@ def run_doctor(
     # ── Check 15: Squeez output compression ─────────────
     _check_squeez(project_dir, result)
 
+    # ── Check 16: Value report ───────────────────────────
+    _check_value(project_dir, config, result)
+
     return result
 
 
@@ -530,6 +533,53 @@ def _check_squeez(
             f"squeez ({version}) installed but hook not configured. "
             "Run `squeez install` to enable Bash output compression."
         )
+
+
+def _check_value(project_dir: Path, config: ProjectConfig, result: DoctorResult) -> None:
+    """Report value summary: what cc-rig configured and how it helps."""
+    # CLAUDE.md line count + cache guardrails
+    claude_md = project_dir / "CLAUDE.md"
+    guardrail_count = 0
+    if claude_md.exists():
+        content = claude_md.read_text()
+        line_count = content.count("\n") + 1
+        result.info.append(f"CLAUDE.md: {line_count} lines (cache-optimized, static-first)")
+        for marker in [
+            "edit CLAUDE.md mid-session",
+            "toggle hooks",
+            "switch models",
+            "memory via Read",
+        ]:
+            if marker in content:
+                guardrail_count += 1
+    result.info.append(f"Cache guardrails: {guardrail_count}/4 present")
+
+    # Counts
+    result.info.append(
+        f"Agents: {len(config.agents)} | "
+        f"Plugins: {len(config.recommended_plugins)} | "
+        f"Hooks: {len(config.hooks)} | "
+        f"Commands: {len(config.commands)}"
+    )
+
+    # Deny rules (from generated settings.json)
+    settings_path = project_dir / ".claude" / "settings.json"
+    if settings_path.exists():
+        try:
+            perms = json.loads(settings_path.read_text()).get("permissions", {})
+            deny_parts = []
+            if perms.get("denyRead"):
+                deny_parts.append("denyRead")
+            if perms.get("denyWrite"):
+                deny_parts.append("denyWrite")
+            if deny_parts:
+                result.info.append(f"Deny rules: {' + '.join(deny_parts)} configured")
+            else:
+                result.info.append("Deny rules: not configured")
+        except (json.JSONDecodeError, OSError):
+            pass
+    else:
+        result.info.append("Deny rules: settings.json not found")
 
 
 def _hook_command_contains(project_dir: Path, event: str, needle: str) -> bool:

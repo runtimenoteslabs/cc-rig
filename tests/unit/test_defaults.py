@@ -45,23 +45,22 @@ class TestAllCombosValid:
 
 class TestAgentCounts:
     def test_agent_counts_increase_with_complexity(self):
-        """Workflows with more complexity should have more agents."""
+        """Tiers with more complexity should have more agents."""
         counts = {}
         for wf in WORKFLOWS:
             config = compute_defaults("fastapi", wf, project_name="test")
             base_agents = [a for a in config.agents if a != "parallel-worker"]
             counts[wf] = len(base_agents)
-        assert counts["speedrun"] < counts["standard"]
-        assert counts["standard"] <= counts["spec-driven"]
-        assert counts["standard"] <= counts["superpowers"]
+        assert counts["quick"] < counts["standard"]
+        assert counts["standard"] <= counts["rigorous"]
 
     def test_speedrun_has_minimum_agents(self):
-        config = compute_defaults("fastapi", "speedrun", project_name="test")
+        config = compute_defaults("fastapi", "quick", project_name="test")
         base_agents = [a for a in config.agents if a != "parallel-worker"]
         assert len(base_agents) >= 3
 
     def test_superpowers_has_most_agents(self):
-        config = compute_defaults("fastapi", "superpowers", project_name="test")
+        config = compute_defaults("fastapi", "rigorous", project_name="test")
         base_agents = [a for a in config.agents if a != "parallel-worker"]
         assert len(base_agents) >= 10
 
@@ -118,7 +117,6 @@ class TestAgentMembership:
         assert len(base) >= 10
         assert "security-auditor" in config.agents
         assert "doc-writer" in config.agents
-        assert "db-reader" in config.agents
 
 
 # ---------------------------------------------------------------------------
@@ -150,17 +148,19 @@ class TestCommandCounts:
         assert "techdebt" in config.commands
 
     def test_gtd_lite_has_gtd_commands(self):
+        """gtd-lite resolves to standard tier + gtd pack; no gtd-specific commands by default."""
         config = compute_defaults("fastapi", "gtd-lite", project_name="test")
-        assert "gtd-capture" in config.commands
-        assert "gtd-process" in config.commands
-        assert "daily-plan" in config.commands
-        assert "worktree" in config.commands
+        assert config.workflow == "standard"
+        assert config.process_pack == "gtd"
+        # Standard tier commands present
+        assert "remember" in config.commands
+        assert "fix-issue" in config.commands
 
     def test_verify_heavy_has_quality_commands(self):
         config = compute_defaults("fastapi", "verify-heavy", project_name="test")
         assert "security" in config.commands
         assert "document" in config.commands
-        assert "optimize" in config.commands
+        assert "techdebt" in config.commands
 
     def test_verify_heavy_strips_gtd_commands_when_gtd_disabled(self):
         """verify-heavy has gtd=False, so GTD commands should be stripped."""
@@ -241,8 +241,8 @@ class TestFeatureFlags:
             ("spec-driven", "spec_workflow", True),
             ("spec-driven", "worktrees", True),
             ("gtd-lite", "memory", True),
-            ("gtd-lite", "gtd", True),
-            ("gtd-lite", "worktrees", True),
+            ("gtd-lite", "gtd", False),
+            ("gtd-lite", "worktrees", False),
             ("gtd-lite", "spec_workflow", False),
             ("verify-heavy", "memory", True),
             ("verify-heavy", "spec_workflow", True),
@@ -282,11 +282,12 @@ class TestFeatureImplications:
         assert "spec-execute" in config.commands
 
     def test_gtd_implies_commands(self):
+        """gtd-lite resolves to standard+gtd pack; gtd feature flag is not set by default."""
         config = compute_defaults("fastapi", "gtd-lite", project_name="test")
-        assert config.features.gtd is True
-        assert "gtd-capture" in config.commands
-        assert "gtd-process" in config.commands
-        assert "daily-plan" in config.commands
+        assert config.process_pack == "gtd"
+        # Standard tier commands are present
+        assert "remember" in config.commands
+        assert "fix-issue" in config.commands
 
     def test_worktrees_implies_agent_and_command(self):
         config = compute_defaults("fastapi", "spec-driven", project_name="test")
@@ -803,11 +804,11 @@ class TestSkillCountScaling:
     def test_spec_driven_more_than_standard(self):
         assert self._count("fastapi", "spec-driven") >= self._count("fastapi", "standard")
 
-    def test_gtd_lite_similar_to_spec_driven(self):
-        """GTD-lite and spec-driven should have similar skill counts."""
+    def test_gtd_lite_fewer_than_spec_driven(self):
+        """gtd-lite (standard tier) has fewer skills than spec-driven (rigorous tier)."""
         gtd = self._count("fastapi", "gtd-lite")
         spec = self._count("fastapi", "spec-driven")
-        assert abs(gtd - spec) <= 2
+        assert gtd < spec
 
     def test_fastapi_more_skills_than_rust_cli(self):
         assert self._count("fastapi", "standard") > self._count("rust-cli", "standard")
@@ -824,9 +825,9 @@ class TestSkillCountScaling:
         """Exact count ranges per workflow (with fastapi template)."""
         assert 1 <= self._count("fastapi", "speedrun") <= 5
         assert 10 <= self._count("fastapi", "standard") <= 16
-        assert 15 <= self._count("fastapi", "spec-driven") <= 22
-        assert 15 <= self._count("fastapi", "gtd-lite") <= 22
-        assert 18 <= self._count("fastapi", "verify-heavy") <= 25
+        assert 15 <= self._count("fastapi", "spec-driven") <= 30
+        assert 10 <= self._count("fastapi", "gtd-lite") <= 20
+        assert 18 <= self._count("fastapi", "verify-heavy") <= 30
 
     @pytest.mark.parametrize("template", TEMPLATES)
     @pytest.mark.parametrize("workflow", WORKFLOWS)
@@ -842,7 +843,7 @@ class TestSkillCountScaling:
 
 
 class TestGtdLiteSkills:
-    """GTD-lite skill coverage (previously only tested via anthropic pack)."""
+    """GTD-lite skill coverage: resolves to standard tier + gtd process pack."""
 
     def test_has_all_standard_phases(self):
         config = compute_defaults("fastapi", "gtd-lite", project_name="test")
@@ -850,22 +851,19 @@ class TestGtdLiteSkills:
         for phase in ("coding", "testing", "review", "security", "devops"):
             assert phase in phases, f"gtd-lite missing phase: {phase}"
 
-    def test_has_planning_phase(self):
+    def test_no_planning_phase(self):
+        """gtd-lite resolves to standard tier which does not include planning skills."""
         config = compute_defaults("fastapi", "gtd-lite", project_name="test")
         phases = {s.sdlc_phase for s in config.recommended_skills}
-        assert "planning" in phases
+        assert "planning" not in phases
 
-    def test_superpowers_list(self):
-        """GTD-lite includes 7 specific superpowers skills."""
+    def test_has_standard_review_skills(self):
+        """gtd-lite includes standard-tier review skills."""
         config = compute_defaults("fastapi", "gtd-lite", project_name="test")
         names = {s.name for s in config.recommended_skills}
         expected = {
-            "brainstorming",
-            "writing-plans",
-            "executing-plans",
             "requesting-code-review",
             "receiving-code-review",
-            "using-git-worktrees",
             "finishing-a-development-branch",
         }
         assert expected.issubset(names), f"Missing: {expected - names}"
@@ -876,13 +874,13 @@ class TestGtdLiteSkills:
         names = {s.name for s in config.recommended_skills}
         assert "static-analysis" not in names
 
-    def test_similar_skills_to_spec_driven(self):
-        """GTD-lite and spec-driven should produce identical skill sets."""
+    def test_same_skills_as_standard(self):
+        """gtd-lite and standard should produce identical skill sets (same tier)."""
         gtd = compute_defaults("fastapi", "gtd-lite", project_name="test")
-        spec = compute_defaults("fastapi", "spec-driven", project_name="test")
+        std = compute_defaults("fastapi", "standard", project_name="test")
         gtd_names = {s.name for s in gtd.recommended_skills}
-        spec_names = {s.name for s in spec.recommended_skills}
-        assert gtd_names == spec_names
+        std_names = {s.name for s in std.recommended_skills}
+        assert gtd_names == std_names
 
 
 # ---------------------------------------------------------------------------

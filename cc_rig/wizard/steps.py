@@ -9,7 +9,13 @@ from __future__ import annotations
 from typing import Any
 
 from cc_rig.config.detection import detect_project
-from cc_rig.presets.manager import BUILTIN_TEMPLATES, BUILTIN_WORKFLOWS, load_workflow
+from cc_rig.presets.manager import (
+    BUILTIN_PACKS,
+    BUILTIN_TEMPLATES,
+    BUILTIN_TIERS,
+    load_pack,
+    load_workflow,
+)
 from cc_rig.ui.descriptions import TEMPLATE_DESCRIPTIONS
 from cc_rig.ui.prompts import IO, ask_choice, ask_input, confirm
 from cc_rig.wizard.stepper import BACK, StepAction, StepResult
@@ -98,18 +104,40 @@ class TemplateStep:
 
 class WorkflowStep:
     name = "workflow"
-    title = "Select your workflow"
+    title = "How much structure do you want?"
 
     def execute(self, state: dict[str, Any], io: IO) -> StepResult:
         descriptions: dict[str, str] = {}
-        for w in BUILTIN_WORKFLOWS:
+        for w in BUILTIN_TIERS:
             data = load_workflow(w)
             descriptions[w] = data.get("description", w)
-        options = [(w, f"{w} - {descriptions[w]}") for w in BUILTIN_WORKFLOWS]
-        workflow = ask_choice("Select workflow:", options, "standard", io=io, allow_back=True)
-        if _is_back(workflow):
+        options = [(w, f"{w} - {descriptions[w]}") for w in BUILTIN_TIERS]
+        tier = ask_choice("Select tier:", options, "standard", io=io, allow_back=True)
+        if _is_back(tier):
             return StepResult(action=StepAction.BACK)
-        return StepResult(data={"workflow": workflow})
+        return StepResult(data={"workflow": tier})
+
+
+class PackStep:
+    name = "pack"
+    title = "Add a community process pack?"
+
+    def execute(self, state: dict[str, Any], io: IO) -> StepResult:
+        if state.get("workflow") == "quick":
+            return StepResult(data={"pack": ""})
+
+        options = [("none", "none - Just the cc-rig workflow")]
+        for p in BUILTIN_PACKS:
+            data = load_pack(p)
+            desc = data.get("description", p)
+            skills = len(data.get("process_skills", []))
+            options.append((p, f"{p} - {desc} ({skills} skills)"))
+        pack = ask_choice(
+            "Add a process pack? (optional):", options, "none", io=io, allow_back=True
+        )
+        if _is_back(pack):
+            return StepResult(action=StepAction.BACK)
+        return StepResult(data={"pack": "" if pack == "none" else pack})
 
 
 # ── Step: Review ──────────────────────────────────────────────────
@@ -129,6 +157,7 @@ class ReviewStep:
             project_name=state.get("name", ""),
             project_desc=state.get("desc", ""),
             output_dir=str(state.get("output_dir", ".")),
+            process_pack=state.get("pack") or None,
         )
         state["config"] = config
         io.say(format_summary(config))

@@ -19,7 +19,7 @@ from cc_rig.config.defaults import compute_defaults
 from cc_rig.config.detection import detect_project
 from cc_rig.config.project import ProjectConfig
 from cc_rig.presets.manager import (
-    _WORKFLOW_ALIASES,
+    _TIER_RESOLUTION,
     BUILTIN_TEMPLATES,
     BUILTIN_WORKFLOWS,
     load_workflow,
@@ -51,7 +51,7 @@ def run_wizard(args: argparse.Namespace, io: IO | None = None) -> int:
         available = ", ".join(sorted(BUILTIN_TEMPLATES))
         io.say(f"Error: Unknown template: {template!r}. Available: {available}")
         return 1
-    if workflow and workflow not in BUILTIN_WORKFLOWS and workflow not in _WORKFLOW_ALIASES:
+    if workflow and workflow not in _TIER_RESOLUTION:
         available = ", ".join(sorted(BUILTIN_WORKFLOWS))
         io.say(f"Error: Unknown workflow: {workflow!r}. Available: {available}")
         return 1
@@ -242,6 +242,7 @@ def _guided_flow(
         ConfirmStep,
         ExpertStep,
         HarnessStep,
+        PackStep,
         ReviewStep,
         SkillPacksStep,
         TemplateStep,
@@ -276,6 +277,7 @@ def _guided_flow(
     # mode == "fresh" — run through step-based guided flow
     steps = [
         WorkflowStep(),
+        PackStep(),
         TemplateStep(),
         BasicsStep(),
         ReviewStep(),

@@ -1,0 +1,11 @@
+{
+  "name": "gtd",
+  "description": "Persistent task tracking with planning-with-files.",
+  "source": "OthmanAdi/planning-with-files + obra/superpowers",
+  "source_url": "https://github.com/OthmanAdi/planning-with-files",
+  "process_skills": [
+    "planning-with-files",
+    "writing-plans",
+    "executing-plans"
+  ]
+}

@@ -3,13 +3,30 @@
 import json
 
 from cc_rig.clean import CleanResult, load_manifest, run_clean
+from cc_rig.config.defaults import compute_defaults
 from cc_rig.generators.fileops import _BACKUP_DIR
+from cc_rig.generators.orchestrator import generate_all
 from tests.conftest import generate_project as _generate_project
 
 
 def _generate_with_features(tmp_path, workflow="standard"):
     """Generate a project with the given workflow (controls features)."""
     return _generate_project(tmp_path, workflow=workflow)
+
+
+def _generate_with_gtd(tmp_path):
+    """Generate a project with GTD features explicitly enabled."""
+    config = compute_defaults("fastapi", "standard", project_name="test-proj")
+    config.features.gtd = True
+    config.features.worktrees = True
+    config.commands = list(config.commands) + [
+        "gtd-capture",
+        "gtd-process",
+        "daily-plan",
+        "worktree",
+    ]
+    manifest = generate_all(config, tmp_path)
+    return config, manifest
 
 
 class TestSafeCleanRestorePreExisting:
@@ -159,7 +176,7 @@ class TestPreserveOnClean:
 
     def test_modified_gtd_file_preserved(self, tmp_path):
         """Edited GTD task files survive clean."""
-        _generate_with_features(tmp_path, workflow="gtd-lite")
+        _generate_with_gtd(tmp_path)
         inbox = tmp_path / "tasks" / "inbox.md"
         assert inbox.exists()
         inbox.write_text("# Inbox\n\n- [ ] My real task\n")

@@ -12,6 +12,16 @@ def _generate_addons(template, workflow, tmp_path, *, use_tracker=False):
     return config, files, tracker
 
 
+def _generate_addons_with_gtd(template, tmp_path, *, use_tracker=False):
+    """Generate addons with GTD features explicitly enabled."""
+    config = compute_defaults(template, "standard", project_name="test-project")
+    config.features.gtd = True
+    config.features.worktrees = True
+    tracker = FileTracker(tmp_path) if use_tracker else None
+    files = generate_addons(config, tmp_path, tracker=tracker)
+    return config, files, tracker
+
+
 # ── Specs Template ────────────────────────────────────────────────────
 
 
@@ -76,10 +86,14 @@ class TestSpecsTemplate:
 
 
 class TestGtdFiles:
-    """Verify GTD task file content when gtd is enabled."""
+    """Verify GTD task file content when gtd is enabled.
+
+    GTD files require features.gtd=True; gtd-lite now maps to the
+    standard tier which does not enable gtd by default.
+    """
 
     def test_all_three_files_generated_when_gtd_enabled(self, tmp_path):
-        _, files, _ = _generate_addons("fastapi", "gtd-lite", tmp_path)
+        _, files, _ = _generate_addons_with_gtd("fastapi", tmp_path)
         assert "tasks/inbox.md" in files
         assert "tasks/todo.md" in files
         assert "tasks/someday.md" in files
@@ -90,37 +104,37 @@ class TestGtdFiles:
         assert gtd_files == []
 
     def test_inbox_starts_with_heading(self, tmp_path):
-        _generate_addons("fastapi", "gtd-lite", tmp_path)
+        _generate_addons_with_gtd("fastapi", tmp_path)
         content = (tmp_path / "tasks" / "inbox.md").read_text()
         assert content.startswith("# Inbox")
 
     def test_inbox_references_gtd_process(self, tmp_path):
-        _generate_addons("fastapi", "gtd-lite", tmp_path)
+        _generate_addons_with_gtd("fastapi", tmp_path)
         content = (tmp_path / "tasks" / "inbox.md").read_text()
         assert "/gtd-process" in content
 
     def test_inbox_has_date_format(self, tmp_path):
-        _generate_addons("fastapi", "gtd-lite", tmp_path)
+        _generate_addons_with_gtd("fastapi", tmp_path)
         content = (tmp_path / "tasks" / "inbox.md").read_text()
         assert "YYYY-MM-DD" in content
 
     def test_todo_starts_with_heading(self, tmp_path):
-        _generate_addons("fastapi", "gtd-lite", tmp_path)
+        _generate_addons_with_gtd("fastapi", tmp_path)
         content = (tmp_path / "tasks" / "todo.md").read_text()
         assert content.startswith("# Todo")
 
     def test_todo_has_next_format(self, tmp_path):
-        _generate_addons("fastapi", "gtd-lite", tmp_path)
+        _generate_addons_with_gtd("fastapi", tmp_path)
         content = (tmp_path / "tasks" / "todo.md").read_text()
         assert "Next:" in content
 
     def test_someday_starts_with_heading(self, tmp_path):
-        _generate_addons("fastapi", "gtd-lite", tmp_path)
+        _generate_addons_with_gtd("fastapi", tmp_path)
         content = (tmp_path / "tasks" / "someday.md").read_text()
         assert content.startswith("# Someday")
 
     def test_someday_mentions_weekly_review(self, tmp_path):
-        _generate_addons("fastapi", "gtd-lite", tmp_path)
+        _generate_addons_with_gtd("fastapi", tmp_path)
         content = (tmp_path / "tasks" / "someday.md").read_text()
         assert "weekly" in content.lower()
 
@@ -130,7 +144,7 @@ class TestGtdFiles:
         tasks_dir.mkdir(parents=True)
         (tasks_dir / "inbox.md").write_text("# My Custom Inbox\n")
 
-        _generate_addons("fastapi", "gtd-lite", tmp_path)
+        _generate_addons_with_gtd("fastapi", tmp_path)
 
         content = (tasks_dir / "inbox.md").read_text()
         assert content == "# My Custom Inbox\n"
@@ -148,7 +162,7 @@ class TestPreserveOnClean:
         assert meta["specs/TEMPLATE.md"].get("preserve_on_clean") is True
 
     def test_gtd_files_marked_preserve(self, tmp_path):
-        _, _, tracker = _generate_addons("fastapi", "gtd-lite", tmp_path, use_tracker=True)
+        _, _, tracker = _generate_addons_with_gtd("fastapi", tmp_path, use_tracker=True)
         meta = tracker.metadata()
         for rel in ("tasks/inbox.md", "tasks/todo.md", "tasks/someday.md"):
             assert meta[rel].get("preserve_on_clean") is True, f"{rel} missing preserve_on_clean"

@@ -1,0 +1,14 @@
+{
+  "name": "gstack",
+  "description": "Garry Tan's cognitive gears: Plan, Review, Ship.",
+  "source": "garrytan/gstack",
+  "source_url": "https://github.com/garrytan/gstack",
+  "process_skills": [
+    "plan-ceo-review",
+    "plan-eng-review",
+    "plan-design-review",
+    "gstack-review",
+    "ship",
+    "document-release"
+  ]
+}

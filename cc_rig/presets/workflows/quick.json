@@ -1,0 +1,37 @@
+{
+  "name": "quick",
+  "version": 2,
+  "description": "Ship fast, minimal ceremony. Side projects, prototypes, scripts.",
+  "source": "cc-rig",
+  "source_url": "",
+  "process_skills": [],
+  "agents": [
+    "code-reviewer",
+    "test-writer",
+    "explorer"
+  ],
+  "commands": [
+    "fix-issue",
+    "review",
+    "test",
+    "plan",
+    "learn",
+    "assumptions"
+  ],
+  "hooks": [
+    "format",
+    "lint",
+    "block-rm-rf",
+    "block-env",
+    "block-main",
+    "session-context"
+  ],
+  "features": {
+    "memory": false,
+    "spec_workflow": false,
+    "gtd": false,
+    "worktrees": false,
+    "github_actions": false
+  },
+  "permission_mode": "default"
+}

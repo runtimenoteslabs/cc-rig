@@ -471,10 +471,10 @@ class TestOptionalFrontmatterFields:
         fields, _ = _parse_frontmatter(content)
         assert fields["disallowedTools"] == "Write, Edit, Bash"
 
-    def test_techdebt_hunter_has_disallowed_tools(self, tmp_path):
+    def test_python_reviewer_has_disallowed_tools(self, tmp_path):
         config = compute_defaults("fastapi", "verify-heavy", project_name="test", claude_plan="max")
         generate_agents(config, tmp_path)
-        content = (tmp_path / ".claude" / "agents" / "techdebt-hunter.md").read_text()
+        content = (tmp_path / ".claude" / "agents" / "python-reviewer.md").read_text()
         fields, _ = _parse_frontmatter(content)
         assert fields["disallowedTools"] == "Write, Edit, Bash"
 

@@ -21,6 +21,7 @@ from cc_rig.generators.harness import generate_harness
 from cc_rig.generators.mcp import generate_mcp
 from cc_rig.generators.memory import generate_memory
 from cc_rig.generators.misc import generate_misc
+from cc_rig.generators.playbook import generate_playbook
 from cc_rig.generators.settings import generate_settings
 from cc_rig.generators.settings_local import generate_settings_local
 from cc_rig.generators.skills import generate_skills
@@ -51,6 +52,7 @@ def generate_all(
     all_files.extend(generate_settings(config, output_dir, tracker=tracker))
     all_files.extend(generate_agents(config, output_dir, tracker=tracker))
     all_files.extend(generate_commands(config, output_dir, tracker=tracker))
+    all_files.extend(generate_playbook(config, output_dir, tracker=tracker))
     all_files.extend(generate_skills(config, output_dir, tracker=tracker))
     all_files.extend(generate_agent_docs(config, output_dir, tracker=tracker))
     all_files.extend(generate_memory(config, output_dir, tracker=tracker))

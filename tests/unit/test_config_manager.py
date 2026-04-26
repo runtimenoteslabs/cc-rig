@@ -183,11 +183,11 @@ class TestDiff:
 
     def test_different_workflow_shows_diff(self):
         a = _make_config("fastapi", "standard")
-        b = _make_config("fastapi", "speedrun")
+        b = _make_config("fastapi", "rigorous")
         result = diff_configs(a, b)
         assert "workflow" in result
         assert "standard" in result
-        assert "speedrun" in result
+        assert "rigorous" in result
 
     def test_different_template_shows_diff(self):
         a = _make_config("fastapi", "standard")

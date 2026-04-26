@@ -20,7 +20,7 @@ BANNER = """
 
 BANNER_COMPACT = "cc-rig"
 
-TAGLINE = "Project setup generator for Claude Code"
+TAGLINE = "Set up Claude Code the right way, in under a minute"
 
 
 def print_banner(print_fn: Callable[..., Any] | None = None) -> None:

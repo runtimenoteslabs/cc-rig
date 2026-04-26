@@ -36,8 +36,8 @@ def generate_skills(
     report = _download_community_skills(specs, output_dir, tracker)
     files_written.extend(report.all_files)
 
-    # Speedrun bundled_only: generate thin tdd/debug instead of downloading
-    if config.workflow == "speedrun":
+    # Quick/speedrun bundled_only: generate thin tdd/debug instead of downloading
+    if config.workflow in ("quick", "speedrun"):
         files_written.extend(_write_tdd_fallback(config, output_dir, tracker))
         files_written.extend(_write_debug_fallback(config, output_dir, tracker))
     else:

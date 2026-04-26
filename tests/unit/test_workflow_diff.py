@@ -92,21 +92,30 @@ class TestSpecDrivenUnique:
 
 
 class TestGtdLiteUnique:
-    """GTD-lite should include GTD components."""
+    """gtd-lite resolves to the standard tier with a gtd process pack."""
 
-    def test_has_gtd_commands(self, tmp_path):
+    def test_has_standard_tier_commands(self, tmp_path):
+        """gtd-lite maps to standard tier; standard commands are present."""
         gtd_cfg, _, _ = _gen(tmp_path, "gtd-lite")
-        assert "gtd-capture" in gtd_cfg.commands
-        assert "gtd-process" in gtd_cfg.commands
-        assert "daily-plan" in gtd_cfg.commands
+        assert gtd_cfg.workflow == "standard"
+        assert gtd_cfg.process_pack == "gtd"
+        assert "remember" in gtd_cfg.commands
+        assert "fix-issue" in gtd_cfg.commands
+
+    def test_no_gtd_specific_commands_by_default(self, tmp_path):
+        """GTD commands require features.gtd=True; not set by the gtd-lite alias."""
+        gtd_cfg, _, _ = _gen(tmp_path, "gtd-lite")
+        assert "gtd-capture" not in gtd_cfg.commands
+        assert "gtd-process" not in gtd_cfg.commands
 
     def test_standard_lacks_gtd_components(self, tmp_path):
         st_cfg, _, _ = _gen(tmp_path, "standard")
         assert "gtd-capture" not in st_cfg.commands
 
     def test_has_gtd_feature_flag(self, tmp_path):
+        """gtd-lite resolves to standard tier; gtd feature flag is off by default."""
         gtd_cfg, _, _ = _gen(tmp_path, "gtd-lite")
-        assert gtd_cfg.features.gtd is True
+        assert gtd_cfg.features.gtd is False
 
 
 class TestCLAUDEMdDiffers:

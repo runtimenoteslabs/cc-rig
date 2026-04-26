@@ -9,7 +9,7 @@ import pytest
 
 from cc_rig.config.defaults import compute_defaults
 from cc_rig.generators.claude_md import generate_claude_md
-from cc_rig.presets.manager import BUILTIN_WORKFLOWS, load_workflow
+from cc_rig.presets.manager import BUILTIN_WORKFLOWS, load_pack, load_workflow
 from cc_rig.skills.registry import (
     SKILL_CATALOG,
     WORKFLOW_PROCESS_SKILLS,
@@ -150,12 +150,14 @@ class TestComputeDefaultsProcessSkills:
 
 class TestAliasResolution:
     def test_verify_heavy_resolves_to_superpowers(self):
+        """verify-heavy resolves to the rigorous tier (superpowers is now a pack)."""
         data = load_workflow("verify-heavy")
-        assert data["name"] == "superpowers"
+        assert data["name"] == "rigorous"
 
     def test_gtd_lite_resolves_to_gtd(self):
+        """gtd-lite resolves to the standard tier (gtd is now a pack)."""
         data = load_workflow("gtd-lite")
-        assert data["name"] == "gtd"
+        assert data["name"] == "standard"
 
     def test_alias_config_matches_canonical(self):
         alias_config = compute_defaults("fastapi", "verify-heavy", project_name="test")
@@ -236,9 +238,11 @@ class TestPresetV2Format:
         assert "source" in data, f"{workflow} preset missing source"
 
     def test_gstack_preset_process_skills_match_registry(self):
-        data = load_workflow("gstack")
+        """gstack is now a pack; use load_pack() to get its process skills."""
+        data = load_pack("gstack")
         assert data["process_skills"] == WORKFLOW_PROCESS_SKILLS["gstack"]
 
     def test_aihero_preset_process_skills_match_registry(self):
-        data = load_workflow("aihero")
+        """aihero is now a pack; use load_pack() to get its process skills."""
+        data = load_pack("aihero")
         assert data["process_skills"] == WORKFLOW_PROCESS_SKILLS["aihero"]

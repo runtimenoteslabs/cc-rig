@@ -118,11 +118,15 @@ def _iter_manifest_files(
 
 # Target line counts per workflow (from SMART-DEFAULTS-MATRIX.md §7)
 _CLAUDE_MD_LINE_TARGETS: dict[str, int] = {
-    "speedrun": 60,
-    "standard": 95,
-    "spec-driven": 110,
-    "gtd-lite": 115,
-    "verify-heavy": 120,
+    # Tiers (+2 for HTML attribution comment)
+    "quick": 62,
+    "standard": 97,
+    "rigorous": 122,
+    # Legacy workflow names
+    "speedrun": 62,
+    "spec-driven": 112,
+    "gtd-lite": 117,
+    "verify-heavy": 122,
 }
 
 

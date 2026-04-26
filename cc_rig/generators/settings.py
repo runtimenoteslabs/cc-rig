@@ -16,8 +16,12 @@ _SHELL_INJECTION_RE = re.compile(r"[;|&`$><\n\r]|\.\./")
 
 # Workflow → CC effort level mapping (V2.1)
 _WORKFLOW_EFFORT: dict[str, str] = {
-    "speedrun": "low",
+    # Tiers
+    "quick": "low",
     "standard": "medium",
+    "rigorous": "high",
+    # Legacy workflow names
+    "speedrun": "low",
     "gstack": "medium",
     "aihero": "medium",
     "spec-driven": "high",
@@ -26,6 +30,11 @@ _WORKFLOW_EFFORT: dict[str, str] = {
     "gtd-lite": "medium",
     "verify-heavy": "high",
 }
+
+# High-rigor workflows: get thinking summaries, suppress git instructions, strict auto mode.
+_HIGH_RIGOR_WORKFLOWS = frozenset({"rigorous", "superpowers", "verify-heavy", "spec-driven"})
+# Sandbox required: subset of high-rigor (spec-driven excluded: less strict on sandbox).
+_SANDBOX_REQUIRED_WORKFLOWS = frozenset({"rigorous", "superpowers", "verify-heavy"})
 
 
 # ── Hook metadata registry ─────────────────────────────────────────
@@ -262,17 +271,17 @@ def generate_settings(
     # Thinking summaries: show for high-rigor workflows where reasoning
     # visibility matters, suppress for speed-focused workflows (CC v2.1.89+,
     # defaults to false).
-    if config.workflow in ("superpowers", "verify-heavy", "spec-driven"):
+    if config.workflow in _HIGH_RIGOR_WORKFLOWS:
         settings["showThinkingSummaries"] = True
 
     # Suppress built-in git instructions for high-rigor workflows (V2.1)
     # These workflows have comprehensive guardrails in CLAUDE.md already.
-    if config.workflow in ("superpowers", "verify-heavy", "spec-driven"):
+    if config.workflow in _HIGH_RIGOR_WORKFLOWS:
         settings["includeGitInstructions"] = False
 
-    # Require sandbox for high-rigor workflows (CC v2.1.83+).
-    # Exit if sandbox is unavailable rather than running unprotected.
-    if config.workflow in ("superpowers", "verify-heavy"):
+    # Require sandbox for rigorous/superpowers/verify-heavy (CC v2.1.83+).
+    # spec-driven excluded: less strict on sandbox requirement.
+    if config.workflow in _SANDBOX_REQUIRED_WORKFLOWS:
         settings.setdefault("sandbox", {})["failIfUnavailable"] = True
 
     # Auto mode (V2.3, CC v2.1.89+)
@@ -282,7 +291,7 @@ def generate_settings(
             "environment": [f"Trusted local development ({config.framework})"],
             "allow": ["Installing packages from lockfile"],
         }
-        if config.workflow in ("superpowers", "verify-heavy", "spec-driven"):
+        if config.workflow in _HIGH_RIGOR_WORKFLOWS:
             auto_mode["soft_deny"] = [
                 "Production deploys without approval",
                 "Force push to any branch",
@@ -575,6 +584,13 @@ def _script_stop_validator(config: ProjectConfig) -> str:
 
 
 def _script_session_context(config: ProjectConfig) -> str:
+    plugin_count = len(config.recommended_plugins)
+    hook_count = len(config.hooks)
+    nudge = (
+        f"cc-rig | {config.workflow} + {config.framework}"
+        f" | {plugin_count} plugins, {hook_count} hooks"
+        " | /cc-rig for recipes + savings"
+    ).replace("'", "'\\''")
     return (
         "#!/usr/bin/env bash\n"
         "# cc-rig hook: session-context — print project context at session start\n"
@@ -593,6 +609,8 @@ def _script_session_context(config: ProjectConfig) -> str:
         '    [ -f "$f" ] && echo "  $f"\n'
         "  done\n"
         "fi\n"
+        "\n"
+        f"echo '{nudge}'\n"
         "\n"
         "exit 0\n"
     )
@@ -866,6 +884,11 @@ def _script_session_telemetry(config: ProjectConfig) -> str:
         "D = '\\033[2m' if use_color else ''\n"
         "R = '\\033[0m' if use_color else ''\n"
         "cache_pct = f'{metrics[\"cache_read_ratio\"]:.0%}'\n"
+        "# Net savings: read discount minus creation premium\n"
+        "read_discount = metrics['cache_read_tokens'] * (p[0] - p[3]) / 1e6\n"
+        "create_premium = metrics['cache_creation_tokens'] * (p[2] - p[0]) / 1e6\n"
+        "savings = max(0, read_discount - create_premium)\n"
+        "savings_note = f' (saved ~${savings:.2f})' if savings > 0.01 else ''\n"
         "dedup_note = ''\n"
         "if metrics['entries_deduped'] > 0:\n"
         "    dedup_note = f' | deduped {metrics[\"entries_deduped\"]}'\n"
@@ -873,7 +896,8 @@ def _script_session_telemetry(config: ProjectConfig) -> str:
         "      f'{metrics[\"turn_count\"]} turns, '\n"
         "      f'{total_tokens:,} tokens, '\n"
         "      f'{G}~${cost:.2f}{R} | '\n"
-        "      f'cache {G}{cache_pct}{R}{dedup_note}')\n"
+        "      f'cache {G}{cache_pct}{savings_note}{R}{dedup_note} | '\n"
+        "      f'{D}/cc-rig savings{R}')\n"
         "PYEOF\n"
         "fi\n"
         "\n"
@@ -1103,13 +1127,17 @@ def _script_budget_reminder(config: ProjectConfig) -> str:
         "D = '\\033[2m' if use_color else ''\n"
         "B = '\\033[1m' if use_color else ''\n"
         "R = '\\033[0m' if use_color else ''\n"
+        "# Net savings: read discount minus creation premium\n"
+        "savings = max(0, t_cr * (p_in - p_cr) / 1e6 - t_cc * (p_cc - p_in) / 1e6)\n"
+        "savings_note = f' (saved ~${savings:.2f})' if savings > 0.01 else ''\n"
         "dedup_note = ''\n"
         "if n_deduped > 0:\n"
         "    dedup_note = f' | deduped {n_deduped}'\n"
         "print(f'{B}{C}Budget{R}  '\n"
         "      f'{total_tokens:,} tokens, '\n"
         "      f'{G}~${cost:.2f}{R} ({label}) | '\n"
-        "      f'cache {G}{cache_ratio:.0f}%{R}{dedup_note}')\n"
+        "      f'cache {G}{cache_ratio:.0f}%{savings_note}{R}{dedup_note} | '\n"
+        "      f'{D}/cc-rig savings{R}')\n"
         "PYEOF\n"
         "  ) 2>/dev/null || true\n"
         '  [ -n "$COST_OUTPUT" ] && echo "$COST_OUTPUT"\n'

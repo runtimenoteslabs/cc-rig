@@ -98,9 +98,22 @@ class TestFileManifestSnapshot:
         assert "specs/TEMPLATE.md" in files
 
     def test_gin_gtd_lite_has_task_files(self, tmp_path):
-        """Snapshot: gtd-lite should include tasks/ files."""
+        """Snapshot: task files require features.gtd=True (gtd-lite maps to standard tier)."""
+        from cc_rig.config.defaults import compute_defaults
+        from cc_rig.generators.orchestrator import generate_all
+
         output = tmp_path / "out"
-        _, manifest = _generate("gin", "gtd-lite", output)
+        output.mkdir(parents=True, exist_ok=True)
+        config = compute_defaults("gin", "standard", project_name="test-gin")
+        config.features.gtd = True
+        config.features.worktrees = True
+        config.commands = list(config.commands) + [
+            "gtd-capture",
+            "gtd-process",
+            "daily-plan",
+            "worktree",
+        ]
+        manifest = generate_all(config, output)
         files = set(manifest["files"])
         assert "tasks/inbox.md" in files
         assert "tasks/todo.md" in files
@@ -272,15 +285,18 @@ class TestCLAUDEmdSnapshot:
             )
 
     _LINE_CAPS = {
-        "speedrun": 86,
-        "standard": 125,
-        "spec-driven": 163,
-        "gtd-lite": 164,
-        "gtd": 164,
-        "verify-heavy": 174,
-        "superpowers": 174,
-        "gstack": 153,
-        "aihero": 166,
+        # +2 for HTML attribution comment at top of CLAUDE.md
+        "quick": 88,
+        "standard": 127,
+        "rigorous": 176,
+        "speedrun": 88,
+        "spec-driven": 165,
+        "gtd-lite": 166,
+        "gtd": 166,
+        "verify-heavy": 176,
+        "superpowers": 176,
+        "gstack": 155,
+        "aihero": 168,
     }
 
     @pytest.mark.parametrize("template,workflow", _SNAPSHOT_COMBOS)

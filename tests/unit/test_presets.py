@@ -110,7 +110,7 @@ class TestWorkflowPresets:
             load_workflow("nonexistent")
 
     def test_has_minimum_workflows(self):
-        assert len(BUILTIN_WORKFLOWS) >= 5
+        assert len(BUILTIN_WORKFLOWS) >= 3
 
 
 class TestWorkflowOrdering:
@@ -121,8 +121,8 @@ class TestWorkflowOrdering:
         for name in BUILTIN_WORKFLOWS:
             data = load_workflow(name)
             counts[name] = len(data["agents"])
-        assert counts["speedrun"] < counts["standard"]
-        assert counts["standard"] < counts["superpowers"]
+        assert counts["quick"] < counts["standard"]
+        assert counts["standard"] < counts["rigorous"]
 
     def test_speedrun_is_minimal(self):
         data = load_workflow("speedrun")
@@ -139,11 +139,11 @@ class TestWorkflowOrdering:
 
     def test_verify_heavy_alias_resolves(self):
         data = load_workflow("verify-heavy")
-        assert data["name"] == "superpowers"
+        assert data["name"] == "rigorous"
 
     def test_gtd_lite_alias_resolves(self):
         data = load_workflow("gtd-lite")
-        assert data["name"] == "gtd"
+        assert data["name"] == "standard"
 
 
 class TestListPresets:

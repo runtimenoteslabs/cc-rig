@@ -46,7 +46,7 @@ CLAUDE.local.md              # Personal preferences (gitignored)
 .claude/commands/            # 6-19 slash commands matched to your workflow
 .claude/hooks/               # Auto-format, lint gates, safety blocks
 .claude/skills/              # Community skills from 17 repos
-.github/workflows/claude.yml # Claude reviews your PRs (opt-out for speedrun)
+.github/workflows/claude.yml # Claude reviews your PRs (opt-out for quick tier)
 agent_docs/                  # Framework-specific guides (auto-loaded via @import)
 memory/                      # Git-tracked team knowledge across sessions
 ```
@@ -88,7 +88,7 @@ cc-rig init
 Or skip the wizard and specify everything directly:
 
 ```bash
-cc-rig init --workflow gstack --template fastapi --name my-api
+cc-rig init --workflow rigorous --template fastapi --name my-api
 ```
 
 ### Set up an existing project
@@ -138,23 +138,32 @@ cc-rig is **workflow-first**. You pick how you like to work, then optionally pic
 </p>
 </details>
 
-### How you like to work: Workflows
+### How you like to work: Tiers
 
-Workflow is the primary axis. It determines your agents, commands, hooks, process skills, and features.
+Your workflow tier is the primary axis. It determines agents, commands, hooks, plugins, and features.
 
-| Workflow | Source | Best for |
-|----------|--------|----------|
-| **speedrun** | cc-rig | Side projects, prototypes. 3 agents, 6 commands. No memory. Just code fast. |
-| **standard** | cc-rig | Most projects. 5 agents, 9 commands. Memory, safety hooks, code review. |
-| **gstack** | [garrytan/gstack](https://github.com/garrytan/gstack) | Garry Tan's cognitive gears. Plan, review, ship. 6 process skills installed. |
-| **aihero** | [mattpocock/skills](https://github.com/mattpocock/skills) | Matt Pocock's PRD-driven flow. Grill-me, TDD, architecture. 7 process skills. |
-| **spec-driven** | cc-rig + community | Teams that plan first. Spec create/execute, PM and implementer agents. |
-| **superpowers** | [obra/superpowers](https://github.com/obra/superpowers) | Full SDLC suite. 11 process skills covering planning through branch cleanup. |
-| **gtd** | [OthmanAdi](https://github.com/OthmanAdi/planning-with-files) + cc-rig | Persistent task tracking. planning-with-files, daily plans, worktrees. |
+| Tier | Best for | What you get |
+|------|----------|-------------|
+| **quick** | Side projects, prototypes, scripts | 3 agents, 6 commands. Minimal ceremony. Just code fast. |
+| **standard** | Most projects, teams, day-to-day | 5 agents, 9 commands. Memory, safety hooks, code review. |
+| **rigorous** | Critical systems, compliance, teams | 10 agents, 15 commands. Spec workflow, security auditor, worktrees. |
 
-Community workflows install their original process skills with full attribution. For example, gstack installs `/plan-ceo-review`, `/plan-eng-review`, `/gstack-review`, `/ship`, `/document-release` directly from garrytan/gstack.
+All three tiers are cc-rig's own. They define the foundation: how many agents, what hooks fire, which safety nets are active.
 
-Backward-compatible aliases: `verify-heavy` resolves to `superpowers`, `gtd-lite` resolves to `gtd`.
+### Optional: Community Process Packs
+
+After picking a tier, you can add a community process pack. Packs overlay curated workflow skills on top of your tier, with full attribution to the original author.
+
+| Pack | Source | What it adds |
+|------|--------|-------------|
+| **gstack** | [garrytan/gstack](https://github.com/garrytan/gstack) | Plan, review, ship. 6 process skills (`/plan-ceo-review`, `/ship`, ...) |
+| **aihero** | [mattpocock/skills](https://github.com/mattpocock/skills) | PRD-driven flow. 7 skills (`/write-a-prd`, `/mp-tdd`, ...) |
+| **superpowers** | [obra/superpowers](https://github.com/obra/superpowers) | Full SDLC suite. 11 skills covering planning through branch cleanup. |
+| **gtd** | [OthmanAdi](https://github.com/OthmanAdi/planning-with-files) | Persistent task tracking. 3 skills (`/planning-with-files`, `/daily-plan`). |
+
+Packs are optional. Most users start with just a tier.
+
+Old workflow names still work via CLI: `--workflow gstack` resolves to standard + gstack pack, `--workflow superpowers` resolves to rigorous + superpowers pack.
 
 ### What you're building: Stack (optional)
 
@@ -181,25 +190,25 @@ Stack is secondary enrichment. It adds framework-specific tool commands, agent d
 
 ### Add-ons
 
-Some workflows include compound features that span multiple Claude Code primitives:
+Some tiers include compound features that span multiple Claude Code primitives:
 
-**Spec Workflow** (spec-driven, aihero, superpowers). Plan-first development: `/spec-create` and `/spec-execute` commands, `pm-spec` and `implementer` agents, `specs/TEMPLATE.md` starter file. Based on [Pimzino's spec workflow](https://github.com/Pimzino/claude-code-spec-workflow).
+**Spec Workflow** (rigorous tier). Plan-first development: `/spec-create` and `/spec-execute` commands, `pm-spec` and `implementer` agents, `specs/TEMPLATE.md` starter file. Based on [Pimzino's spec workflow](https://github.com/Pimzino/claude-code-spec-workflow).
 
-**GTD System** (gtd). Getting Things Done for Claude Code: `/gtd-capture`, `/gtd-process`, `/daily-plan` commands, pre-created `tasks/inbox.md`, `tasks/todo.md` and `tasks/someday.md`. Based on [adagradschool's cc-gtd](https://github.com/adagradschool/cc-gtd).
+**GTD System** (opt-in feature). Getting Things Done for Claude Code: `/gtd-capture`, `/gtd-process`, `/daily-plan` commands, pre-created `tasks/inbox.md`, `tasks/todo.md` and `tasks/someday.md`. Based on [adagradschool's cc-gtd](https://github.com/adagradschool/cc-gtd).
 
-**Worktrees** (gstack, aihero, spec-driven, superpowers, gtd). Parallel development using Claude Code's native git worktree support: `parallel-worker` agent and `/worktree` command. For batch orchestration, `cc-rig worktree spawn` launches multiple Claude sessions in isolated worktrees simultaneously. Each gets its own branch, runs independently, and can be merged via PR when done.
+**Worktrees** (standard + rigorous tiers). Parallel development using Claude Code's native git worktree support: `parallel-worker` agent and `/worktree` command. For batch orchestration, `cc-rig worktree spawn` launches multiple Claude sessions in isolated worktrees simultaneously. Each gets its own branch, runs independently, and can be merged via PR when done.
 
 ### Mix and match
 
 ```bash
-# Just the gstack workflow, no specific stack
-cc-rig init --workflow gstack
+# Rigorous tier, no specific stack
+cc-rig init --workflow rigorous
 
-# FastAPI with superpowers - maximum rigor
+# FastAPI with rigorous tier + superpowers community pack
 cc-rig init --template fastapi --workflow superpowers
 
-# Go microservice with GTD task tracking
-cc-rig init --template gin --workflow gtd
+# Go microservice with standard tier
+cc-rig init --template gin --workflow standard
 ```
 
 ---
@@ -258,11 +267,11 @@ Up to 14 hooks from your workflow preset, plus up to 5 more from the harness lev
 
 ### Skills
 
-cc-rig downloads skills from the original community repos at init time and does not bundle or redistribute them. Your workflow determines the process skills: gstack installs Garry Tan's 6 skills from [garrytan/gstack](https://github.com/garrytan/gstack), superpowers installs obra's 11 from [obra/superpowers](https://github.com/obra/superpowers). Your stack adds framework-matched content: Django projects get Django ORM and testing patterns from [everything-claude-code](https://github.com/affaan-m/everything-claude-code), Go projects get static analysis, Rust projects get ownership and lifetime patterns.
+cc-rig downloads skills from the original community repos at init time and does not bundle or redistribute them. Your tier determines the base skills (0 for quick, up to 14 for rigorous). Community process packs add their own skills: the gstack pack installs Garry Tan's 6 skills from [garrytan/gstack](https://github.com/garrytan/gstack), the superpowers pack installs obra's 11 from [obra/superpowers](https://github.com/obra/superpowers). Your stack adds framework-matched content: Django projects get Django ORM and testing patterns from [everything-claude-code](https://github.com/affaan-m/everything-claude-code), Go projects get static analysis, Rust projects get ownership and lifetime patterns.
 
 **Starter set** (auto-installed at `init`):
 - **Framework-matched**: Python projects get `modern-python` and `property-based-testing`, Next.js gets `vercel-react-best-practices` and `next-best-practices`, Go/Rust get `static-analysis`
-- **Cross-cutting**: code review, security basics, TDD, debugging. Scaled by workflow (0 for speedrun, up to 14 for superpowers)
+- **Cross-cutting**: code review, security basics, TDD, debugging. Scaled by tier (0 for quick, up to 14 for rigorous)
 - **`project-patterns`** stub for your team's custom conventions
 
 **Optional skill packs** (select during wizard or add later):
@@ -303,7 +312,7 @@ cc-rig generates a **team memory layer** (`memory/`): 5 git-tracked files for de
 
 **Agent docs** in `agent_docs/` provide framework-specific reference (architecture, conventions, testing, deployment, cache-friendly workflow) loaded via `@import` syntax.
 
-**GitHub Actions** (v2.5). The `github_actions` feature generates `.github/workflows/claude.yml` using [anthropics/claude-code-action@v1](https://github.com/anthropics/claude-code-action). Claude reviews every PR and responds to `@claude` mentions in comments. High-rigor workflows (superpowers, verify-heavy) add a second security-review job. Enabled by default for all workflows except speedrun.
+**GitHub Actions** (v2.5). The `github_actions` feature generates `.github/workflows/claude.yml` using [anthropics/claude-code-action@v1](https://github.com/anthropics/claude-code-action). Claude reviews every PR and responds to `@claude` mentions in comments. The rigorous tier adds a second security-review job. Enabled by default for standard and rigorous tiers.
 
 [Full details for all of the above](docs/generated-output.md#memory).
 

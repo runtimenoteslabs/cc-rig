@@ -47,7 +47,7 @@ class TestZeroConfig:
                 "--template",
                 "django",
                 "--workflow",
-                "speedrun",
+                "quick",
                 "--name",
                 "my-django",
                 "-o",
@@ -56,7 +56,7 @@ class TestZeroConfig:
         )
         data = json.loads((output / ".cc-rig.json").read_text())
         assert data["framework"] == "django"
-        assert data["workflow"] == "speedrun"
+        assert data["workflow"] == "quick"
 
     def test_all_templates_work(self, tmp_path):
         from cc_rig.presets.manager import BUILTIN_TEMPLATES

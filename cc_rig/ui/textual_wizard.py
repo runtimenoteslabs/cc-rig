@@ -32,7 +32,7 @@ from textual.widgets import (
 
 from cc_rig.config.schema import VALID_AGENTS, VALID_COMMANDS, VALID_HOOKS
 from cc_rig.plugins.registry import PLUGIN_CATALOG, WORKFLOW_PLUGINS
-from cc_rig.presets.manager import BUILTIN_TEMPLATES, BUILTIN_WORKFLOWS, load_workflow
+from cc_rig.presets.manager import BUILTIN_TEMPLATES, load_workflow
 from cc_rig.ui.banner import BANNER, BANNER_COMPACT, TAGLINE
 
 
@@ -383,6 +383,18 @@ class WelcomeScreen(ModalScreen[Optional[dict]]):
                 id="repo-url",
                 classes="dim",
             )
+            yield Label(
+                "One command sets up your entire Claude Code environment:\n"
+                "  agents that review, test, and fix your code\n"
+                "  hooks that auto-format, lint-gate, and block mistakes\n"
+                "  a cache-optimized CLAUDE.md that saves 80%+ on tokens\n"
+                "\n"
+                "Then /cc-rig guides you:\n"
+                "  /cc-rig          your dashboard: workflow, recipes, what's active\n"
+                "  /cc-rig recipes  step-by-step guides for bugs, features, refactors\n"
+                "  /cc-rig savings  how much cc-rig saved you on tokens\n",
+                classes="description",
+            )
             yield Label("How would you like to start?", classes="screen-title")
             yield AutoSelectRadioSet(
                 RadioButton("Fresh project - full guided setup", value=True),
@@ -531,8 +543,8 @@ class TemplateScreen(ModalScreen[Optional[dict]]):
 # ── Screen 4: Workflow ────────────────────────────────────────────────
 
 
-class WorkflowScreen(ModalScreen[Optional[dict]]):
-    """Select workflow preset with educational detail panel."""
+class TierScreen(ModalScreen[Optional[dict]]):
+    """Select workflow tier (quick, standard, rigorous)."""
 
     BINDINGS = [("escape", "go_back", "Back")]
 
@@ -541,17 +553,19 @@ class WorkflowScreen(ModalScreen[Optional[dict]]):
         self._state = state
 
     def compose(self) -> ComposeResult:
+        from cc_rig.presets.manager import BUILTIN_TIERS
         from cc_rig.ui.descriptions import WORKFLOW_DETAILS
 
         yield BrandHeader(self._state.get("step_label", ""))
         with VerticalScroll(id="body"):
-            yield Label("Select your workflow", classes="screen-title")
+            yield Label("How much structure do you want?", classes="screen-title")
             yield Label(
-                "Controls which agents, commands, hooks, plugins, and features are generated.",
+                "This sets your foundation: how many AI agents help you, what safety\n"
+                "nets are active, and how much process ceremony each task gets.",
                 classes="description",
             )
             buttons = []
-            for i, w in enumerate(BUILTIN_WORKFLOWS):
+            for w in BUILTIN_TIERS:
                 data = load_workflow(w)
                 desc = data.get("description", w)
                 agents = len(data.get("agents", []))
@@ -561,7 +575,6 @@ class WorkflowScreen(ModalScreen[Optional[dict]]):
                 selected = self._state.get("workflow", "standard")
                 buttons.append(RadioButton(label, value=(w == selected)))
             yield AutoSelectRadioSet(*buttons, id="workflow-radio")
-            # Show details for the selected workflow
             default_detail = WORKFLOW_DETAILS.get(self._state.get("workflow", "standard"), "")
             yield Static(default_detail, id="workflow-details")
         yield NavBar()
@@ -571,20 +584,82 @@ class WorkflowScreen(ModalScreen[Optional[dict]]):
         self.query_one("#workflow-radio", RadioSet).focus()
 
     def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
+        from cc_rig.presets.manager import BUILTIN_TIERS
         from cc_rig.ui.descriptions import WORKFLOW_DETAILS
 
         idx = event.radio_set.pressed_index
-        if idx >= 0 and idx < len(BUILTIN_WORKFLOWS):
-            workflow = BUILTIN_WORKFLOWS[idx]
-            detail = WORKFLOW_DETAILS.get(workflow, "")
+        if idx >= 0 and idx < len(BUILTIN_TIERS):
+            tier = BUILTIN_TIERS[idx]
+            detail = WORKFLOW_DETAILS.get(tier, "")
             self.query_one("#workflow-details", Static).update(detail)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        from cc_rig.presets.manager import BUILTIN_TIERS
+
         if event.button.id == "btn-next":
             radio = self.query_one("#workflow-radio", RadioSet)
+            idx = radio.pressed_index if radio.pressed_index >= 0 else 1  # default: standard
+            tier = BUILTIN_TIERS[idx]
+            self.dismiss({"workflow": tier})
+        elif event.button.id == "btn-back":
+            self.dismiss(None)
+        elif event.button.id == "btn-cancel":
+            self.dismiss("cancel")
+
+    def action_go_back(self) -> None:
+        self.dismiss(None)
+
+
+# Keep WorkflowScreen as an alias for backward compat in tests
+WorkflowScreen = TierScreen
+
+
+class PackScreen(ModalScreen[Optional[dict]]):
+    """Optional community process pack selection (single-select via RadioSet)."""
+
+    BINDINGS = [("escape", "go_back", "Back")]
+
+    def __init__(self, state: dict[str, Any]) -> None:
+        super().__init__()
+        self._state = state
+
+    def compose(self) -> ComposeResult:
+        from cc_rig.presets.manager import BUILTIN_PACKS, load_pack
+
+        yield BrandHeader(self._state.get("step_label", ""))
+        with VerticalScroll(id="body"):
+            yield Label("Add a community process pack?", classes="screen-title")
+            yield Label(
+                "Process packs add community-curated workflow skills on top of your tier.\n"
+                "These are optional. Select none to use just the cc-rig workflow.",
+                classes="description",
+            )
+            prev_pack = self._state.get("pack", "")
+            # "None" option first, then the 4 packs
+            buttons = [RadioButton("none - Just the cc-rig workflow", value=(not prev_pack))]
+            for pack_name in BUILTIN_PACKS:
+                pack_data = load_pack(pack_name)
+                desc = pack_data.get("description", pack_name)
+                skill_count = len(pack_data.get("process_skills", []))
+                source = pack_data.get("source", "")
+                label = f"{pack_name} - {desc} ({skill_count} skills, {source})"
+                buttons.append(RadioButton(label, value=(pack_name == prev_pack)))
+            yield AutoSelectRadioSet(*buttons, id="pack-radio")
+        yield NavBar()
+        yield KeyHintsBar()
+
+    def on_mount(self) -> None:
+        self.query_one("#pack-radio", RadioSet).focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        from cc_rig.presets.manager import BUILTIN_PACKS
+
+        if event.button.id == "btn-next":
+            radio = self.query_one("#pack-radio", RadioSet)
             idx = radio.pressed_index if radio.pressed_index >= 0 else 0
-            workflow = BUILTIN_WORKFLOWS[idx]
-            self.dismiss({"workflow": workflow})
+            # Index 0 = "none", 1+ = BUILTIN_PACKS[idx-1]
+            pack = BUILTIN_PACKS[idx - 1] if idx > 0 else ""
+            self.dismiss({"pack": pack})
         elif event.button.id == "btn-back":
             self.dismiss(None)
         elif event.button.id == "btn-cancel":
@@ -629,6 +704,41 @@ def _format_config_summary(config: Any, output_dir: str = ".") -> str:
         f"  Harness:    {config.harness.level}",
         f"  Output:     {output_dir}",
     ]
+    return "\n".join(lines)
+
+
+def _format_value_summary(config: Any, output_dir: str = ".") -> str:
+    """Format config with value props for ConfirmScreen (pre-generate)."""
+    from cc_rig.generators.playbook import WORKFLOW_CHAINS
+
+    chain = WORKFLOW_CHAINS.get(config.workflow, "/plan -> implement -> /review -> commit")
+    pack_label = f" + {config.process_pack}" if config.process_pack else ""
+
+    lines = [
+        f"  {config.workflow}{pack_label} + {config.framework}",
+        "",
+        f"  Your workflow:  {chain}",
+        f"  Your agents:    {len(config.agents)}",
+        f"  Your plugins:   {len(config.recommended_plugins)}",
+        f"  Your hooks:     {len(config.hooks)}",
+        f"  Your commands:  {len(config.commands)}",
+    ]
+    if config.process_skills:
+        lines.append(
+            f"  Process pack:   {len(config.process_skills)} skills ({config.workflow_source})"
+        )
+    lines.extend(
+        [
+            "  Cache savings:  static-first CLAUDE.md + 4 cache guardrails",
+            "",
+            f"  Output: {output_dir}",
+            "",
+            "  After generation:",
+            "    /cc-rig          see your dashboard, workflow, and quick recipes",
+            "    /cc-rig recipes  step-by-step guides for common tasks",
+            "    /cc-rig savings  track how much cc-rig saves you on tokens",
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -1198,7 +1308,7 @@ class HarnessScreen(ModalScreen[Optional[dict]]):
 
 
 class ConfirmScreen(ModalScreen[Optional[dict]]):
-    """Final confirmation before generation."""
+    """Final confirmation before generation with value summary."""
 
     BINDINGS = [("escape", "go_back", "Back")]
 
@@ -1214,7 +1324,7 @@ class ConfirmScreen(ModalScreen[Optional[dict]]):
             if config:
                 out = str(self._state.get("output_dir", "."))
                 yield Static(
-                    _format_config_summary(config, out),
+                    _format_value_summary(config, out),
                     id="summary-box",
                 )
             yield Label("")
@@ -1288,9 +1398,15 @@ def _wants_expert(s: dict[str, Any]) -> bool:
     return bool(s.get("wants_expert") or s.get("force_expert"))
 
 
+def _wants_pack(s: dict[str, Any]) -> bool:
+    """Show pack screen for non-quick tiers."""
+    return s.get("workflow") != "quick"
+
+
 _GUIDED_SCREENS: list[tuple[type, str, Any]] = [
     (WelcomeScreen, "Welcome", None),
-    (WorkflowScreen, "Select your workflow", None),
+    (TierScreen, "How much structure?", None),
+    (PackScreen, "Process pack", _wants_pack),
     (TemplateScreen, "Select your stack", None),
     (BasicsScreen, "Project basics", None),
     (ReviewScreen, "Configuration preview", None),
@@ -1302,7 +1418,8 @@ _GUIDED_SCREENS: list[tuple[type, str, Any]] = [
 ]
 
 _QUICK_SCREENS: list[tuple[type, str, Any]] = [
-    (WorkflowScreen, "Select your workflow", None),
+    (TierScreen, "How much structure?", None),
+    (PackScreen, "Process pack", _wants_pack),
     (TemplateScreen, "Select your stack", None),
     (BasicsScreen, "Project name", None),
     (ReviewScreen, "Configuration preview", None),
@@ -1382,8 +1499,8 @@ class WizardApp(App[Optional[dict]]):
 
             state.update(result)
 
-            # After template or workflow change, recompute config
-            if screen_cls in (TemplateScreen, WorkflowScreen):
+            # After template, tier, or pack change, recompute config
+            if screen_cls in (TemplateScreen, TierScreen, PackScreen):
                 if "template" in state and "workflow" in state:
                     state = self._compute_config(state)
 
@@ -1450,6 +1567,7 @@ class WizardApp(App[Optional[dict]]):
 
         template = state.get("template", "fastapi")
         workflow = state.get("workflow", "standard")
+        pack = state.get("pack") or None
         try:
             config = compute_defaults(
                 template,
@@ -1457,6 +1575,7 @@ class WizardApp(App[Optional[dict]]):
                 project_name=state.get("name", ""),
                 project_desc=state.get("desc", ""),
                 output_dir=str(state.get("output_dir", ".")),
+                process_pack=pack,
             )
             state["config"] = config
         except (KeyError, ValueError):

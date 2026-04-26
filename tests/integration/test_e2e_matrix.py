@@ -151,7 +151,7 @@ class TestS01FastapiStandardB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 46, f"Expected 46 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 48, f"Expected 48 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
@@ -171,6 +171,7 @@ class TestS01FastapiStandardB0:
         commands = _list_dir(self.root, ".claude/commands")
         expected = [
             "assumptions.md",
+            "cc-rig.md",
             "fix-issue.md",
             "learn.md",
             "plan.md",
@@ -334,13 +335,12 @@ class TestS02FastapiVerifyHeavyB3:
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
-        # 12 from workflow + parallel-worker + python-reviewer
-        # + build-fixer + e2e-runner = 16
-        assert len(agents) == 16, f"Expected 16 agents, got {len(agents)}: {agents}"
+        # rigorous tier: architect, code-reviewer, test-writer, explorer,
+        # refactorer, doc-writer, pm-spec, implementer, pr-reviewer, security-auditor
+        # + template: python-reviewer, build-fixer, e2e-runner, parallel-worker = 14
+        assert len(agents) == 14, f"Expected 14 agents, got {len(agents)}: {agents}"
         assert "security-auditor.md" in agents
         assert "doc-writer.md" in agents
-        assert "techdebt-hunter.md" in agents
-        assert "db-reader.md" in agents
         assert "pm-spec.md" in agents
         assert "implementer.md" in agents
         assert "parallel-worker.md" in agents
@@ -363,7 +363,7 @@ class TestS02FastapiVerifyHeavyB3:
 
     def test_command_count(self):
         commands = _list_dir(self.root, ".claude/commands")
-        # 16 base + health.md + session-health.md (session_telemetry) = 18
+        # rigorous tier (15 commands) + cc-rig.md + health.md + session-health.md = 18
         assert len(commands) == 18, f"Expected 18 commands, got {len(commands)}: {commands}"
 
     def test_memory_present(self):
@@ -441,7 +441,7 @@ class TestS02FastapiVerifyHeavyB3:
 
 
 class TestS03FastapiGtdLiteB0:
-    """GTD feature path + no harness."""
+    """gtd-lite alias maps to standard tier + gtd process pack (no gtd features by default)."""
 
     @pytest.fixture(autouse=True)
     def setup(self, tmp_path):
@@ -450,32 +450,36 @@ class TestS03FastapiGtdLiteB0:
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
-        assert len(agents) == 11, f"Expected 11 agents, got {len(agents)}: {agents}"
-        assert "parallel-worker.md" in agents
+        # standard tier: 8 agents (no parallel-worker — worktrees=False)
+        assert len(agents) == 8, f"Expected 8 agents, got {len(agents)}: {agents}"
+        assert "parallel-worker.md" not in agents
 
-    def test_gtd_commands_present(self):
+    def test_no_gtd_commands(self):
+        """GTD commands absent because features.gtd is False by default."""
         commands = _list_dir(self.root, ".claude/commands")
-        assert "gtd-capture.md" in commands
-        assert "gtd-process.md" in commands
-        assert "daily-plan.md" in commands
+        assert "gtd-capture.md" not in commands
+        assert "gtd-process.md" not in commands
+        assert "daily-plan.md" not in commands
 
     def test_no_spec_commands(self):
         commands = _list_dir(self.root, ".claude/commands")
         assert "spec-create.md" not in commands
         assert "spec-execute.md" not in commands
 
-    def test_worktree_command_present(self):
+    def test_no_worktree_command(self):
+        """worktree command absent because features.worktrees is False."""
         commands = _list_dir(self.root, ".claude/commands")
-        assert "worktree.md" in commands
+        assert "worktree.md" not in commands
 
     def test_command_count(self):
         commands = _list_dir(self.root, ".claude/commands")
-        assert len(commands) == 13, f"Expected 13 commands, got {len(commands)}: {commands}"
+        # standard tier (9 commands) + cc-rig.md = 10
+        assert len(commands) == 10, f"Expected 10 commands, got {len(commands)}: {commands}"
 
-    def test_gtd_task_files(self):
-        assert (self.root / "tasks" / "inbox.md").exists()
-        assert (self.root / "tasks" / "todo.md").exists()
-        assert (self.root / "tasks" / "someday.md").exists()
+    def test_no_gtd_task_files(self):
+        """Task files absent because features.gtd is False."""
+        assert not (self.root / "tasks" / "inbox.md").exists()
+        assert not (self.root / "tasks" / "someday.md").exists()
 
     def test_memory_present(self):
         assert (self.root / "memory" / "decisions.md").exists()
@@ -507,7 +511,7 @@ class TestS04FastapiSpeedrunB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 32, f"Expected 32 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 34, f"Expected 34 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
@@ -524,6 +528,7 @@ class TestS04FastapiSpeedrunB0:
         commands = _list_dir(self.root, ".claude/commands")
         expected = [
             "assumptions.md",
+            "cc-rig.md",
             "fix-issue.md",
             "learn.md",
             "plan.md",
@@ -705,8 +710,8 @@ class TestS06GinSpecDrivenB0:
         assert "pm-spec.md" in agents
         assert "implementer.md" in agents
         assert "parallel-worker.md" in agents
-        # 8 from workflow + parallel-worker + go-reviewer + build-fixer + e2e-runner = 12
-        assert len(agents) == 12, f"Expected 12 agents, got {len(agents)}: {agents}"
+        # rigorous tier (10) + go-reviewer + build-fixer + e2e-runner + parallel-worker = 14
+        assert len(agents) == 14, f"Expected 14 agents, got {len(agents)}: {agents}"
 
     def test_claude_md_references_go_gin(self):
         content = _read_claude_md(self.root)
@@ -935,7 +940,7 @@ class TestS10DjangoSpeedrunB0:
 
     def test_minimal_commands(self):
         commands = _list_dir(self.root, ".claude/commands")
-        assert len(commands) == 6
+        assert len(commands) == 7  # 6 workflow commands + cc-rig playbook
 
     def test_no_memory(self):
         assert not (self.root / "memory").exists()
@@ -953,7 +958,7 @@ class TestS10DjangoSpeedrunB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 32, f"Expected 32 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 34, f"Expected 34 files, got {len(files)}: {sorted(files)}"
 
     def test_hooks_executable(self):
         _assert_hooks_executable(self.root)
@@ -1021,7 +1026,9 @@ class TestS11Rerun:
         config_new = compute_defaults("fastapi", "verify-heavy", project_name="rerun-proj")
         manifest_new = generate_all(config_new, self.root)
 
-        assert manifest_new["workflow_preset"] == "superpowers"  # alias resolved
+        assert (
+            manifest_new["workflow_preset"] == "rigorous+superpowers"
+        )  # alias resolved to tier+pack
         _assert_manifest_consistent(self.root)
 
 
@@ -1228,8 +1235,19 @@ def test_spec_workflow_produces_spec_files(tmp_path):
 
 
 def test_gtd_produces_task_files(tmp_path):
-    """When gtd=true, GTD task files and commands exist."""
-    config, manifest = _generate(tmp_path, "fastapi", "gtd-lite")
+    """GTD task files and commands require features.gtd=True explicitly."""
+    from cc_rig.generators.orchestrator import generate_all
+
+    config = compute_defaults("fastapi", "standard", project_name="test-gtd")
+    config.features.gtd = True
+    config.features.worktrees = True
+    config.commands = list(config.commands) + [
+        "gtd-capture",
+        "gtd-process",
+        "daily-plan",
+        "worktree",
+    ]
+    generate_all(config, tmp_path)
     assert (tmp_path / "tasks" / "inbox.md").exists()
     assert (tmp_path / "tasks" / "todo.md").exists()
     assert (tmp_path / "tasks" / "someday.md").exists()
@@ -1766,8 +1784,9 @@ class TestS24GstackFastapiB0:
         assert self.config.workflow_source == "garrytan/gstack"
 
     def test_features(self):
+        """gstack maps to standard tier: memory on, worktrees off."""
         assert self.config.features.memory is True
-        assert self.config.features.worktrees is True
+        assert self.config.features.worktrees is False
         assert self.config.features.spec_workflow is False
 
     def test_hooks_executable(self):
@@ -1809,9 +1828,10 @@ class TestS25AiheroGenericB0:
         assert self.config.workflow_source == "mattpocock/skills"
 
     def test_features(self):
+        """aihero maps to standard tier: memory on, spec_workflow off, worktrees off."""
         assert self.config.features.memory is True
-        assert self.config.features.spec_workflow is True
-        assert self.config.features.worktrees is True
+        assert self.config.features.spec_workflow is False
+        assert self.config.features.worktrees is False
 
     def test_hooks_executable(self):
         _assert_hooks_executable(self.root)
@@ -2202,7 +2222,7 @@ class TestS23RalphLoopPlugin:
     [
         ("speedrun", "commit-commands"),
         ("standard", "code-review"),
-        ("spec-driven", "feature-dev"),
+        ("spec-driven", "pr-review-toolkit"),
         ("verify-heavy", "security-guidance"),
     ],
 )

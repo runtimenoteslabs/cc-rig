@@ -580,8 +580,20 @@ TEMPLATE_PLUGINS: dict[str, list[str]] = {
 # ── Workflow → workflow plugins (cumulative) ─────────────────────────
 
 WORKFLOW_PLUGINS: dict[str, list[str]] = {
-    "speedrun": ["commit-commands"],
+    # Tiers
+    "quick": ["commit-commands"],
     "standard": ["commit-commands", "code-review"],
+    "rigorous": [
+        "commit-commands",
+        "code-review",
+        "pr-review-toolkit",
+        "security-guidance",
+        "code-simplifier",
+        "test-runner",
+        "doc-generator",
+    ],
+    # Legacy workflow names
+    "speedrun": ["commit-commands"],
     "gstack": ["commit-commands", "code-review", "pr-review-toolkit"],
     "aihero": ["commit-commands", "code-review", "feature-dev", "pr-review-toolkit"],
     "spec-driven": [
@@ -603,7 +615,6 @@ WORKFLOW_PLUGINS: dict[str, list[str]] = {
         "doc-generator",
     ],
     "gtd": ["commit-commands", "code-review"],
-    # Backward compat aliases
     "gtd-lite": ["commit-commands", "code-review"],
     "verify-heavy": [
         "commit-commands",
