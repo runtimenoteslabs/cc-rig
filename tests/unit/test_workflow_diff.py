@@ -4,8 +4,22 @@ Generates output for different workflows and explicitly compares them
 to verify they produce meaningfully different content.
 """
 
+from unittest.mock import patch
+
+import pytest
+
 from cc_rig.config.defaults import compute_defaults
 from cc_rig.generators.orchestrator import generate_all
+from cc_rig.skills.downloader import SkillInstallReport
+
+
+@pytest.fixture(autouse=True)
+def _mock_skill_downloads():
+    """Mock skill downloads to avoid network calls and non-deterministic file counts."""
+    report = SkillInstallReport()
+    object.__setattr__(report, "_files", [])
+    with patch("cc_rig.generators.skills.download_skills", return_value=report):
+        yield
 
 
 def _gen(tmp_path, workflow, template="fastapi"):
