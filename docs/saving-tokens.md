@@ -16,7 +16,7 @@ The server hashes this prefix. If it matches a previous request byte-for-byte, c
 
 | Model | Uncached Input | Cache Read (10x savings) |
 |-------|---------------|-------------------------|
-| Opus 4.6 | $5.00 | $0.50 |
+| Opus 4.7 | $5.00 | $0.50 |
 | Sonnet 4.6 | $3.00 | $0.30 |
 | Haiku 4.5 | $1.00 | $0.10 |
 

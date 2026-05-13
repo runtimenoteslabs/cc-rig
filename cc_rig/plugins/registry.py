@@ -536,6 +536,118 @@ PLUGIN_CATALOG: dict[str, PluginSpec] = {
         category="utility",
         description="Context window optimization and token management",
     ),
+    # ── v3.1 (CC v2.1.126 alignment): integrations + databases + deployment + security ──
+    # Selection criteria (registry policy):
+    #   1. Maps to a language or framework cc-rig already supports.
+    #   2. Anthropic-official OR > 50 stars / > 1000 weekly installs.
+    #   3. Last release < 90 days (verify on catalog refresh).
+    #   4. No duplicate of an existing plugin.
+    #   5. No LSP for a language without a cc-rig template.
+    # Cap: <= 120 plugins total. All v3.1 additions are expert opt-in
+    # (no smart-default wiring) so they never enable without user choice.
+    # NOTE: discord and datadog already exist higher in this catalog;
+    # not re-declared. amplitude/postgres/mysql/redis/fly-deploy/security
+    # plugins are new in v3.1.
+    "amplitude": PluginSpec(
+        name="amplitude",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Amplitude analytics events and dashboards (expert)",
+    ),
+    # Databases
+    "postgres-mcp": PluginSpec(
+        name="postgres-mcp",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="PostgreSQL queries, schema, and migrations (expert)",
+    ),
+    "mysql-mcp": PluginSpec(
+        name="mysql-mcp",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="MySQL queries and schema introspection (expert)",
+    ),
+    "redis-mcp": PluginSpec(
+        name="redis-mcp",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Redis key inspection and command execution (expert)",
+    ),
+    # Deployment
+    "vercel-deploy": PluginSpec(
+        name="vercel-deploy",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Vercel deployments, env vars, and project management (expert)",
+    ),
+    "fly-deploy": PluginSpec(
+        name="fly-deploy",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Fly.io app deployment and configuration (expert)",
+    ),
+    "railway-deploy": PluginSpec(
+        name="railway-deploy",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="Railway service deployment and env management (expert)",
+    ),
+    # Security
+    "semgrep": PluginSpec(
+        name="semgrep",
+        marketplace="claude-plugins-official",
+        category="utility",
+        description="Static analysis with custom security rules (expert)",
+    ),
+    "trivy": PluginSpec(
+        name="trivy",
+        marketplace="claude-plugins-official",
+        category="utility",
+        description="Container and IaC vulnerability scanning (expert)",
+    ),
+    "gitleaks": PluginSpec(
+        name="gitleaks",
+        marketplace="claude-plugins-official",
+        category="utility",
+        description="Secrets scanning across git history and working tree (expert)",
+    ),
+    # Additional v3.1 entries (round 2, week 3): more breadth, expert-only.
+    "sqlite-mcp": PluginSpec(
+        name="sqlite-mcp",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="SQLite query and schema introspection for embedded DBs (expert)",
+    ),
+    "planetscale-mcp": PluginSpec(
+        name="planetscale-mcp",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="PlanetScale branched-database queries and schema (expert)",
+    ),
+    "snyk": PluginSpec(
+        name="snyk",
+        marketplace="claude-plugins-official",
+        category="utility",
+        description="Dependency and IaC vulnerability scanning (expert)",
+    ),
+    "bandit-security": PluginSpec(
+        name="bandit-security",
+        marketplace="claude-plugins-official",
+        category="utility",
+        description="Python-specific static security analysis (expert)",
+    ),
+    "braintrust": PluginSpec(
+        name="braintrust",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="LLM evaluation suite and prompt regression testing (expert)",
+    ),
+    "langfuse": PluginSpec(
+        name="langfuse",
+        marketplace="claude-plugins-official",
+        category="integration",
+        description="LLM observability, tracing, and prompt management (expert)",
+    ),
 }
 
 

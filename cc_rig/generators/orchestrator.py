@@ -22,6 +22,7 @@ from cc_rig.generators.mcp import generate_mcp
 from cc_rig.generators.memory import generate_memory
 from cc_rig.generators.misc import generate_misc
 from cc_rig.generators.playbook import generate_playbook
+from cc_rig.generators.rules import generate_rules
 from cc_rig.generators.settings import generate_settings
 from cc_rig.generators.settings_local import generate_settings_local
 from cc_rig.generators.skills import generate_skills
@@ -46,6 +47,17 @@ def generate_all(
     tracker = FileTracker(output_dir)
     all_files: list[str] = []
 
+    # Load prior manifest if present so generators can distinguish
+    # "user wrote this" from "we wrote this last time" on rerun.
+    prior_manifest: dict[str, Any] | None = None
+    prior_manifest_path = output_dir / ".claude" / ".cc-rig-manifest.json"
+    if prior_manifest_path.exists():
+        try:
+            prior_manifest_data = json.loads(prior_manifest_path.read_text())
+            prior_manifest = prior_manifest_data.get("file_metadata") or {}
+        except (json.JSONDecodeError, OSError):
+            prior_manifest = None
+
     # Run generators in dependency order (CLAUDE.md first since it's the
     # primary file, settings next for hooks, then everything else).
     all_files.extend(generate_claude_md(config, output_dir, tracker=tracker, skip=skip_claude_md))
@@ -53,6 +65,9 @@ def generate_all(
     all_files.extend(generate_agents(config, output_dir, tracker=tracker))
     all_files.extend(generate_commands(config, output_dir, tracker=tracker))
     all_files.extend(generate_playbook(config, output_dir, tracker=tracker))
+    all_files.extend(
+        generate_rules(config, output_dir, tracker=tracker, prior_manifest=prior_manifest)
+    )
     all_files.extend(generate_skills(config, output_dir, tracker=tracker))
     all_files.extend(generate_agent_docs(config, output_dir, tracker=tracker))
     all_files.extend(generate_memory(config, output_dir, tracker=tracker))

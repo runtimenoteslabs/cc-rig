@@ -151,7 +151,7 @@ class TestS01FastapiStandardB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 48, f"Expected 48 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 50, f"Expected 50 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
@@ -511,7 +511,7 @@ class TestS04FastapiSpeedrunB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 34, f"Expected 34 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 36, f"Expected 36 files, got {len(files)}: {sorted(files)}"
 
     def test_agents(self):
         agents = _list_dir(self.root, ".claude/agents")
@@ -958,7 +958,7 @@ class TestS10DjangoSpeedrunB0:
 
     def test_file_count(self):
         files = self.manifest["files"]
-        assert len(files) == 34, f"Expected 34 files, got {len(files)}: {sorted(files)}"
+        assert len(files) == 36, f"Expected 36 files, got {len(files)}: {sorted(files)}"
 
     def test_hooks_executable(self):
         _assert_hooks_executable(self.root)

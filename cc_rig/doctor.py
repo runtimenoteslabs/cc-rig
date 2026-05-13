@@ -128,6 +128,18 @@ def run_doctor(
     # ── Check 16: Value report ───────────────────────────
     _check_value(project_dir, config, result)
 
+    # ── Check 17: settings.json key validity (v3.1) ──────
+    _check_settings_key_validity(project_dir, result)
+
+    # ── Check 18: .claude/rules/ frontmatter syntax (v3.1) ──
+    _check_rules_glob_syntax(project_dir, result)
+
+    # ── Check 19: agent model ID validity (v3.1) ──────────
+    _check_model_id_validity(project_dir, result)
+
+    # ── Check 20: enabledPlugins format (v3.1) ────────────
+    _check_plugin_marketplace_format(project_dir, result)
+
     return result
 
 
@@ -606,3 +618,239 @@ def _hook_command_contains(project_dir: Path, event: str, needle: str) -> bool:
         except (json.JSONDecodeError, OSError):
             continue
     return False
+
+
+# v3.1: Pinned CC v2.1.126 settings.json key whitelist. Update on each
+# alignment phase. Source: code.claude.com/docs/en/settings.
+_VALID_SETTINGS_KEYS_V2_1_126: frozenset[str] = frozenset(
+    {
+        "$schema",
+        "agent",
+        "allowedChannelPlugins",
+        "allowedHttpHookUrls",
+        "allowedMcpServers",
+        "allowManagedHooksOnly",
+        "allowManagedMcpServersOnly",
+        "allowManagedPermissionRulesOnly",
+        "alwaysThinkingEnabled",
+        "apiKeyHelper",
+        "attribution",
+        "autoMemoryDirectory",
+        "autoMemoryEnabled",
+        "autoMode",
+        "autoScrollEnabled",
+        "autoUpdatesChannel",
+        "availableModels",
+        "awaySummaryEnabled",
+        "awsAuthRefresh",
+        "awsCredentialExport",
+        "blockedMarketplaces",
+        "channelsEnabled",
+        "claudeMdExcludes",
+        "cleanupPeriodDays",
+        "companyAnnouncements",
+        "defaultShell",
+        "deniedMcpServers",
+        "disableAllHooks",
+        "disableAutoMode",
+        "disableDeepLinkRegistration",
+        "disabledMcpjsonServers",
+        "disableSkillShellExecution",
+        "editorMode",
+        "effortLevel",
+        "enableAllProjectMcpServers",
+        "enabledMcpjsonServers",
+        "enabledPlugins",
+        "env",
+        "extraKnownMarketplaces",
+        "fastModePerSessionOptIn",
+        "feedbackSurveyRate",
+        "fileSuggestion",
+        "forceLoginMethod",
+        "forceLoginOrgUUID",
+        "forceRemoteSettingsRefresh",
+        "hooks",
+        "httpHookAllowedEnvVars",
+        "includeCoAuthoredBy",  # deprecated but still accepted
+        "includeGitInstructions",
+        "language",
+        "minimumVersion",
+        "model",
+        "modelOverrides",
+        "otelHeadersHelper",
+        "outputStyle",
+        "permissions",
+        "plansDirectory",
+        "pluginTrustMessage",
+        "preferredNotifChannel",
+        "prefersReducedMotion",
+        "prUrlTemplate",
+        "respectGitignore",
+        "sandbox",
+        "showClearContextOnPlanAccept",
+        "showThinkingSummaries",
+        "showTurnDuration",
+        "skipDangerousModePermissionPrompt",
+        "skipWebFetchPreflight",
+        "spinnerTipsEnabled",
+        "spinnerTipsOverride",
+        "spinnerVerbs",
+        "sshConfigs",
+        "statusLine",
+        "strictKnownMarketplaces",
+        "teammateMode",
+        "terminalProgressBarEnabled",
+        "tui",
+        "useAutoModeDuringPlan",
+        "viewMode",
+        "voice",
+        "voiceEnabled",  # legacy but still accepted
+        "worktree",
+        "wslInheritsWindowsSettings",
+    }
+)
+
+
+def _check_rules_glob_syntax(project_dir: Path, result: DoctorResult) -> None:
+    """Check 18 (v3.1): every .claude/rules/*.md file has well-formed
+    frontmatter. Files without frontmatter are valid (load eagerly).
+    Files with frontmatter must have a parseable `paths:` list of strings.
+    """
+    rules_dir = project_dir / ".claude" / "rules"
+    if not rules_dir.exists():
+        return
+    rule_files = list(rules_dir.rglob("*.md"))
+    if not rule_files:
+        return
+    bad: list[str] = []
+    for path in rule_files:
+        try:
+            content = path.read_text()
+        except OSError:
+            bad.append(f"{path.name} (read error)")
+            continue
+        if not content.startswith("---"):
+            continue  # No frontmatter, eager-load. Valid.
+        # Frontmatter present: split on first two `---` lines.
+        end = content.find("\n---", 3)
+        if end == -1:
+            bad.append(f"{path.name} (unterminated frontmatter)")
+            continue
+        front = content[3:end].strip()
+        if "paths:" not in front:
+            bad.append(f"{path.name} (frontmatter without `paths:` field)")
+            continue
+        # Quick structural check: at least one `- "..."` glob entry.
+        if "- " not in front:
+            bad.append(f"{path.name} (`paths:` has no glob entries)")
+    if bad:
+        result.warnings.append(f".claude/rules/ files with malformed frontmatter: {', '.join(bad)}")
+    else:
+        result.info.append(f".claude/rules/: {len(rule_files)} file(s), frontmatter clean")
+
+
+# Valid model aliases accepted by `claude --model`. CC also accepts full
+# IDs and `<alias>[1m]` 1M-context variants; the regex below covers those.
+_MODEL_ALIASES: frozenset[str] = frozenset({"opus", "sonnet", "haiku"})
+
+# Valid full model ID pattern: claude-<family>-<n>-<m> with optional [1m].
+# Examples that match: claude-opus-4-7, claude-sonnet-4-6, opus[1m].
+_MODEL_FULL_RE = re.compile(r"^claude-(opus|sonnet|haiku)-\d+-\d+$")
+_MODEL_BRACKET_RE = re.compile(r"^(opus|sonnet|haiku)\[\d+[a-z]\]$")
+
+# Valid plugin marketplace key format: name@marketplace where name is
+# kebab-case alphanumeric and marketplace is similar.
+_PLUGIN_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]*@[a-z][a-z0-9_-]*$")
+
+
+def _check_model_id_validity(project_dir: Path, result: DoctorResult) -> None:
+    """Check 19 (v3.1): every agent file's `model:` frontmatter resolves
+    to a known alias, full Anthropic ID, or 1M-context variant. Warn on
+    unrecognized values (typo, deprecated, or new family).
+    """
+    agents_dir = project_dir / ".claude" / "agents"
+    if not agents_dir.exists():
+        return
+    bad: list[str] = []
+    checked = 0
+    for path in sorted(agents_dir.glob("*.md")):
+        try:
+            content = path.read_text()
+        except OSError:
+            continue
+        if not content.startswith("---"):
+            continue
+        end = content.find("\n---", 3)
+        if end == -1:
+            continue
+        front = content[3:end]
+        for line in front.splitlines():
+            stripped = line.strip()
+            if not stripped.startswith("model:"):
+                continue
+            value = stripped.split(":", 1)[1].strip().strip('"').strip("'")
+            checked += 1
+            if (
+                value in _MODEL_ALIASES
+                or _MODEL_FULL_RE.match(value)
+                or _MODEL_BRACKET_RE.match(value)
+            ):
+                break
+            bad.append(f"{path.name}:{value}")
+            break
+    if bad:
+        result.warnings.append(
+            f"Agent files with unrecognized model IDs: {', '.join(bad)}. "
+            "Expected alias (opus/sonnet/haiku), full ID (claude-opus-4-7), or [1m] variant."
+        )
+    elif checked:
+        result.info.append(f"Agent model IDs: {checked} valid")
+
+
+def _check_plugin_marketplace_format(project_dir: Path, result: DoctorResult) -> None:
+    """Check 20 (v3.1): every key in settings.json `enabledPlugins` matches
+    `name@marketplace` format. Warn on malformed keys (typos, missing
+    marketplace suffix).
+    """
+    settings_path = project_dir / ".claude" / "settings.json"
+    if not settings_path.exists():
+        return
+    try:
+        data = json.loads(settings_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return
+    plugins = data.get("enabledPlugins", {})
+    if not isinstance(plugins, dict):
+        return
+    bad = sorted(k for k in plugins if not _PLUGIN_KEY_RE.match(k))
+    if bad:
+        result.warnings.append(
+            f"enabledPlugins keys not matching name@marketplace format: {', '.join(bad)}"
+        )
+    elif plugins:
+        result.info.append(f"enabledPlugins: {len(plugins)} keys, format clean")
+
+
+def _check_settings_key_validity(project_dir: Path, result: DoctorResult) -> None:
+    """Check 17 (v3.1): every key in .claude/settings.json is in the pinned
+    CC v2.1.126 schema. Warn on unknown keys (typos, deprecated, or new in a
+    later CC version cc-rig has not yet aligned with).
+    """
+    settings_path = project_dir / ".claude" / "settings.json"
+    if not settings_path.exists():
+        return
+    try:
+        data = json.loads(settings_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        result.warnings.append("settings.json is invalid JSON; skipping key validation.")
+        return
+    if not isinstance(data, dict):
+        return
+    unknown = sorted(k for k in data if k not in _VALID_SETTINGS_KEYS_V2_1_126)
+    if unknown:
+        result.warnings.append(
+            f"settings.json has keys not in CC v2.1.126 schema: {', '.join(unknown)}. "
+            "These may be typos, deprecated, or from a newer CC version. Verify intent."
+        )
+    else:
+        result.info.append(f"settings.json: {len(data)} keys all valid for CC v2.1.126")

@@ -58,7 +58,7 @@ These actions invalidate the prompt cache (from Claude Code internals):
 
 | Model | Base Input | Cache Read (10x savings) |
 |-------|-----------|-------------------------|
-| Opus 4.6 | $5.00/M | $0.50/M |
+| Opus 4.7 | $5.00/M | $0.50/M |
 | Sonnet 4.6 | $3.00/M | $0.30/M |
 | Haiku 4.5 | $1.00/M | $0.10/M |
 

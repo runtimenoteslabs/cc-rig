@@ -103,6 +103,8 @@ def generate_claude_md(
 
 
 def _section_project_identity(config: ProjectConfig) -> str:
+    from cc_rig.config.cc_version import PINNED_CC_VERSION_STR
+
     name = config.project_name or "my-project"
     desc = config.project_desc or f"A {config.framework} project"
     return (
@@ -114,6 +116,7 @@ def _section_project_identity(config: ProjectConfig) -> str:
         f"- **Type**: {config.project_type}\n"
         f"- **Source**: `{config.source_dir}/`  "
         f"**Tests**: `{config.test_dir}/`\n"
+        f"- **Claude Code**: v{PINNED_CC_VERSION_STR} (cc-rig pinned)\n"
     )
 
 

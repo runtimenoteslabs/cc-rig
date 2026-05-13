@@ -286,17 +286,18 @@ class TestCLAUDEmdSnapshot:
 
     _LINE_CAPS = {
         # +2 for HTML attribution comment at top of CLAUDE.md
-        "quick": 88,
-        "standard": 127,
-        "rigorous": 176,
-        "speedrun": 88,
-        "spec-driven": 165,
-        "gtd-lite": 166,
-        "gtd": 166,
-        "verify-heavy": 176,
-        "superpowers": 176,
-        "gstack": 155,
-        "aihero": 168,
+        # +1 for v3.1 pinned-CC-version line in project identity section
+        "quick": 89,
+        "standard": 128,
+        "rigorous": 177,
+        "speedrun": 89,
+        "spec-driven": 166,
+        "gtd-lite": 167,
+        "gtd": 167,
+        "verify-heavy": 177,
+        "superpowers": 177,
+        "gstack": 156,
+        "aihero": 169,
     }
 
     @pytest.mark.parametrize("template,workflow", _SNAPSHOT_COMBOS)

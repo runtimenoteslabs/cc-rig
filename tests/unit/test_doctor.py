@@ -380,6 +380,136 @@ class TestDoctorJsonlAccounting:
         assert "2 after dedup" in info_msgs[0]
 
 
+class TestDoctorSettingsKeyValidity:
+    """v3.1 Check 17: settings.json keys validated against pinned CC schema."""
+
+    def test_clean_settings_passes(self, tmp_path):
+        generate_project(tmp_path)
+        result = run_doctor(tmp_path)
+        assert result.passed
+        info = " ".join(result.info)
+        assert "all valid for CC v2.1.126" in info
+
+    def test_unknown_key_warns(self, tmp_path):
+        import json
+
+        generate_project(tmp_path)
+        settings_path = tmp_path / ".claude" / "settings.json"
+        data = json.loads(settings_path.read_text())
+        data["totallyMadeUpKey"] = "value"
+        settings_path.write_text(json.dumps(data, indent=2))
+        result = run_doctor(tmp_path)
+        assert any("totallyMadeUpKey" in w and "v2.1.126" in w for w in result.warnings), (
+            f"expected warning about unknown key, got: {result.warnings}"
+        )
+
+    def test_known_v3_3_keys_pass(self, tmp_path):
+        import json
+
+        generate_project(tmp_path)
+        settings_path = tmp_path / ".claude" / "settings.json"
+        data = json.loads(settings_path.read_text())
+        # All these are now in the pinned schema
+        data["language"] = "en"
+        data["prUrlTemplate"] = "https://github.com/owner/repo/pull/{n}"
+        data["autoMemoryEnabled"] = True
+        settings_path.write_text(json.dumps(data, indent=2))
+        result = run_doctor(tmp_path)
+        unknown_warnings = [w for w in result.warnings if "v2.1.126 schema" in w]
+        assert not unknown_warnings, f"expected no schema warnings, got: {unknown_warnings}"
+
+
+class TestDoctorModelIdValidity:
+    """v3.1 Check 19: agent model frontmatter validates against known IDs."""
+
+    def test_clean_agents_pass(self, tmp_path):
+        generate_project(tmp_path)
+        result = run_doctor(tmp_path)
+        info = " ".join(result.info)
+        assert "Agent model IDs:" in info
+        assert "valid" in info
+
+    def test_unknown_model_warns(self, tmp_path):
+        generate_project(tmp_path)
+        agent = next((tmp_path / ".claude" / "agents").glob("*.md"))
+        content = agent.read_text()
+        # Replace model line with garbage
+        content = content.replace("model: sonnet", "model: gpt-5")
+        content = content.replace("model: opus", "model: gpt-5")
+        content = content.replace("model: haiku", "model: gpt-5")
+        agent.write_text(content)
+        result = run_doctor(tmp_path)
+        assert any("unrecognized model" in w.lower() for w in result.warnings)
+
+    def test_full_id_accepted(self, tmp_path):
+        generate_project(tmp_path)
+        agent = next((tmp_path / ".claude" / "agents").glob("*.md"))
+        content = agent.read_text()
+        for alias in ("model: sonnet", "model: opus", "model: haiku"):
+            content = content.replace(alias, "model: claude-opus-4-7")
+        agent.write_text(content)
+        result = run_doctor(tmp_path)
+        warnings = [w for w in result.warnings if "unrecognized model" in w.lower()]
+        assert not warnings, f"full ID should be accepted: {warnings}"
+
+    def test_1m_variant_accepted(self, tmp_path):
+        import re
+
+        generate_project(tmp_path)
+        agent = next((tmp_path / ".claude" / "agents").glob("*.md"))
+        content = agent.read_text()
+        # Replace any `model: <alias>` line (single regex pass; avoid chained
+        # replaces that would re-match the inserted text).
+        content = re.sub(
+            r"^model: (sonnet|opus|haiku)$", "model: opus[1m]", content, flags=re.MULTILINE
+        )
+        agent.write_text(content)
+        result = run_doctor(tmp_path)
+        warnings = [w for w in result.warnings if "unrecognized model" in w.lower()]
+        assert not warnings, f"[1m] variant should be accepted: {warnings}"
+
+
+class TestDoctorPluginMarketplaceFormat:
+    """v3.1 Check 20: enabledPlugins keys match name@marketplace."""
+
+    def test_clean_settings_pass(self, tmp_path):
+        import json
+
+        generate_project(tmp_path)
+        settings_path = tmp_path / ".claude" / "settings.json"
+        # Ensure at least one plugin so the check has something to validate
+        data = json.loads(settings_path.read_text())
+        if not data.get("enabledPlugins"):
+            data["enabledPlugins"] = {"github@claude-plugins-official": True}
+        settings_path.write_text(json.dumps(data, indent=2))
+        result = run_doctor(tmp_path)
+        info = " ".join(result.info)
+        assert "format clean" in info
+
+    def test_malformed_key_warns(self, tmp_path):
+        import json
+
+        generate_project(tmp_path)
+        settings_path = tmp_path / ".claude" / "settings.json"
+        data = json.loads(settings_path.read_text())
+        # No @marketplace suffix
+        data["enabledPlugins"] = {"just-a-name": True}
+        settings_path.write_text(json.dumps(data, indent=2))
+        result = run_doctor(tmp_path)
+        assert any("name@marketplace" in w for w in result.warnings)
+
+    def test_uppercase_key_warns(self, tmp_path):
+        import json
+
+        generate_project(tmp_path)
+        settings_path = tmp_path / ".claude" / "settings.json"
+        data = json.loads(settings_path.read_text())
+        data["enabledPlugins"] = {"BadName@marketplace": True}
+        settings_path.write_text(json.dumps(data, indent=2))
+        result = run_doctor(tmp_path)
+        assert any("name@marketplace" in w for w in result.warnings)
+
+
 class TestDoctorCLI:
     def test_doctor_runs(self, capsys, tmp_path):
         generate_project(tmp_path)

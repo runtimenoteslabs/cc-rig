@@ -74,6 +74,39 @@ class FileTracker:
         """Set file permissions (e.g. 0o755 for hook scripts)."""
         (self._output_dir / rel_path).chmod(mode)
 
+    def is_user_authored(
+        self,
+        rel_path: str,
+        prior_manifest: dict[str, Any] | None = None,
+    ) -> bool:
+        """Return True if *rel_path* exists on disk AND was not produced by
+        a prior cc-rig generation.
+
+        Used by generators that should never overwrite user-authored content
+        (e.g. ``.claude/rules/*.md``). Pass ``prior_manifest`` from a previous
+        ``cc-rig init`` run to distinguish "user wrote this" from "we wrote
+        this last time."
+
+        Args:
+            rel_path: Path relative to the output directory.
+            prior_manifest: Optional manifest mapping rel_path -> metadata
+                from a previous generation. If None, any existing file is
+                treated as user-authored.
+
+        Returns:
+            True if the file should be left alone.
+        """
+        full = self._output_dir / rel_path
+        if not full.exists():
+            return False
+        # If we wrote it earlier in *this* generation run, it's ours.
+        if rel_path in self._written:
+            return False
+        # If we wrote it in a *prior* run (per the persisted manifest), it's ours.
+        if prior_manifest is not None and rel_path in prior_manifest:
+            return False
+        return True
+
     def metadata(self) -> dict[str, dict[str, Any]]:
         """Return a deep copy of the collected file metadata."""
         return {k: dict(v) for k, v in self._meta.items()}

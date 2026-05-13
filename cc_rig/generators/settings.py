@@ -14,6 +14,26 @@ from cc_rig.generators.fileops import FileTracker
 # Legitimate commands (e.g. "ruff check", "npx prettier --write") never need these.
 _SHELL_INJECTION_RE = re.compile(r"[;|&`$><\n\r]|\.\./")
 
+# v3.1 Gate 2: settings.json keys that cc-rig owns. On regeneration, these
+# are overwritten with current generator output. User-added keys outside
+# this set are preserved via shallow-merge in generate_settings().
+_OWNED_KEYS: frozenset[str] = frozenset(
+    {
+        "$schema",
+        "permissions",
+        "hooks",
+        "enabledPlugins",
+        "effortLevel",
+        "attribution",
+        "autoMemoryEnabled",
+        "autoMode",
+        "showThinkingSummaries",
+        "includeGitInstructions",
+        "sandbox",
+        "worktree",
+    }
+)
+
 # Workflow → CC effort level mapping (V2.1)
 _WORKFLOW_EFFORT: dict[str, str] = {
     # Tiers
@@ -268,6 +288,15 @@ def generate_settings(
     effort = _WORKFLOW_EFFORT.get(config.workflow, "medium")
     settings["effortLevel"] = effort
 
+    # Attribution (CC v2.1.105+): mark generated commits/PRs as cc-rig-driven
+    # so users can audit AI contributions in git history.
+    settings["attribution"] = {"commit": "cc-rig"}
+
+    # Auto memory (CC v2.1.59+): leave on (CC's default) but make it explicit
+    # in settings so users can flip it off without hunting for the env var.
+    # The platform thesis depends on memory accumulating over sessions.
+    settings["autoMemoryEnabled"] = True
+
     # Thinking summaries: show for high-rigor workflows where reasoning
     # visibility matters, suppress for speed-focused workflows (CC v2.1.89+,
     # defaults to false).
@@ -284,27 +313,65 @@ def generate_settings(
     if config.workflow in _SANDBOX_REQUIRED_WORKFLOWS:
         settings.setdefault("sandbox", {})["failIfUnavailable"] = True
 
-    # Auto mode (V2.3, CC v2.1.89+)
+    # Worktree symlinks (CC v2.1.118+): when cc-rig spawns a worktree, link
+    # heavy dependency directories instead of copying them. Detection is
+    # language-driven; only the dirs that exist in *this* tree get linked.
+    worktree_symlinks: list[str] = []
+    if config.language == "python":
+        worktree_symlinks.append(".venv")
+    if config.language in ("typescript", "javascript"):
+        worktree_symlinks.append("node_modules")
+    if config.language == "rust":
+        worktree_symlinks.append("target")
+    if config.language == "go":
+        worktree_symlinks.append("vendor")
+    if worktree_symlinks:
+        settings["worktree"] = {"symlinkDirectories": worktree_symlinks}
+
+    # Auto mode (V2.3, CC v2.1.89+; $defaults extension v2.1.119)
+    # Use the literal "$defaults" string to merge with built-in rules
+    # instead of replacing them. cc-rig's project-specific rules append
+    # alongside CC's built-ins.
     if config.permission_mode == "auto":
         settings.setdefault("permissions", {})["defaultMode"] = "auto"
         auto_mode: dict[str, Any] = {
-            "environment": [f"Trusted local development ({config.framework})"],
-            "allow": ["Installing packages from lockfile"],
+            "environment": [
+                "$defaults",
+                f"Trusted local development ({config.framework})",
+            ],
+            "allow": [
+                "$defaults",
+                "Installing packages from lockfile",
+            ],
         }
         if config.workflow in _HIGH_RIGOR_WORKFLOWS:
             auto_mode["soft_deny"] = [
+                "$defaults",
                 "Production deploys without approval",
                 "Force push to any branch",
             ]
         settings["autoMode"] = auto_mode
+
+    # Shallow-merge with existing settings.json (v3.1 backward-compat contract).
+    # Generator-owned keys are overwritten; user-added keys (not in _OWNED_KEYS)
+    # are preserved. Backup is handled by FileTracker.
+    settings_path_obj = claude_dir / "settings.json"
+    if settings_path_obj.exists():
+        try:
+            existing = json.loads(settings_path_obj.read_text())
+            if isinstance(existing, dict):
+                for key, value in existing.items():
+                    if key not in _OWNED_KEYS and key not in settings:
+                        settings[key] = value
+        except (json.JSONDecodeError, OSError):
+            pass
 
     # Write settings.json
     settings_content = json.dumps(settings, indent=2) + "\n"
     if tracker is not None:
         tracker.write_text(".claude/settings.json", settings_content)
     else:
-        settings_path = claude_dir / "settings.json"
-        settings_path.write_text(settings_content)
+        settings_path_obj.write_text(settings_content)
     files_written.append(".claude/settings.json")
 
     return files_written

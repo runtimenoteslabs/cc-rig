@@ -81,6 +81,107 @@ class TestSettingsJson:
         assert "sandbox" not in data
 
 
+class TestV31Alignment:
+    """v3.1: CC v2.1.126 alignment surfaces."""
+
+    def test_attribution_generated(self, tmp_path):
+        _generate_settings("fastapi", "standard", tmp_path)
+        data = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        assert data.get("attribution") == {"commit": "cc-rig"}
+
+    def test_attribution_present_for_all_workflows(self, tmp_path):
+        for workflow in ("speedrun", "standard", "rigorous", "spec-driven"):
+            sub = tmp_path / workflow
+            sub.mkdir()
+            _generate_settings("fastapi", workflow, sub)
+            data = json.loads((sub / ".claude" / "settings.json").read_text())
+            assert "attribution" in data, f"missing attribution for {workflow}"
+            assert data["attribution"]["commit"] == "cc-rig"
+
+    def test_automode_uses_defaults_extension(self, tmp_path):
+        config = compute_defaults("fastapi", "rigorous", project_name="test-project")
+        config.permission_mode = "auto"
+        generate_settings(config, tmp_path)
+        data = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        auto_mode = data.get("autoMode", {})
+        assert auto_mode, "autoMode should be generated when permission_mode=auto"
+        assert "$defaults" in auto_mode.get("environment", []), (
+            "autoMode.environment should include $defaults to extend built-ins"
+        )
+        assert "$defaults" in auto_mode.get("allow", []), (
+            "autoMode.allow should include $defaults to extend built-ins"
+        )
+
+    def test_automode_high_rigor_includes_soft_deny_defaults(self, tmp_path):
+        config = compute_defaults("fastapi", "rigorous", project_name="test-project")
+        config.permission_mode = "auto"
+        generate_settings(config, tmp_path)
+        data = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        soft_deny = data.get("autoMode", {}).get("soft_deny", [])
+        assert "$defaults" in soft_deny, "high-rigor autoMode.soft_deny should include $defaults"
+
+    def test_automode_absent_when_not_auto_mode(self, tmp_path):
+        _generate_settings("fastapi", "standard", tmp_path)
+        data = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        assert "autoMode" not in data
+
+    def test_effort_level_per_tier(self, tmp_path):
+        cases = [("speedrun", "low"), ("standard", "medium"), ("rigorous", "high")]
+        for workflow, expected in cases:
+            sub = tmp_path / workflow
+            sub.mkdir()
+            _generate_settings("fastapi", workflow, sub)
+            data = json.loads((sub / ".claude" / "settings.json").read_text())
+            assert data.get("effortLevel") == expected, (
+                f"{workflow}: expected effortLevel={expected}, got {data.get('effortLevel')}"
+            )
+
+
+class TestSettingsShallowMerge:
+    """v3.1 Gate 2: settings.json preserves user-added keys on regeneration."""
+
+    def test_user_keys_preserved_on_regenerate(self, tmp_path):
+        # First generation
+        _generate_settings("fastapi", "standard", tmp_path)
+        settings_path = tmp_path / ".claude" / "settings.json"
+        data = json.loads(settings_path.read_text())
+        # User adds a custom key
+        data["language"] = "en-US"
+        data["customUserKey"] = {"foo": "bar"}
+        settings_path.write_text(json.dumps(data, indent=2))
+        # Regenerate
+        _generate_settings("fastapi", "standard", tmp_path)
+        merged = json.loads(settings_path.read_text())
+        assert merged.get("language") == "en-US", "user key 'language' should be preserved"
+        assert merged.get("customUserKey") == {"foo": "bar"}, (
+            "user key 'customUserKey' should be preserved"
+        )
+
+    def test_owned_keys_overwritten_on_regenerate(self, tmp_path):
+        _generate_settings("fastapi", "standard", tmp_path)
+        settings_path = tmp_path / ".claude" / "settings.json"
+        data = json.loads(settings_path.read_text())
+        # User tampers with an owned key
+        data["effortLevel"] = "max"
+        data["attribution"] = {"commit": "user-override"}
+        settings_path.write_text(json.dumps(data, indent=2))
+        # Regenerate
+        _generate_settings("fastapi", "standard", tmp_path)
+        merged = json.loads(settings_path.read_text())
+        # Owned keys should be reset to generator output
+        assert merged.get("effortLevel") == "medium"
+        assert merged.get("attribution") == {"commit": "cc-rig"}
+
+    def test_invalid_existing_json_does_not_break(self, tmp_path):
+        claude_dir = tmp_path / ".claude"
+        claude_dir.mkdir()
+        (claude_dir / "settings.json").write_text("{invalid json")
+        _generate_settings("fastapi", "standard", tmp_path)
+        # Should regenerate cleanly without crashing
+        data = json.loads((claude_dir / "settings.json").read_text())
+        assert data.get("effortLevel") == "medium"
+
+
 class TestHookSchema:
     def test_all_events_valid(self, tmp_path):
         _generate_settings("fastapi", "standard", tmp_path)
@@ -94,7 +195,7 @@ class TestHookSchema:
         for event, matchers in data.get("hooks", {}).items():
             for matcher in matchers:
                 for hook in matcher.get("hooks", []):
-                    assert hook["type"] in ("command", "prompt", "agent", "http"), (
+                    assert hook["type"] in ("command", "prompt", "agent", "http", "mcp_tool"), (
                         f"Invalid type {hook['type']} in {event}"
                     )
 

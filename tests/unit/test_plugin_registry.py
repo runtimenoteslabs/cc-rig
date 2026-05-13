@@ -23,8 +23,9 @@ class TestPluginCatalog:
         assert len(PLUGIN_CATALOG) > 0
 
     def test_catalog_has_expected_count(self):
-        """Guard: update count when adding/removing plugins."""
-        assert len(PLUGIN_CATALOG) == 80
+        """Guard: update count when adding/removing plugins. Cap at 120 (v3.1)."""
+        assert len(PLUGIN_CATALOG) == 96
+        assert len(PLUGIN_CATALOG) <= 120, "Plugin catalog hard cap is 120"
 
     def test_all_plugins_have_name(self):
         for name, spec in PLUGIN_CATALOG.items():

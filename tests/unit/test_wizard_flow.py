@@ -139,8 +139,8 @@ class TestExpertFlow:
     def test_expert_plugins_category_applies_selection(self, tmp_path):
         """Selecting 'plugins' in expert category picker applies the plugin selection."""
         output = tmp_path / "out"
-        # Plugin options (sorted, non-autonomy) indices (1-based):
-        #   33=github, 57=pyright-lsp
+        # Plugin options (sorted, non-autonomy) indices (1-based) at v3.1:
+        #   37=github, 66=pyright-lsp
         io = _make_io(
             [
                 "1",  # launcher: fresh project
@@ -150,7 +150,7 @@ class TestExpertFlow:
                 "plugin-proj",  # name
                 "",  # description
                 "3",  # expert categories: plugins (3rd option in ask_multi)
-                "33,57",  # plugin selection: github + pyright-lsp
+                "37,66",  # plugin selection: github + pyright-lsp
                 "n",  # add optional skill packs? no
                 "n",  # add runtime harness? no
                 "y",  # generate? yes

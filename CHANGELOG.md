@@ -2,6 +2,47 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [3.1.0] - 2026-05-14
+
+> This release bundles two phases of work. The v3.0 milestone (playbook pivot, tier rebrand, community process packs, session savings, attribution) was internal-only and never shipped to PyPI. v3.1 (CC v2.1.126 alignment, `.claude/rules/` generator, doctor checks 17–20) layered on top. PyPI users see one jump from 2.5.0 → 3.1.0; both phases ship together here.
+
+### Added: Playbook & Tier System
+
+- **Three-tier workflow model** (`quick`, `standard`, `rigorous`). Replaces the previous flat 5-workflow list as the primary axis. New `ResolvedWorkflow` dataclass and `_TIER_RESOLUTION` table in `cc_rig/presets/manager.py` are the single source of truth. Tiers compose with process packs independently.
+- **Four community process packs** in `cc_rig/presets/packs/`: `gstack` (Garry Tan, 6 skills), `aihero` (mattpocock, 7 skills), `superpowers` (obra, 11 skills), `gtd` (OthmanAdi, 3 skills). Packs overlay curated process skills on a tier with full source attribution. Old workflow names (`gstack`, `aihero`, `superpowers`, `speedrun`, `verify-heavy`, `spec-driven`, `gtd-lite`) still work on the CLI and resolve to a tier + auto-pack via `_TIER_RESOLUTION`.
+- **`/cc-rig` playbook command** with 6 subcommands: `dashboard`, `detail`, `recipes`, `savings`, `hooks`, `autonomous`. Teaches users how to use what was just generated. Generator at `cc_rig/generators/playbook.py`.
+- **`PLAYBOOK.md`** written to project root during init. Tier-specific walkthrough explaining what was installed and the recipes for using it.
+- **Session savings estimate** in the wizard's post-generation summary. Calculates cache-aware token savings based on the selected tier + features.
+- **Brand attribution** for every community pack. Author, repo link, and license shown in the wizard pack picker, README, and generated `PLAYBOOK.md`. No community work appropriated without credit.
+- **Wizard screens**: new `TierScreen` (three-radio tier picker) and `PackScreen` (optional process-pack overlay) replace the old single workflow picker. `WelcomeScreen` now leads with the value proposition; `ConfirmScreen` shows a value summary before generation.
+- **Session-context nudge** in generated `CLAUDE.md`: one-line footer (`cc-rig | {tier} + {framework} | N plugins, N hooks | /cc-rig for help`) so users always know how to reach the playbook.
+
+### Added: CC v2.1.126 Alignment
+
+- **CC v2.1.126 alignment**. Pinned to v2.1.126 (verified live). All settings keys, hook events, and `.claude/rules/` mechanism verified against `code.claude.com/docs`.
+- **`.claude/rules/` generator** (CC v2.1.108+). New `cc_rig/generators/rules.py` produces detection-driven path-scoped instruction files: `tests.md` (any recognized language), `migrations.md` (Django/FastAPI/Rails/Laravel/Phoenix/Spring frameworks), `security.md` (high-rigor tiers, eager-load), `frontend.md` (Next.js/Express or TypeScript). Frontmatter `paths` field uses brace-expansion globs.
+- **Settings keys**: `attribution: {commit: "cc-rig"}` (always-on, CC v2.1.105+), `autoMemoryEnabled: true` (explicit, CC v2.1.59+), `worktree.symlinkDirectories` (language-driven: `.venv`/`node_modules`/`target`/`vendor`).
+- **`autoMode` `$defaults` extension** (CC v2.1.119+). Generated `autoMode.{environment, allow, soft_deny}` arrays now lead with the literal `"$defaults"` string to merge with CC's built-in rules instead of replacing them.
+- **`mcp_tool` hook handler type** (CC v2.1.118+) added to schema validators.
+- **Plugin catalog expansion** (80 → 96, cap 120). Net 16 new entries: `amplitude`, `postgres-mcp`, `mysql-mcp`, `redis-mcp`, `sqlite-mcp`, `planetscale-mcp`, `vercel-deploy`, `fly-deploy`, `railway-deploy`, `semgrep`, `trivy`, `gitleaks`, `snyk`, `bandit-security`, `braintrust`, `langfuse`. All v3.1 additions are expert opt-in only. Selection criteria documented in registry docstring.
+- **Doctor Check 17: `settings_key_validity`**. Validates every key in generated `settings.json` against pinned 87-key v2.1.126 schema. Warns on unknown keys (typos, deprecated, or new).
+- **Doctor Check 18: `rules_glob_syntax`**. Validates `.claude/rules/*.md` frontmatter is parseable with a `paths:` array of glob entries.
+- **Doctor Check 19: `model_id_validity`**. Validates agent `model:` frontmatter resolves to a known alias, full Anthropic ID, or 1M-context variant.
+- **Doctor Check 20: `plugin_marketplace_format`**. Validates `enabledPlugins` keys match `name@marketplace` format.
+- **Pinned CC version line in generated CLAUDE.md**. Project identity section now shows `Claude Code: v2.1.126 (cc-rig pinned)`.
+
+### Changed
+- **`settings.json` shallow-merge on regenerate** (Gate 2 contract). Generator-owned keys (`_OWNED_KEYS`: `permissions`, `hooks`, `enabledPlugins`, `effortLevel`, `attribution`, `autoMemoryEnabled`, `autoMode`, `showThinkingSummaries`, `includeGitInstructions`, `sandbox`, `worktree`) are overwritten on `cc-rig init` rerun. User-added top-level keys (e.g., `language`, `env` extensions) survive.
+- **`FileTracker.is_user_authored(rel_path, prior_manifest)`** added. Generators (currently `rules.py`) skip user-authored files while still overwriting their own prior output via the persisted manifest.
+- **Orchestrator** loads `.claude/.cc-rig-manifest.json` on rerun and threads it to generators that distinguish user content from prior cc-rig output.
+- **Pricing tables** in `agent_docs/cache-friendly-workflow.md` and `docs/saving-tokens.md` bumped to Opus 4.7. cc-rig uses model aliases (`opus`/`sonnet`/`haiku`) which auto-resolve, so no agent file changes were needed.
+
+### Architecture
+- **Phase order** (decision 2026-05-03, semver assigned 2026-05-04): v3.1.0 CC alignment ships first; v3.2.0 platform spine builds on aligned base; v3.3.0 distribution after; Twitter outreach is a project phase, not a release; v3.4.0 strategic forks last.
+- **Pinned CC version constants** added to `cc_rig/config/cc_version.py`: `PINNED_CC_VERSION = (2, 1, 126)` and `PINNED_CC_VERSION_STR = "2.1.126"`.
+
+---
+
 ## [2.5.0] - 2026-04-11
 
 ### Added
