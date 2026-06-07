@@ -82,7 +82,7 @@ class TestSettingsJson:
 
 
 class TestV31Alignment:
-    """v3.1: CC v2.1.126 alignment surfaces."""
+    """v3.1+ CC alignment surfaces (pinned v2.1.150)."""
 
     def test_attribution_generated(self, tmp_path):
         _generate_settings("fastapi", "standard", tmp_path)

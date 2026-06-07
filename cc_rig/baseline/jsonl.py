@@ -25,21 +25,23 @@ from typing import Iterable, Optional
 from cc_rig.baseline.paths import PARSE_CACHE_PATH
 
 PRICING_PER_MILLION = {
-    # (input, output, cache_create, cache_read) in USD per million tokens
-    "opus": (15.0, 75.0, 18.75, 1.50),
+    # (input, output, cache_create, cache_read) in USD per million tokens.
+    # cache_create uses the 5-minute write rate. Verified against
+    # platform.claude.com/docs/en/about-claude/pricing.
+    "opus": (5.0, 25.0, 6.25, 0.50),
     "sonnet": (3.0, 15.0, 3.75, 0.30),
-    "haiku": (0.80, 4.0, 1.0, 0.08),
+    "haiku": (1.0, 5.0, 1.25, 0.10),
 }
 DEFAULT_FAMILY = "sonnet"
 
 # Pricing table last verified on this date; bump when Anthropic prices change.
-PRICING_VERIFIED_DATE = "2026-05-14"
+PRICING_VERIFIED_DATE = "2026-05-25"
 
 
 def model_family(model_id: str) -> str:
     """Map a Claude model id to its pricing family.
 
-    Examples: 'claude-opus-4-6' -> 'opus', 'claude-sonnet-4-6' -> 'sonnet',
+    Examples: 'claude-opus-4-7' -> 'opus', 'claude-sonnet-4-6' -> 'sonnet',
     'claude-haiku-4-5-20251001' -> 'haiku'. Unknown ids fall back to sonnet
     (the safe middle); we log this case by leaving the family literal there.
     """

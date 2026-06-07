@@ -61,15 +61,15 @@ _VERIFY_HEAVY_CROSS_CUTTING_COUNT = 14
 
 
 # ---------------------------------------------------------------------------
-# SKILL_CATALOG completeness — 78 skills
+# SKILL_CATALOG completeness — 64 skills
 # ---------------------------------------------------------------------------
 
 
 class TestSkillCatalogCompleteness:
-    """SKILL_CATALOG must contain exactly 78 uniquely-named skills."""
+    """SKILL_CATALOG must contain exactly 64 uniquely-named skills."""
 
-    def test_catalog_has_78_skills(self):
-        assert len(SKILL_CATALOG) == 78
+    def test_catalog_has_64_skills(self):
+        assert len(SKILL_CATALOG) == 64
 
     def test_all_catalog_keys_are_skill_spec(self):
         for name, spec in SKILL_CATALOG.items():

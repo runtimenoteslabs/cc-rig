@@ -381,6 +381,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Project directory",
     )
 
+    # tune (v4: scored, dollar-quantified config report)
+    from cc_rig.cli_tune import add_arguments as _add_tune_args
+
+    tune_parser = subparsers.add_parser(
+        "tune",
+        help="Score the config and rank fixes by impact (cache economics)",
+    )
+    _add_tune_args(tune_parser)
+
     # savings
     from cc_rig.cli_savings import add_arguments as _add_savings_args
 
@@ -466,6 +475,10 @@ def main(argv: list[str] | None = None) -> int:
             return _cmd_doctor(args)
         if args.command == "worktree":
             return _cmd_worktree(args)
+        if args.command == "tune":
+            from cc_rig.cli_tune import run as _run_tune
+
+            return _run_tune(args)
         if args.command == "savings":
             from cc_rig.cli_savings import run as _run_savings
 

@@ -242,7 +242,6 @@ def _guided_flow(
         ConfirmStep,
         ExpertStep,
         HarnessStep,
-        PackStep,
         ReviewStep,
         SkillPacksStep,
         TemplateStep,
@@ -277,7 +276,6 @@ def _guided_flow(
     # mode == "fresh" — run through step-based guided flow
     steps = [
         WorkflowStep(),
-        PackStep(),
         TemplateStep(),
         BasicsStep(),
         ReviewStep(),

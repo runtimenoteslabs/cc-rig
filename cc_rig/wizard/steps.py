@@ -10,10 +10,8 @@ from typing import Any
 
 from cc_rig.config.detection import detect_project
 from cc_rig.presets.manager import (
-    BUILTIN_PACKS,
     BUILTIN_TEMPLATES,
     BUILTIN_TIERS,
-    load_pack,
     load_workflow,
 )
 from cc_rig.ui.descriptions import TEMPLATE_DESCRIPTIONS
@@ -118,28 +116,6 @@ class WorkflowStep:
         return StepResult(data={"workflow": tier})
 
 
-class PackStep:
-    name = "pack"
-    title = "Add a community process pack?"
-
-    def execute(self, state: dict[str, Any], io: IO) -> StepResult:
-        if state.get("workflow") == "quick":
-            return StepResult(data={"pack": ""})
-
-        options = [("none", "none - Just the cc-rig workflow")]
-        for p in BUILTIN_PACKS:
-            data = load_pack(p)
-            desc = data.get("description", p)
-            skills = len(data.get("process_skills", []))
-            options.append((p, f"{p} - {desc} ({skills} skills)"))
-        pack = ask_choice(
-            "Add a process pack? (optional):", options, "none", io=io, allow_back=True
-        )
-        if _is_back(pack):
-            return StepResult(action=StepAction.BACK)
-        return StepResult(data={"pack": "" if pack == "none" else pack})
-
-
 # ── Step: Review ──────────────────────────────────────────────────
 
 
@@ -157,7 +133,6 @@ class ReviewStep:
             project_name=state.get("name", ""),
             project_desc=state.get("desc", ""),
             output_dir=str(state.get("output_dir", ".")),
-            process_pack=state.get("pack") or None,
         )
         state["config"] = config
         io.say(format_summary(config))

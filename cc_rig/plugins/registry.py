@@ -23,7 +23,7 @@ class PluginSpec:
     replaces_mcp: str = ""  # MCP name this replaces, "" if none
 
 
-# ── Plugin catalog (80 official plugins) ──────────────────────────────
+# ── Plugin catalog (87 official plugins) ──────────────────────────────
 
 PLUGIN_CATALOG: dict[str, PluginSpec] = {
     # LSP plugins
@@ -220,23 +220,11 @@ PLUGIN_CATALOG: dict[str, PluginSpec] = {
         requires_binary="sourcekit-lsp",
     ),
     # ── V2.1: New integration plugins (external) ─────────────────────
-    "asana": PluginSpec(
-        name="asana",
-        marketplace="claude-plugins-official",
-        category="integration",
-        description="Asana project and task management",
-    ),
     "context7": PluginSpec(
         name="context7",
         marketplace="claude-plugins-official",
         category="integration",
         description="Documentation context provider for libraries and frameworks",
-    ),
-    "discord": PluginSpec(
-        name="discord",
-        marketplace="claude-plugins-official",
-        category="integration",
-        description="Discord messaging and channel integration",
     ),
     "greptile": PluginSpec(
         name="greptile",
@@ -261,12 +249,6 @@ PLUGIN_CATALOG: dict[str, PluginSpec] = {
         marketplace="claude-plugins-official",
         category="integration",
         description="AI assistant integration and orchestration",
-    ),
-    "telegram": PluginSpec(
-        name="telegram",
-        marketplace="claude-plugins-official",
-        category="integration",
-        description="Telegram messaging and bot integration",
     ),
     # ── V2.1: New workflow plugins ────────────────────────────────────
     "code-simplifier": PluginSpec(
@@ -353,12 +335,6 @@ PLUGIN_CATALOG: dict[str, PluginSpec] = {
         requires_binary="dart",
     ),
     # ── V2.5: Integration expansion ─────────────────────────────────────
-    "figma": PluginSpec(
-        name="figma",
-        marketplace="claude-plugins-official",
-        category="integration",
-        description="Figma design file inspection and component extraction",
-    ),
     "stripe": PluginSpec(
         name="stripe",
         marketplace="claude-plugins-official",
@@ -389,12 +365,6 @@ PLUGIN_CATALOG: dict[str, PluginSpec] = {
         category="integration",
         description="Datadog monitoring and observability integration",
     ),
-    "pagerduty": PluginSpec(
-        name="pagerduty",
-        marketplace="claude-plugins-official",
-        category="integration",
-        description="PagerDuty incident management integration",
-    ),
     "grafana": PluginSpec(
         name="grafana",
         marketplace="claude-plugins-official",
@@ -412,18 +382,6 @@ PLUGIN_CATALOG: dict[str, PluginSpec] = {
         marketplace="claude-plugins-official",
         category="integration",
         description="MongoDB database operations and schema management",
-    ),
-    "twilio": PluginSpec(
-        name="twilio",
-        marketplace="claude-plugins-official",
-        category="integration",
-        description="Twilio communications API integration",
-    ),
-    "sendgrid": PluginSpec(
-        name="sendgrid",
-        marketplace="claude-plugins-official",
-        category="integration",
-        description="SendGrid email delivery integration",
     ),
     "cloudflare": PluginSpec(
         name="cloudflare",
@@ -454,12 +412,6 @@ PLUGIN_CATALOG: dict[str, PluginSpec] = {
         marketplace="claude-plugins-official",
         category="integration",
         description="Railway deployment and infrastructure management",
-    ),
-    "shopify": PluginSpec(
-        name="shopify",
-        marketplace="claude-plugins-official",
-        category="integration",
-        description="Shopify storefront and admin API integration",
     ),
     # ── V2.5: Workflow expansion ─────────────────────────────────────────
     "test-runner": PluginSpec(
@@ -545,15 +497,8 @@ PLUGIN_CATALOG: dict[str, PluginSpec] = {
     #   5. No LSP for a language without a cc-rig template.
     # Cap: <= 120 plugins total. All v3.1 additions are expert opt-in
     # (no smart-default wiring) so they never enable without user choice.
-    # NOTE: discord and datadog already exist higher in this catalog;
-    # not re-declared. amplitude/postgres/mysql/redis/fly-deploy/security
-    # plugins are new in v3.1.
-    "amplitude": PluginSpec(
-        name="amplitude",
-        marketplace="claude-plugins-official",
-        category="integration",
-        description="Amplitude analytics events and dashboards (expert)",
-    ),
+    # NOTE: datadog already exists higher in this catalog; not re-declared.
+    # postgres/mysql/redis/fly-deploy/security plugins are new in v3.1.
     # Databases
     "postgres-mcp": PluginSpec(
         name="postgres-mcp",

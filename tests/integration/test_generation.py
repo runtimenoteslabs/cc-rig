@@ -133,10 +133,10 @@ class TestManifestCompleteness:
 
 class TestCLAUDEmdLineCounts:
     _TARGETS = {
-        # +2 for HTML attribution comment at top of CLAUDE.md
-        "quick": 92,
-        "standard": 132,
-        "rigorous": 162,
+        # v4.0 lean-out caps (+2 for HTML attribution comment at top).
+        "quick": 88,
+        "standard": 124,
+        "rigorous": 146,
     }
 
     @pytest.mark.parametrize("workflow", BUILTIN_WORKFLOWS)

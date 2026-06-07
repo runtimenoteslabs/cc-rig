@@ -388,7 +388,7 @@ class TestDoctorSettingsKeyValidity:
         result = run_doctor(tmp_path)
         assert result.passed
         info = " ".join(result.info)
-        assert "all valid for CC v2.1.126" in info
+        assert "all valid for CC v2.1.150" in info
 
     def test_unknown_key_warns(self, tmp_path):
         import json
@@ -399,7 +399,7 @@ class TestDoctorSettingsKeyValidity:
         data["totallyMadeUpKey"] = "value"
         settings_path.write_text(json.dumps(data, indent=2))
         result = run_doctor(tmp_path)
-        assert any("totallyMadeUpKey" in w and "v2.1.126" in w for w in result.warnings), (
+        assert any("totallyMadeUpKey" in w and "v2.1.150" in w for w in result.warnings), (
             f"expected warning about unknown key, got: {result.warnings}"
         )
 
@@ -413,9 +413,13 @@ class TestDoctorSettingsKeyValidity:
         data["language"] = "en"
         data["prUrlTemplate"] = "https://github.com/owner/repo/pull/{n}"
         data["autoMemoryEnabled"] = True
+        # v4.0 (CC v2.1.150 alignment) keys
+        data["skillOverrides"] = {}
+        data["maxSkillDescriptionChars"] = 500
+        data["parentSettingsBehavior"] = "merge"
         settings_path.write_text(json.dumps(data, indent=2))
         result = run_doctor(tmp_path)
-        unknown_warnings = [w for w in result.warnings if "v2.1.126 schema" in w]
+        unknown_warnings = [w for w in result.warnings if "v2.1.150 schema" in w]
         assert not unknown_warnings, f"expected no schema warnings, got: {unknown_warnings}"
 
 

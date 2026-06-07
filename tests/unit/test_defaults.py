@@ -148,10 +148,9 @@ class TestCommandCounts:
         assert "techdebt" in config.commands
 
     def test_gtd_lite_has_gtd_commands(self):
-        """gtd-lite resolves to standard tier + gtd pack; no gtd-specific commands by default."""
+        """gtd-lite resolves to standard tier; no gtd-specific commands by default."""
         config = compute_defaults("fastapi", "gtd-lite", project_name="test")
         assert config.workflow == "standard"
-        assert config.process_pack == "gtd"
         # Standard tier commands present
         assert "remember" in config.commands
         assert "fix-issue" in config.commands
@@ -282,9 +281,9 @@ class TestFeatureImplications:
         assert "spec-execute" in config.commands
 
     def test_gtd_implies_commands(self):
-        """gtd-lite resolves to standard+gtd pack; gtd feature flag is not set by default."""
+        """gtd-lite resolves to standard tier; gtd feature flag is not set by default."""
         config = compute_defaults("fastapi", "gtd-lite", project_name="test")
-        assert config.process_pack == "gtd"
+        assert config.workflow == "standard"
         # Standard tier commands are present
         assert "remember" in config.commands
         assert "fix-issue" in config.commands

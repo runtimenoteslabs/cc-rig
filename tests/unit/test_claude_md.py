@@ -75,9 +75,10 @@ class TestConditionalSections:
 
 class TestLineCounts:
     _TARGETS = {
-        "quick": 90,
-        "standard": 130,
-        "rigorous": 160,
+        # v4.0 lean-out caps (fastapi); legacy aliases keep prior headroom.
+        "quick": 88,
+        "standard": 124,
+        "rigorous": 146,
         # Legacy aliases (resolve to a tier)
         "speedrun": 90,
         "gstack": 130,

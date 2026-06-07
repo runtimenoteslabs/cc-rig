@@ -51,13 +51,12 @@ class TestZeroConfigFlow:
 class TestGuidedFlow:
     def test_full_guided_generates(self, tmp_path):
         output = tmp_path / "out"
-        # Inputs: launcher, workflow pick, pack pick, template pick, name, description,
+        # Inputs: launcher, workflow pick, template pick, name, description,
         # no-customize, no-skill-packs, no-harness, yes-generate
         io = _make_io(
             [
                 "1",  # launcher: fresh project
                 "2",  # workflow: standard (index 2)
-                "1",  # pack: none (index 1, standard shows pack screen)
                 "2",  # template: fastapi (index 2, after generic)
                 "my-project",  # project name
                 "A test project",  # description
@@ -116,12 +115,11 @@ class TestQuickFlow:
 class TestExpertFlow:
     def test_expert_with_no_customization(self, tmp_path):
         output = tmp_path / "out"
-        # Guided flow + expert mode: workflow, pack, template, name, desc, expert, ...
+        # Guided flow + expert mode: workflow, template, name, desc, expert, ...
         io = _make_io(
             [
                 "1",  # launcher: fresh project
                 "2",  # workflow: standard
-                "1",  # pack: none (standard shows pack screen)
                 "2",  # template: fastapi (after generic)
                 "expert-proj",  # name
                 "",  # description
@@ -139,18 +137,17 @@ class TestExpertFlow:
     def test_expert_plugins_category_applies_selection(self, tmp_path):
         """Selecting 'plugins' in expert category picker applies the plugin selection."""
         output = tmp_path / "out"
-        # Plugin options (sorted, non-autonomy) indices (1-based) at v3.1:
-        #   37=github, 66=pyright-lsp
+        # Plugin options (sorted, non-autonomy) indices (1-based) after v4.0 curation:
+        #   33=github, 61=pyright-lsp
         io = _make_io(
             [
                 "1",  # launcher: fresh project
                 "2",  # workflow: standard
-                "1",  # pack: none (standard shows pack screen)
                 "2",  # template: fastapi (after generic)
                 "plugin-proj",  # name
                 "",  # description
                 "3",  # expert categories: plugins (3rd option in ask_multi)
-                "37,66",  # plugin selection: github + pyright-lsp
+                "33,61",  # plugin selection: github + pyright-lsp
                 "n",  # add optional skill packs? no
                 "n",  # add runtime harness? no
                 "y",  # generate? yes

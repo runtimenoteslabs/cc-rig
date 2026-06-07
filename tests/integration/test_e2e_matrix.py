@@ -213,8 +213,7 @@ class TestS01FastapiStandardB0:
         content = (self.root / "CLAUDE.md").read_text()
         assert "## Compaction Survival" in content
         assert "Always Preserve" in content
-        assert "Always Discard" in content
-        assert "Custom /compact" in content
+        assert "/compact" in content
 
     def test_no_harness_hooks_at_b0(self):
         """B0 has no harness hooks."""
@@ -1027,8 +1026,8 @@ class TestS11Rerun:
         manifest_new = generate_all(config_new, self.root)
 
         assert (
-            manifest_new["workflow_preset"] == "rigorous+superpowers"
-        )  # alias resolved to tier+pack
+            manifest_new["workflow_preset"] == "rigorous"
+        )  # verify-heavy alias resolved to rigorous tier
         _assert_manifest_consistent(self.root)
 
 
@@ -1760,28 +1759,20 @@ class TestS22GenericStandardB0:
 
 
 class TestS24GstackFastapiB0:
-    """Gstack workflow — process skills with Garry Tan attribution."""
+    """Gstack legacy workflow resolves to standard tier."""
 
     @pytest.fixture(autouse=True)
     def setup(self, tmp_path):
         self.root = tmp_path
         self.config, self.manifest = _generate(tmp_path, "fastapi", "gstack")
 
-    def test_claude_md_has_process_skills_section(self):
+    def test_resolves_to_standard_tier(self):
+        """gstack legacy name resolves to standard tier."""
+        assert self.config.workflow == "standard"
+
+    def test_claude_md_no_process_skills_section(self):
         content = _read_claude_md(self.root)
-        assert "## Process Skills" in content
-
-    def test_claude_md_has_gstack_attribution(self):
-        content = _read_claude_md(self.root)
-        assert "garrytan/gstack" in content
-
-    def test_process_skills_on_config(self):
-        assert len(self.config.process_skills) == 6
-        assert "plan-ceo-review" in self.config.process_skills
-        assert "ship" in self.config.process_skills
-
-    def test_workflow_source(self):
-        assert self.config.workflow_source == "garrytan/gstack"
+        assert "## Process Skills" not in content
 
     def test_features(self):
         """gstack maps to standard tier: memory on, worktrees off."""
@@ -1804,28 +1795,20 @@ class TestS24GstackFastapiB0:
 
 
 class TestS25AiheroGenericB0:
-    """Aihero workflow — PRD-driven skills, generic stack."""
+    """Aihero legacy workflow resolves to standard tier, generic stack."""
 
     @pytest.fixture(autouse=True)
     def setup(self, tmp_path):
         self.root = tmp_path
         self.config, self.manifest = _generate(tmp_path, "generic", "aihero")
 
-    def test_claude_md_has_process_skills_section(self):
+    def test_resolves_to_standard_tier(self):
+        """aihero legacy name resolves to standard tier."""
+        assert self.config.workflow == "standard"
+
+    def test_claude_md_no_process_skills_section(self):
         content = _read_claude_md(self.root)
-        assert "## Process Skills" in content
-
-    def test_claude_md_has_mattpocock_attribution(self):
-        content = _read_claude_md(self.root)
-        assert "mattpocock/skills" in content
-
-    def test_process_skills_on_config(self):
-        assert len(self.config.process_skills) == 7
-        assert "write-a-prd" in self.config.process_skills
-        assert "mp-tdd" in self.config.process_skills
-
-    def test_workflow_source(self):
-        assert self.config.workflow_source == "mattpocock/skills"
+        assert "## Process Skills" not in content
 
     def test_features(self):
         """aihero maps to standard tier: memory on, spec_workflow off, worktrees off."""
@@ -1844,34 +1827,31 @@ class TestS25AiheroGenericB0:
 
 
 class TestS26SuperpowersDjangoB0:
-    """Superpowers workflow — full obra skill suite."""
+    """Superpowers legacy workflow resolves to rigorous tier, django stack."""
 
     @pytest.fixture(autouse=True)
     def setup(self, tmp_path):
         self.root = tmp_path
         self.config, self.manifest = _generate(tmp_path, "django", "superpowers")
 
-    def test_claude_md_has_process_skills_section(self):
-        content = _read_claude_md(self.root)
-        assert "## Process Skills" in content
+    def test_resolves_to_rigorous_tier(self):
+        """superpowers legacy name resolves to rigorous tier."""
+        assert self.config.workflow == "rigorous"
 
-    def test_claude_md_has_obra_attribution(self):
+    def test_claude_md_no_process_skills_section(self):
         content = _read_claude_md(self.root)
-        assert "obra/superpowers" in content
-
-    def test_process_skills_on_config(self):
-        assert len(self.config.process_skills) == 11
+        assert "## Process Skills" not in content
 
     def test_has_all_agents(self):
-        """Superpowers should have the most agents."""
+        """Rigorous tier should have many agents."""
         assert len(self.config.agents) >= 12
 
-    def test_verify_heavy_alias_produces_same(self, tmp_path):
-        """verify-heavy alias should produce same workflow as superpowers."""
+    def test_verify_heavy_alias_same_tier(self, tmp_path):
+        """verify-heavy alias should produce same tier as superpowers."""
         alias_root = tmp_path / "alias"
         alias_config, _ = _generate(alias_root, "django", "verify-heavy")
         assert alias_config.workflow == self.config.workflow
-        assert alias_config.process_skills == self.config.process_skills
+        assert alias_config.agents == self.config.agents
 
     def test_hooks_executable(self):
         _assert_hooks_executable(self.root)

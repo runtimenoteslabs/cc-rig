@@ -17,7 +17,7 @@ from cc_rig.config.project import (
     SkillRecommendation,
 )
 from cc_rig.plugins.registry import resolve_plugins as _plugin_resolve
-from cc_rig.presets.manager import load_pack, load_template, load_workflow, resolve_workflow
+from cc_rig.presets.manager import load_template, load_workflow, resolve_workflow
 from cc_rig.skills.registry import resolve_skills as _registry_resolve
 
 # Hooks that require a specific tool command to be present.
@@ -249,7 +249,6 @@ def compute_defaults(
     output_dir: str = ".",
     claude_plan: str = "pro",
     skill_packs: list[str] | None = None,
-    process_pack: str | None = None,
 ) -> ProjectConfig:
     """Map template + workflow → fully resolved ProjectConfig.
 
@@ -257,21 +256,18 @@ def compute_defaults(
         template: Template preset name (e.g. "fastapi", "nextjs").
         workflow: Workflow or tier name. Accepts new tiers ("quick", "standard",
             "rigorous") and old workflow names ("speedrun", "gstack", etc.).
-            Old names are resolved to their tier + auto-pack.
+            Old names are resolved to their tier for backward compatibility.
         project_name: Project name (can be filled in later by wizard).
         project_desc: Project description.
         output_dir: Output directory for generated files.
         claude_plan: User's Claude plan tier.
-        process_pack: Optional community process pack name ("gstack", "aihero",
-            "superpowers", "gtd"). Overrides auto-pack from old workflow names.
 
     Returns:
         A fully resolved ProjectConfig ready for generators.
     """
-    # Step 0: Resolve workflow name to tier + optional pack
+    # Step 0: Resolve workflow name to tier
     resolved = resolve_workflow(workflow)
     tier = resolved.tier
-    effective_pack = process_pack if process_pack is not None else resolved.pack
 
     # Step 1: Load template preset → stack data
     tmpl = load_template(template)
@@ -280,17 +276,6 @@ def compute_defaults(
     # Step 2: Load tier preset → process data (agents, commands, hooks, features)
     wf = load_workflow(tier)
     features = Features.from_dict(wf["features"])
-
-    # Step 2b: Load process pack for community skills, or use tier defaults
-    if effective_pack:
-        pack_data = load_pack(effective_pack)
-        process_skill_names: list[str] = list(pack_data.get("process_skills", []))
-        workflow_source: str = pack_data.get("source", "cc-rig")
-        workflow_source_url: str = pack_data.get("source_url", "")
-    else:
-        process_skill_names = list(wf.get("process_skills", []))
-        workflow_source = wf.get("source", "cc-rig")
-        workflow_source_url = wf.get("source_url", "")
 
     # Step 3: Build agent list from workflow
     agents = list(wf["agents"])
@@ -429,14 +414,10 @@ def compute_defaults(
         skill_packs=resolved_packs,
         claude_plan=claude_plan,
         model_overrides=_compute_model_overrides(claude_plan),
-        process_skills=process_skill_names,
-        process_pack=effective_pack or "",
-        workflow_source=workflow_source,
-        workflow_source_url=workflow_source_url,
         cc_rig_version=__version__,
         created_at=datetime.now(timezone.utc).isoformat(),
         template_preset=tmpl["name"],
-        workflow_preset=f"{tier}+{effective_pack}" if effective_pack else tier,
+        workflow_preset=tier,
     )
 
 

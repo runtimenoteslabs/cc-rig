@@ -106,10 +106,6 @@ def run_doctor(
     # ── Check 9: LSP plugin binaries ─────────────────────────
     _check_plugin_binaries(config, result)
 
-    # ── Check 10: Process skills installed ──────────────────
-    if config.process_skills:
-        _check_process_skills(config, project_dir, result)
-
     # ── Check 11: CLAUDE.md cache-friendliness ────────────
     _check_claude_md_cache_friendliness(project_dir, result)
 
@@ -274,18 +270,6 @@ def _check_plugin_binaries(config: ProjectConfig, result: DoctorResult) -> None:
                     f"Plugin {plugin.name!r} requires {plugin.requires_binary!r} "
                     f"but it was not found on PATH. LSP features may not activate."
                 )
-
-
-def _check_process_skills(config: ProjectConfig, output_dir: Path, result: DoctorResult) -> None:
-    """Check that process skills are installed for the workflow."""
-    for skill_name in config.process_skills:
-        skill_dir = output_dir / ".claude" / "skills" / skill_name
-        skill_md = skill_dir / "SKILL.md"
-        if not skill_md.exists():
-            result.warnings.append(
-                f"Process skill {skill_name!r} (workflow={config.workflow}) "
-                f"not found at {skill_md}. Run cc-rig init to install."
-            )
 
 
 # Patterns that indicate dynamic content in the static zone of CLAUDE.md.
@@ -620,9 +604,9 @@ def _hook_command_contains(project_dir: Path, event: str, needle: str) -> bool:
     return False
 
 
-# v3.1: Pinned CC v2.1.126 settings.json key whitelist. Update on each
-# alignment phase. Source: code.claude.com/docs/en/settings.
-_VALID_SETTINGS_KEYS_V2_1_126: frozenset[str] = frozenset(
+# v4.0 Phase 0: Pinned CC v2.1.150 settings.json key whitelist. Update on
+# each alignment phase. Source: code.claude.com/docs/en/settings.
+_VALID_SETTINGS_KEYS_V2_1_150: frozenset[str] = frozenset(
     {
         "$schema",
         "agent",
@@ -707,6 +691,19 @@ _VALID_SETTINGS_KEYS_V2_1_126: frozenset[str] = frozenset(
         "voiceEnabled",  # legacy but still accepted
         "worktree",
         "wslInheritsWindowsSettings",
+        # v4.0 (CC v2.1.150 alignment): top-level keys added since 2.1.126.
+        "allowAllClaudeAiMcps",  # 2.1.149 managed setting (not yet in public settings doc)
+        "claudeMd",
+        "disableAgentView",
+        "disableRemoteControl",
+        "gcpAuthRefresh",
+        "maxSkillDescriptionChars",
+        "parentSettingsBehavior",
+        "policyHelper",
+        "skillListingBudgetFraction",
+        "skillOverrides",
+        "strictPluginOnlyCustomization",
+        "syntaxHighlightingDisabled",
     }
 )
 
@@ -833,7 +830,7 @@ def _check_plugin_marketplace_format(project_dir: Path, result: DoctorResult) ->
 
 def _check_settings_key_validity(project_dir: Path, result: DoctorResult) -> None:
     """Check 17 (v3.1): every key in .claude/settings.json is in the pinned
-    CC v2.1.126 schema. Warn on unknown keys (typos, deprecated, or new in a
+    CC v2.1.150 schema. Warn on unknown keys (typos, deprecated, or new in a
     later CC version cc-rig has not yet aligned with).
     """
     settings_path = project_dir / ".claude" / "settings.json"
@@ -846,11 +843,11 @@ def _check_settings_key_validity(project_dir: Path, result: DoctorResult) -> Non
         return
     if not isinstance(data, dict):
         return
-    unknown = sorted(k for k in data if k not in _VALID_SETTINGS_KEYS_V2_1_126)
+    unknown = sorted(k for k in data if k not in _VALID_SETTINGS_KEYS_V2_1_150)
     if unknown:
         result.warnings.append(
-            f"settings.json has keys not in CC v2.1.126 schema: {', '.join(unknown)}. "
+            f"settings.json has keys not in CC v2.1.150 schema: {', '.join(unknown)}. "
             "These may be typos, deprecated, or from a newer CC version. Verify intent."
         )
     else:
-        result.info.append(f"settings.json: {len(data)} keys all valid for CC v2.1.126")
+        result.info.append(f"settings.json: {len(data)} keys all valid for CC v2.1.150")
