@@ -2,6 +2,7 @@
 
 import json
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -700,6 +701,80 @@ class TestShellInjectionProtection:
         assert _safe_cmd("") == "echo 'No command configured'"
 
 
+# A session log shaped like Claude Code's: one prompt, one tool result, and a
+# message whose usage repeats on each of its three content-block lines.
+_LOG_LINES = [
+    {"type": "user", "message": {"role": "user", "content": "fix the bug"}},
+    {
+        "type": "assistant",
+        "message": {
+            "id": "msg_a",
+            "model": "claude-opus-5-5",
+            "usage": {
+                "input_tokens": 10,
+                "output_tokens": 1000,
+                "cache_creation_input_tokens": 20000,
+                "cache_creation": {"ephemeral_1h_input_tokens": 20000},
+                "cache_read_input_tokens": 0,
+            },
+        },
+    },
+    {"type": "user", "message": {"content": [{"type": "tool_result", "content": "ok"}]}},
+] + [
+    {
+        "type": "assistant",
+        "message": {
+            "id": "msg_b",
+            "model": "claude-opus-5-5",
+            "usage": {"input_tokens": 5, "output_tokens": 500, "cache_read_input_tokens": 20000},
+        },
+    }
+] * 3
+# Opus 5.5 ($4 in, $20 out, $8 1-hour write, $0.20 read), each message once:
+# (10*4 + 1000*20 + 20000*8)/1e6 + (5*4 + 500*20 + 20000*0.2)/1e6
+_LOG_COST = 0.19406
+
+
+# The same session, interrupted: Claude Code logs the interrupt as an assistant
+# message with model "<synthetic>" and zero usage.
+_INTERRUPTED_LOG_LINES = _LOG_LINES + [
+    {
+        "type": "assistant",
+        "message": {
+            "id": "synthetic-1",
+            "model": "<synthetic>",
+            "content": [{"type": "text", "text": "No response requested."}],
+            "usage": {
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cache_creation_input_tokens": 0,
+                "cache_read_input_tokens": 0,
+            },
+        },
+    }
+]
+
+
+def _run_hook_on_log(project_dir, hook_name, lines=_LOG_LINES):
+    """Run a generated hook against a session log, with HOME pointed at tmp."""
+    import shutil
+
+    python3 = shutil.which("python3")
+    if python3 is None:
+        pytest.skip("hook needs python3")
+    project_dir = project_dir.resolve()
+    home = project_dir / "home"
+    log_dir = home / ".claude" / "projects" / str(project_dir).replace("/", "-")
+    log_dir.mkdir(parents=True)
+    (log_dir / "session.jsonl").write_text("\n".join(json.dumps(x) for x in lines) + "\n")
+    script = project_dir / ".claude" / "hooks" / hook_name
+    path = f"{Path(python3).parent}:/usr/bin:/bin"
+    env = {"HOME": str(home), "PATH": path, "NO_COLOR": "1"}
+    return subprocess.run(
+        ["bash", str(script)], cwd=project_dir, env=env, capture_output=True, text=True
+    )
+
+
 class TestBudgetReminderHook:
     """Verify budget-reminder hook is generated for B1+ harness levels."""
 
@@ -738,8 +813,8 @@ class TestBudgetReminderHook:
     def test_script_has_cost_calculation(self, tmp_path):
         self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
         content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
-        assert "PRICING" in content
-        assert "cost" in content
+        assert "PRICES" in content
+        assert "usage_cost" in content
 
     def test_script_passes_bash_syntax(self, tmp_path):
         import subprocess
@@ -818,8 +893,21 @@ class TestBudgetReminderHook:
     def test_script_has_dedup_logic(self, tmp_path):
         self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
         content = (tmp_path / ".claude" / "hooks" / "budget-reminder.sh").read_text()
-        assert "entries_deduped" in content
+        assert "by_id" in content
         assert "cache_creation_input_tokens" in content
+
+    def test_script_reports_deduped_cost_from_session_log(self, tmp_path):
+        self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
+        result = _run_hook_on_log(tmp_path, "budget-reminder.sh")
+        assert result.returncode == 0, result.stderr
+        assert f"~${_LOG_COST:.2f} (Opus)" in result.stdout
+        assert "deduped 2" in result.stdout
+
+    def test_interrupted_session_still_reports_its_model(self, tmp_path):
+        self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
+        result = _run_hook_on_log(tmp_path, "budget-reminder.sh", _INTERRUPTED_LOG_LINES)
+        assert result.returncode == 0, result.stderr
+        assert f"~${_LOG_COST:.2f} (Opus)" in result.stdout
 
     def test_script_has_dedup_display(self, tmp_path):
         self._generate_with_harness(tmp_path, "lite", budget_tokens=500000)
@@ -853,6 +941,25 @@ class TestSessionTelemetryHook:
         content = (tmp_path / ".claude" / "hooks" / "session-telemetry.sh").read_text()
         assert "entries_deduped" in content
         assert "cache_creation_input_tokens" in content
+
+    def test_script_records_cost_and_turns_from_session_log(self, tmp_path):
+        self._generate_with_harness(tmp_path, "standard")
+        result = _run_hook_on_log(tmp_path, "session-telemetry.sh")
+        assert result.returncode == 0, result.stderr
+        lines = (tmp_path / ".claude" / "telemetry.jsonl").read_text().splitlines()
+        record = json.loads(lines[-1])
+        assert record["estimated_cost_usd"] == pytest.approx(_LOG_COST, abs=1e-4)
+        assert record["turn_count"] == 1  # the tool result is not a turn
+        assert record["model"] == "opus"
+
+    def test_interrupted_session_keeps_its_model_and_cost(self, tmp_path):
+        self._generate_with_harness(tmp_path, "standard")
+        result = _run_hook_on_log(tmp_path, "session-telemetry.sh", _INTERRUPTED_LOG_LINES)
+        assert result.returncode == 0, result.stderr
+        lines = (tmp_path / ".claude" / "telemetry.jsonl").read_text().splitlines()
+        record = json.loads(lines[-1])
+        assert record["model"] == "opus"
+        assert record["estimated_cost_usd"] == pytest.approx(_LOG_COST, abs=1e-4)
 
     def test_script_has_cache_read_ratio(self, tmp_path):
         self._generate_with_harness(tmp_path, "standard")

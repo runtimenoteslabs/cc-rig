@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from cc_rig.config.cc_version import PINNED_CC_VERSION_STR
 from cc_rig.generators.fileops import FileTracker
 from cc_rig.tune.fixers import (
     FIXERS,
@@ -40,7 +41,7 @@ class TestAddBulletToSection:
 class TestPinVersion:
     def test_adds_when_missing(self, tmp_path):
         out = _fix_pin_version("# t\n\n- **Stack**: py\n\n## X\n", _ctx(tmp_path))
-        assert "Claude Code" in out and "2.1.150" in out
+        assert "Claude Code" in out and PINNED_CC_VERSION_STR in out
 
     def test_idempotent_when_present(self, tmp_path):
         assert _fix_pin_version("# t\n- **Claude Code**: v2.1.150\n", _ctx(tmp_path)) is None

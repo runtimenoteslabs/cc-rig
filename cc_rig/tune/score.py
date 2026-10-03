@@ -122,14 +122,22 @@ class TuneReport:
         }
 
 
+# Below this, a dollar figure is shown but doesn't outrank severity: two cents
+# a month should not sit above a missing destructive-command guard.
+MATERIAL_MONTHLY_USD = 1.0
+
+
 def rank_opportunities(opportunities: list) -> list:
-    """Rank findings: dollar-quantified first (largest savings), then by
-    severity, then alphabetically for stable output."""
+    """Rank findings: material dollar findings first (largest savings), then
+    by severity, then alphabetically for stable output. Within a severity, a
+    measured-but-immaterial cost is known to be small, so it yields to an
+    unpriced finding."""
 
     def key(o: Opportunity):
-        has_dollar = o.est_monthly_usd is not None
-        dollar = -(o.est_monthly_usd or 0.0)
-        return (0 if has_dollar else 1, dollar, _SEVERITY_RANK.get(o.severity, 1), o.title)
+        usd = o.est_monthly_usd or 0.0
+        material = usd >= MATERIAL_MONTHLY_USD
+        immaterial = o.est_monthly_usd is not None and not material
+        return (0 if material else 1, _SEVERITY_RANK.get(o.severity, 1), immaterial, -usd, o.title)
 
     return sorted(opportunities, key=key)
 

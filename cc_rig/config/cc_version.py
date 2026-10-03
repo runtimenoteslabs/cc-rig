@@ -16,11 +16,11 @@ from dataclasses import dataclass
 MIN_CC_VERSION = (2, 1, 94)
 MIN_CC_VERSION_STR = "2.1.94"
 
-# Pinned CC version cc-rig is verified against (v4.0 Phase 0 alignment).
+# Pinned CC version cc-rig is verified against (v4.0.0 final alignment).
 # Generators and doctor checks treat this as the schema reference.
 # Bumps go through a new alignment phase.
-PINNED_CC_VERSION = (2, 1, 150)
-PINNED_CC_VERSION_STR = "2.1.150"
+PINNED_CC_VERSION = (2, 1, 287)
+PINNED_CC_VERSION_STR = "2.1.287"
 
 
 @dataclass

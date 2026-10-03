@@ -302,9 +302,23 @@ def render_report(console, report: TuneReport) -> None:
     console.print()
 
     # ── Ranked opportunities ──
-    if not report.opportunities:
+    if report.opportunities:
+        _render_opportunities(console, report)
+    else:
         console.print(Text("No opportunities — your config is clean.", style="green"))
-        return
+    console.print()
+    console.print(Text(_NATIVE_TOOLS_NOTE, style="dim"))
+
+
+# tune scores the repo before a session starts; these cover what happens inside one.
+_NATIVE_TOOLS_NOTE = (
+    "In a session, Claude Code's /cost names the likely cause of each cache miss, "
+    "/doctor trims CLAUDE.md, and /skill-doctor finds unused skills."
+)
+
+
+def _render_opportunities(console, report: TuneReport) -> None:
+    from rich.text import Text
 
     from cc_rig.tune.fixers import FIXERS, safe_fixable
 

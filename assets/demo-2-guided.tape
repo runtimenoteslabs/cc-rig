@@ -1,6 +1,6 @@
-# Demo 2: Guided + Expert Mode (v2 — Workflow-first)
-# Shows: cc-rig init → Welcome → Gstack workflow → Django stack → Basics → Expert tabs → Features (locked) → Lite harness → tree + cat
-# Flow: Welcome → Workflow → Template → Basics → Review → Expert → Features → SkillPacks → Harness → Confirm
+# Demo 2: Guided + Expert Mode (v4)
+# Shows: cc-rig init → Welcome → Rigorous tier → Django stack → Basics → Expert tabs → Features → Lite harness → tree + CLAUDE.md + cc-rig tune
+# Flow: Welcome → Tier → Template → Basics → Review → Expert → Features → SkillPacks → Harness → Confirm
 # Duration: ~90s
 
 Output assets/demo-2-guided.gif
@@ -11,6 +11,7 @@ Set Width 1920
 Set Height 1080
 Set Padding 16
 Set TypingSpeed 40ms
+Set Framerate 12
 
 # Setup (hidden)
 Hide
@@ -43,14 +44,15 @@ Sleep 300ms
 Space
 Sleep 2500ms
 
-# ─── Screen 2: WorkflowScreen (workflow first!) ───
-# speedrun(0) → standard(1) → gstack(2)
+# ─── Screen 2: TierScreen ───
+# The highlight starts on quick(0) even though standard is preselected,
+# so two Downs reach rigorous(2).
 Sleep 1500ms
 Down
 Sleep 1200ms
 Down
 Sleep 1500ms
-# Pause on gstack detail panel
+# Pause on the rigorous detail panel
 Sleep 3500ms
 # Tab: RadioSet → Back → Next. Tab Tab Space = Next.
 Tab
@@ -84,7 +86,7 @@ Type "my-django-app"
 Sleep 500ms
 Tab
 Sleep 300ms
-Type "A Django app with gstack workflow"
+Type "A Django app on the rigorous tier"
 Sleep 500ms
 # Tab: desc → output-dir → in-place checkbox → Back → Next
 Tab
@@ -128,8 +130,8 @@ Sleep 500ms
 Space
 Sleep 2500ms
 
-# ─── Screen 7: FeaturesScreen (with workflow locking!) ───
-# gstack: memory [included], spec [not available], gtd [not available], worktrees [included]
+# ─── Screen 7: FeaturesScreen (tier locking) ───
+# rigorous includes everything except gtd, so gtd is the only focusable checkbox.
 # Disabled checkboxes can't be focused via Tab, so Tab skips them.
 # Show the screen for a moment, then proceed.
 Sleep 3000ms
@@ -148,7 +150,9 @@ Sleep 2500ms
 Sleep 1500ms
 Space
 Sleep 1000ms
-# Tab through remaining packs → Back → Next
+# Tab through the other 5 packs → Back → Next (6 packs, so 7 Tabs)
+Tab
+Sleep 150ms
 Tab
 Sleep 150ms
 Tab
@@ -208,16 +212,16 @@ Type "head -40 CLAUDE.md"
 Enter
 Sleep 6000ms
 
-# Section 3: CLAUDE.md — process skills section
+# Section 3: keep it right — tune scores the fresh setup
 Type "clear"
 Enter
 Sleep 500ms
-Type "# Process skills — installed from garrytan/gstack"
+Type "# Keep it right: cc-rig tune scores the setup"
 Enter
 Sleep 1500ms
-Type "sed -n '41,80p' CLAUDE.md"
+Type "cc-rig tune"
 Enter
-Sleep 6000ms
+Sleep 7000ms
 
 # ── CTA ──
 Type "clear"
@@ -227,12 +231,12 @@ Type ""
 Enter
 Type "# Get started:"
 Enter
-Type "#   pip install cc-rig"
+Type "#   uvx cc-rig init"
 Enter
 Type "#   github.com/runtimenoteslabs/cc-rig"
 Enter
 Type ""
 Enter
-Type "# One command. Complete Claude Code setup."
+Type "# Generate it right with init. Keep it right with tune."
 Enter
 Sleep 5000ms

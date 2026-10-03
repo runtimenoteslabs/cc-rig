@@ -1,6 +1,6 @@
 # Saving Tokens with cc-rig
 
-Claude Code uses prompt caching to avoid reprocessing the system prompt, CLAUDE.md and tool definitions on every turn. When the cache hits, input tokens cost 10% of the uncached price. When it misses, you pay full price. Over a day of coding, the difference is 5-10x in token spend.
+Claude Code uses prompt caching to avoid reprocessing the system prompt, CLAUDE.md and tool definitions on every turn. When the cache hits, input tokens cost 5-10% of the uncached price, depending on the model. When it misses, the prefix is written to the cache again at 1.25x to 2x the uncached price. Over a day of coding, the difference is 5-10x in token spend.
 
 ## How prompt caching works
 
@@ -14,11 +14,13 @@ The server hashes this prefix. If it matches a previous request byte-for-byte, c
 
 **Pricing (per million tokens):**
 
-| Model | Uncached Input | Cache Read (10x savings) |
-|-------|---------------|-------------------------|
-| Opus 4.7 | $5.00 | $0.50 |
-| Sonnet 4.6 | $3.00 | $0.30 |
-| Haiku 4.5 | $1.00 | $0.10 |
+| Model | Uncached Input | Cache Read | Read vs uncached |
+|-------|---------------|------------|------------------|
+| Opus 5.5 | $4.00 | $0.20 | 5% |
+| Sonnet 5.5 | $2.00 | $0.20 | 10% |
+| Haiku 4.5 | $1.00 | $0.10 | 10% |
+
+Cache writes cost 1.25x the uncached price on the 5-minute TTL and 2x on the 1-hour TTL. These are the rates `cc-rig tune` and `cc-rig savings` use (`cc_rig/pricing.py`).
 
 **Cache TTL:**
 - Pro/API users: 5 minutes. Each cache hit resets the timer. Take 6 minutes between messages and the cache expires entirely.

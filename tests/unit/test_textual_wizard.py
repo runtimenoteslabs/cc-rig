@@ -231,6 +231,32 @@ class TestFullForwardFlow:
         assert state.get("template") == "generic"
         assert "config" in state
 
+    @pytest.mark.asyncio
+    async def test_typed_basics_reach_the_config(self):
+        """The config is built after the stack pick, before Basics; the name,
+        description and output dir typed there must still land in it."""
+        app = QuickWizardApp(initial_state=_make_state(name="", output_dir=Path(".")))
+        async with app.run_test(size=(120, 40)) as pilot:
+            await pilot.pause()
+            await pilot.click("#btn-next")  # Tier: default
+            await pilot.pause()
+            await pilot.click("#btn-next")  # Template: default
+            await pilot.pause()
+            assert isinstance(app.screen, BasicsScreen)
+            app.screen.query_one("#input-name").value = "typed-name"
+            app.screen.query_one("#input-desc").value = "Typed description"
+            app.screen.query_one("#input-output-dir").value = "/tmp/typed-out"
+            await pilot.click("#btn-next")
+            await pilot.pause()
+            for _ in range(3):  # Review, SkillPacks, Confirm
+                await pilot.click("#btn-next")
+                await pilot.pause()
+
+        config = app.return_value["config"]
+        assert config.project_name == "typed-name"
+        assert config.project_desc == "Typed description"
+        assert Path(config.output_dir) == Path("/tmp/typed-out").resolve()
+
 
 # ── Expert + Features flow ────────────────────────────────────────────
 

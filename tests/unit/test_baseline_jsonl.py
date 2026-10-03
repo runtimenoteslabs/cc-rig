@@ -11,9 +11,10 @@ import json
 import time
 from pathlib import Path
 
+import pytest
+
 from cc_rig.baseline.jsonl import (
     DEFAULT_FAMILY,
-    PRICING_PER_MILLION,
     SessionSummary,
     compute_cost,
     discover_session_files,
@@ -21,6 +22,7 @@ from cc_rig.baseline.jsonl import (
     parse_session,
     parse_sessions,
 )
+from cc_rig.pricing import FAMILY_PRICING, PRICING_VERIFIED_DATE
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "jsonl"
 
@@ -44,7 +46,7 @@ def test_model_family_handles_empty_or_unknown():
 
 def test_compute_cost_uses_family_pricing():
     cost = compute_cost(1_000_000, 0, 0, 0, "sonnet")
-    assert cost == PRICING_PER_MILLION["sonnet"][0]
+    assert cost == FAMILY_PRICING["sonnet"][0]
 
 
 def test_compute_cost_zeros_yield_zero():
@@ -52,7 +54,7 @@ def test_compute_cost_zeros_yield_zero():
 
 
 def test_compute_cost_unknown_family_falls_back():
-    assert compute_cost(1_000_000, 0, 0, 0, "fictional") == PRICING_PER_MILLION[DEFAULT_FAMILY][0]
+    assert compute_cost(1_000_000, 0, 0, 0, "fictional") == FAMILY_PRICING[DEFAULT_FAMILY][0]
 
 
 # ---------- parse_session: quick tier --------------------------------------
@@ -94,6 +96,198 @@ def test_parse_session_q3_records_model_switch():
     # We saw both model ids
     assert any("sonnet" in m for m in summary.models_seen)
     assert any("opus" in m for m in summary.models_seen)
+
+
+# ---------- parse_session: real-log shape --------------------------------
+
+
+def _assistant_line(msg_id, usage, model="claude-opus-5-5"):
+    message = {"role": "assistant", "model": model, "usage": usage}
+    if msg_id is not None:
+        message["id"] = msg_id
+    return json.dumps({"type": "assistant", "message": message})
+
+
+def test_parse_session_counts_each_message_once(tmp_path):
+    """Claude Code repeats a message's usage on each content-block line."""
+    partial = {"input_tokens": 5, "output_tokens": 1, "cache_read_input_tokens": 2000}
+    final = {"input_tokens": 5, "output_tokens": 500, "cache_read_input_tokens": 2000}
+    other = {"input_tokens": 10, "output_tokens": 100, "cache_creation_input_tokens": 3000}
+    lines = [
+        _assistant_line("msg_a", partial),
+        _assistant_line("msg_a", partial),
+        _assistant_line("msg_a", final),
+        _assistant_line("msg_b", other),
+    ]
+    path = tmp_path / "s.jsonl"
+    path.write_text("\n".join(lines) + "\n")
+
+    summary = parse_session(path)
+
+    assert summary.assistant_turns == 2
+    assert summary.output_tokens == 600  # last usage of msg_a, plus msg_b
+    assert summary.cache_read_tokens == 2000
+    expected = compute_cost(5, 500, 0, 2000, "claude-opus-5-5") + compute_cost(
+        10, 100, 3000, 0, "claude-opus-5-5"
+    )
+    assert summary.cost_usd == pytest.approx(expected)
+
+
+def test_parse_session_prices_one_hour_cache_writes(tmp_path):
+    usage = {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_creation_input_tokens": 1_000_000,
+        "cache_creation": {"ephemeral_1h_input_tokens": 1_000_000},
+    }
+    path = tmp_path / "s.jsonl"
+    path.write_text(_assistant_line("msg_a", usage) + "\n")
+
+    summary = parse_session(path)
+
+    assert summary.cache_create_1h_tokens == 1_000_000
+    assert summary.primary_model == "claude-opus-5-5"
+    assert summary.cost_usd == pytest.approx(8.0)  # Opus 5.5 input $4 x 2
+
+
+def test_parse_sessions_reparses_entries_priced_at_old_rates(tmp_path):
+    path = tmp_path / "s.jsonl"
+    path.write_text(_assistant_line("msg_a", {"input_tokens": 1_000_000}) + "\n")
+    stale = SessionSummary(
+        session_id="s", file_path=str(path), file_mtime=path.stat().st_mtime, cost_usd=999.0
+    )
+    cache_path = tmp_path / "parse-cache.json"
+    cache_path.write_text(
+        json.dumps({str(path): {"mtime": path.stat().st_mtime, "summary": stale.to_dict()}})
+    )
+
+    (summary,) = parse_sessions([path], cache_path=cache_path)
+
+    assert summary.cost_usd == pytest.approx(4.0)
+    saved = json.loads(cache_path.read_text())[str(path)]
+    assert saved["pricing"] == PRICING_VERIFIED_DATE
+
+
+def test_parse_sessions_reparses_entries_from_an_older_parser(tmp_path):
+    path = tmp_path / "s.jsonl"
+    path.write_text(_assistant_line("msg_a", {"input_tokens": 1_000_000}) + "\n")
+    stale = SessionSummary(
+        session_id="s", file_path=str(path), file_mtime=path.stat().st_mtime, model_switches=1
+    )
+    entry = {"mtime": path.stat().st_mtime, "pricing": PRICING_VERIFIED_DATE}
+    cache_path = tmp_path / "parse-cache.json"
+    cache_path.write_text(json.dumps({str(path): {**entry, "summary": stale.to_dict()}}))
+
+    (summary,) = parse_sessions([path], cache_path=cache_path)
+
+    assert summary.model_switches == 0
+    assert "parser" in json.loads(cache_path.read_text())[str(path)]
+
+
+# ---------- parse_session: interrupts and model switches -------------------
+
+# Claude Code logs an interrupt or an API error as an assistant message with
+# model "<synthetic>" and zero usage (shapes copied from real session logs).
+_ZERO_USAGE = {
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {"ephemeral_1h_input_tokens": 0, "ephemeral_5m_input_tokens": 0},
+}
+
+
+def _synthetic_line(text, api_error=False):
+    message = {
+        "id": f"synthetic-{len(text)}",
+        "role": "assistant",
+        "model": "<synthetic>",
+        "content": [{"type": "text", "text": text}],
+        "usage": _ZERO_USAGE,
+    }
+    event = {"type": "assistant", "isApiErrorMessage": api_error, "message": message}
+    return json.dumps(event)
+
+
+def _write_1h(tokens):
+    return {
+        "input_tokens": 5,
+        "output_tokens": 100,
+        "cache_creation_input_tokens": tokens,
+        "cache_creation": {"ephemeral_1h_input_tokens": tokens},
+        "cache_read_input_tokens": 0,
+    }
+
+
+_READ = {"input_tokens": 5, "output_tokens": 100, "cache_read_input_tokens": 30_000}
+
+
+@pytest.mark.parametrize(
+    "synthetic",
+    [
+        _synthetic_line("No response requested."),
+        _synthetic_line("Login expired · Please run /login", api_error=True),
+    ],
+    ids=["interrupt", "api-error"],
+)
+def test_synthetic_message_is_not_a_model_switch(tmp_path, synthetic):
+    path = tmp_path / "s.jsonl"
+    path.write_text("\n".join([_assistant_line("msg_a", _write_1h(30_000)), synthetic]) + "\n")
+
+    summary = parse_session(path)
+
+    assert summary.model_switches == 0
+    assert summary.model_switch_cost_usd == 0.0
+    assert summary.models_seen == ["claude-opus-5-5"]
+    assert summary.primary_model == "claude-opus-5-5"
+    assert summary.primary_family == "opus"
+
+
+def test_message_without_model_is_priced_at_the_session_model(tmp_path):
+    no_model = json.dumps({"type": "assistant", "message": {"id": "msg_b", "usage": _READ}})
+    path = tmp_path / "s.jsonl"
+    path.write_text("\n".join([_assistant_line("msg_a", _write_1h(30_000)), no_model]) + "\n")
+
+    summary = parse_session(path)
+
+    assert summary.model_switches == 0
+    expected = compute_cost(5, 100, 0, 0, "claude-opus-5-5", 30_000) + compute_cost(
+        5, 100, 0, 30_000, "claude-opus-5-5"
+    )
+    assert summary.cost_usd == pytest.approx(expected)
+
+
+def test_model_switch_is_priced_from_the_cache_rewrite_after_it(tmp_path):
+    """The new model writes the 30K prefix once; later turns read it back."""
+    lines = [
+        _assistant_line("msg_a", _write_1h(30_000)),
+        _assistant_line("msg_a", _write_1h(30_000)),
+        *[_assistant_line("msg_b", _write_1h(30_000), model="claude-sonnet-5-5")] * 3,
+        _assistant_line("msg_c", _READ, model="claude-sonnet-5-5"),
+    ]
+    path = tmp_path / "s.jsonl"
+    path.write_text("\n".join(lines) + "\n")
+
+    summary = parse_session(path)
+
+    assert summary.model_switches == 1
+    # Sonnet 5.5: a 1-hour write at $4/M instead of a read at $0.20/M.
+    assert summary.model_switch_cost_usd == pytest.approx(30_000 * (4.0 - 0.20) / 1e6)
+
+
+def test_switch_back_to_a_warm_cache_costs_nothing(tmp_path):
+    lines = [
+        _assistant_line("msg_a", _write_1h(30_000)),
+        _assistant_line("msg_b", _write_1h(30_000), model="claude-sonnet-5-5"),
+        _assistant_line("msg_c", _READ),
+    ]
+    path = tmp_path / "s.jsonl"
+    path.write_text("\n".join(lines) + "\n")
+
+    summary = parse_session(path)
+
+    assert summary.model_switches == 2
+    assert summary.model_switch_cost_usd == pytest.approx(30_000 * (4.0 - 0.20) / 1e6)
 
 
 # ---------- parse_session: standard tier -----------------------------------

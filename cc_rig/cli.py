@@ -386,7 +386,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     tune_parser = subparsers.add_parser(
         "tune",
-        help="Score the config and rank fixes by impact (cache economics)",
+        help="Score the config, rank what to fix, apply the safe fixes",
     )
     _add_tune_args(tune_parser)
 

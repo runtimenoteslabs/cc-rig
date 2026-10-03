@@ -159,12 +159,12 @@ def run_generation(
     tee.say(f"  Your plugins:   {plugin_count}")
     tee.say(f"  Your hooks:     {hook_count}")
     tee.say(f"  Your commands:  {command_count}")
-    tee.say("  Cache savings:  static-first CLAUDE.md + 4 cache guardrails")
+    tee.say("  Cache hygiene:  static-first CLAUDE.md + 4 cache guardrails")
     tee.say("")
     tee.say("  In any session, /cc-rig guides you:")
     tee.say("    /cc-rig          dashboard with your workflow and quick recipes")
     tee.say("    /cc-rig recipes  step-by-step guides for bugs, features, refactors")
-    tee.say("    /cc-rig savings  how much cc-rig saved you on tokens")
+    tee.say("    /cc-rig tune     score the setup and fix what drifts")
     tee.say("")
 
     # Next steps

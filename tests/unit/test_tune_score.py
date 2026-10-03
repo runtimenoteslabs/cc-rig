@@ -43,6 +43,23 @@ class TestRankOpportunities:
         ]
         assert [o.title for o in rank_opportunities(opps)] == ["c", "b", "a"]
 
+    def test_immaterial_dollar_findings_rank_by_severity(self):
+        opps = [
+            Opportunity("cents", "d", severity="low", est_monthly_usd=0.02),
+            Opportunity("guard", "d", severity="high"),
+            Opportunity("big", "d", severity="low", est_monthly_usd=12.0),
+        ]
+        assert [o.title for o in rank_opportunities(opps)] == ["big", "guard", "cents"]
+
+    def test_immaterial_dollar_finding_yields_to_unpriced_at_same_severity(self):
+        # "a-cents" sorts first alphabetically; the ranking must not lean on that.
+        opps = [
+            Opportunity("a-cents", "d", severity="high", est_monthly_usd=0.02),
+            Opportunity("z-guard", "d", severity="high"),
+            Opportunity("m-tip", "d", severity="med"),
+        ]
+        assert [o.title for o in rank_opportunities(opps)] == ["z-guard", "a-cents", "m-tip"]
+
     def test_severity_orders_non_dollar(self):
         opps = [
             Opportunity("low1", "d", severity="low"),

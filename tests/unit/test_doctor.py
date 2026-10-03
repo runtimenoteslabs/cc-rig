@@ -4,7 +4,10 @@ import os
 import stat
 import time
 
+import pytest
+
 from cc_rig.cli import main
+from cc_rig.config.cc_version import PINNED_CC_VERSION_STR
 from cc_rig.doctor import DoctorResult, run_doctor
 from tests.conftest import generate_project
 
@@ -198,6 +201,11 @@ class TestDoctorCacheFriendliness:
 class TestDoctorCacheHealth:
     """Cache health check parses session JSONL files."""
 
+    @pytest.fixture(autouse=True)
+    def _isolated_home(self, tmp_path, monkeypatch):
+        # Session logs live under ~/.claude/projects; keep them out of the real one.
+        monkeypatch.setenv("HOME", str(tmp_path / "home"))
+
     def test_no_session_data_no_warning(self, tmp_path):
         """No session data directory means no warning (graceful skip)."""
         generate_project(tmp_path)
@@ -268,6 +276,11 @@ class TestDoctorCacheHealth:
 
 class TestDoctorJsonlAccounting:
     """JSONL accounting integrity check detects PRELIM entry inflation."""
+
+    @pytest.fixture(autouse=True)
+    def _isolated_home(self, tmp_path, monkeypatch):
+        # Session logs live under ~/.claude/projects; keep them out of the real one.
+        monkeypatch.setenv("HOME", str(tmp_path / "home"))
 
     def test_no_session_data_no_info(self, tmp_path):
         """No session data directory means no info entry."""
@@ -388,7 +401,7 @@ class TestDoctorSettingsKeyValidity:
         result = run_doctor(tmp_path)
         assert result.passed
         info = " ".join(result.info)
-        assert "all valid for CC v2.1.150" in info
+        assert f"all valid for CC v{PINNED_CC_VERSION_STR}" in info
 
     def test_unknown_key_warns(self, tmp_path):
         import json
@@ -399,9 +412,9 @@ class TestDoctorSettingsKeyValidity:
         data["totallyMadeUpKey"] = "value"
         settings_path.write_text(json.dumps(data, indent=2))
         result = run_doctor(tmp_path)
-        assert any("totallyMadeUpKey" in w and "v2.1.150" in w for w in result.warnings), (
-            f"expected warning about unknown key, got: {result.warnings}"
-        )
+        assert any(
+            "totallyMadeUpKey" in w and f"v{PINNED_CC_VERSION_STR}" in w for w in result.warnings
+        ), f"expected warning about unknown key, got: {result.warnings}"
 
     def test_known_v3_3_keys_pass(self, tmp_path):
         import json
@@ -413,13 +426,13 @@ class TestDoctorSettingsKeyValidity:
         data["language"] = "en"
         data["prUrlTemplate"] = "https://github.com/owner/repo/pull/{n}"
         data["autoMemoryEnabled"] = True
-        # v4.0 (CC v2.1.150 alignment) keys
+        # v4.0 (CC v2.1.150 alignment) keys, still valid at the current pin
         data["skillOverrides"] = {}
         data["maxSkillDescriptionChars"] = 500
         data["parentSettingsBehavior"] = "merge"
         settings_path.write_text(json.dumps(data, indent=2))
         result = run_doctor(tmp_path)
-        unknown_warnings = [w for w in result.warnings if "v2.1.150 schema" in w]
+        unknown_warnings = [w for w in result.warnings if f"v{PINNED_CC_VERSION_STR} schema" in w]
         assert not unknown_warnings, f"expected no schema warnings, got: {unknown_warnings}"
 
 

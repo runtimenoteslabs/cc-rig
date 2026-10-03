@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
+from cc_rig.config.cc_version import PINNED_CC_VERSION_STR
 from cc_rig.config.project import ProjectConfig
 from cc_rig.generators.memory import MEMORY_FILE_TEMPLATES
 from cc_rig.validator import ValidationResult, validate_output
@@ -604,106 +605,200 @@ def _hook_command_contains(project_dir: Path, event: str, needle: str) -> bool:
     return False
 
 
-# v4.0 Phase 0: Pinned CC v2.1.150 settings.json key whitelist. Update on
-# each alignment phase. Source: code.claude.com/docs/en/settings.
-_VALID_SETTINGS_KEYS_V2_1_150: frozenset[str] = frozenset(
+# settings.json keys valid for the pinned CC version (PINNED_CC_VERSION_STR).
+# Built from code.claude.com/docs/en/settings-reference plus the schemastore
+# schema. Add-only: a key dropped from the docs stays, so users who set it
+# earlier don't get false warnings.
+_VALID_SETTINGS_KEYS: frozenset[str] = frozenset(
     {
         "$schema",
+        "advisorModel",
         "agent",
-        "allowedChannelPlugins",
-        "allowedHttpHookUrls",
-        "allowedMcpServers",
+        "agentPushNotifEnabled",
+        "allowAllClaudeAiMcps",
+        "allowClaudeInChromeWithManagedMcp",
         "allowManagedHooksOnly",
         "allowManagedMcpServersOnly",
         "allowManagedPermissionRulesOnly",
+        "allowedChannelPlugins",
+        "allowedHttpHookUrls",
+        "allowedMcpServers",
+        "allowedProviders",
         "alwaysThinkingEnabled",
         "apiKeyHelper",
+        "appendPlugins",
+        "askUserQuestionTimeout",
         "attribution",
+        "autoCompactEnabled",
+        "autoCompactWindow",
+        "autoConnectIde",
+        "autoContinueAtUsageLimit",
+        "autoInstallIdeExtension",
         "autoMemoryDirectory",
         "autoMemoryEnabled",
         "autoMode",
         "autoScrollEnabled",
         "autoUpdatesChannel",
         "availableModels",
+        "availableModelsMatch",
         "awaySummaryEnabled",
         "awsAuthRefresh",
         "awsCredentialExport",
+        "axScreenReader",
+        "bashEditDiffEnabled",
+        "bashOutputMaxChars",
         "blockedMarketplaces",
+        "browserExternalPageTools",
         "channelsEnabled",
+        "claudeInChromeDefaultEnabled",
+        "claudeMd",
         "claudeMdExcludes",
         "cleanupPeriodDays",
         "companyAnnouncements",
+        "copyFullResponse",
+        "copyOnSelect",
+        "crossSessionInbound",
         "defaultShell",
+        "defaultToAgentsView",
         "deniedMcpServers",
+        "deniedModels",
+        "desktopSessionCleanupPeriodDays",
+        "dialogExpiry",
+        "diffTool",
+        "disableAgentView",
         "disableAllHooks",
+        "disableArtifact",
         "disableAutoMode",
+        "disableBrowserExternalNavigation",
+        "disableBundledSkills",
+        "disableClaudeAiConnectors",
+        "disableCommandPluginSources",
         "disableDeepLinkRegistration",
-        "disabledMcpjsonServers",
+        "disableDesktopLocalSessions",
+        "disableMobileSimulatorTools",
+        "disableRemoteControl",
+        "disableSideloadFlags",
         "disableSkillShellExecution",
+        "disableWorkflows",
+        "disabledMcpjsonServers",
         "editorMode",
         "effortLevel",
+        "emojiCompletionEnabled",
         "enableAllProjectMcpServers",
+        "enableArtifact",
+        "enableWorkflows",
         "enabledMcpjsonServers",
         "enabledPlugins",
+        "enforceAvailableModels",
         "env",
+        "externalEditorContext",
         "extraKnownMarketplaces",
+        "fallbackModel",
+        "fastMode",
         "fastModePerSessionOptIn",
+        "feedbackDrafts",
         "feedbackSurveyRate",
+        "fileCheckpointingEnabled",
         "fileSuggestion",
+        "footerLinksRegexes",
+        "forceLoginGatewayUrl",
         "forceLoginMethod",
         "forceLoginOrgUUID",
         "forceRemoteSettingsRefresh",
+        "gatewayInternalNetworks",
+        "gcpAuthRefresh",
         "hooks",
         "httpHookAllowedEnvVars",
-        "includeCoAuthoredBy",  # deprecated but still accepted
+        "includeCoAuthoredBy",
         "includeGitInstructions",
+        "inputNeededNotifEnabled",
+        "isolatePeerMachines",
+        "keybindingFlavor",
         "language",
+        "leftArrowOpensAgents",
+        "managedMcpServers",
+        "managedSourcesBehavior",
+        "maxEffortLevel",
+        "maxProseWidth",
+        "maxSkillDescriptionChars",
         "minimumVersion",
         "model",
         "modelOverrides",
+        "modelPicker",
+        "modelPricing",
+        "modelSettings",
         "otelHeadersHelper",
         "outputStyle",
+        "parentSettingsBehavior",
+        "permissionExplainerEnabled",
         "permissions",
         "plansDirectory",
+        "pluginConfigs",
+        "pluginSuggestionMarketplaces",
         "pluginTrustMessage",
+        "policyHelper",
+        "prStatusFooterEnabled",
+        "prUrlTemplate",
         "preferredNotifChannel",
         "prefersReducedMotion",
-        "prUrlTemplate",
+        "prependPlugins",
+        "processWrapper",
+        "promptCacheTtl",
+        "promptSuggestionEnabled",
+        "remoteControlAtStartup",
+        "requireCoworkFullVmSandbox",
+        "requiredMaximumVersion",
+        "requiredMinimumVersion",
         "respectGitignore",
+        "respondToBashCommands",
         "sandbox",
         "showClearContextOnPlanAccept",
         "showThinkingSummaries",
         "showTurnDuration",
+        "skillListingBudgetFraction",
+        "skillListingMaxDescChars",
+        "skillOverrides",
+        "skipAutoPermissionPrompt",
         "skipDangerousModePermissionPrompt",
         "skipWebFetchPreflight",
+        "skippedMarketplaces",
+        "skippedPlugins",
+        "spellcheck",
         "spinnerTipsEnabled",
         "spinnerTipsOverride",
         "spinnerVerbs",
         "sshConfigs",
+        "sshHostAllowlist",
         "statusLine",
         "strictKnownMarketplaces",
+        "strictPluginOnlyCustomization",
+        "subagentPromptCacheTtl",
+        "subagentStatusLine",
+        "switchModelsOnFlag",
+        "syncClaudeAiPlugins",
+        "syncClaudeAiSkills",
+        "syntaxHighlightingDisabled",
+        "taskOutputMaxChars",
+        "teammateDefaultModel",
         "teammateMode",
         "terminalProgressBarEnabled",
+        "terminalTitleFromRename",
+        "theme",
+        "timeFormat",
+        "timeZone",
         "tui",
+        "ultracode",
         "useAutoModeDuringPlan",
+        "verbose",
         "viewMode",
+        "vimInsertModeRemaps",
         "voice",
-        "voiceEnabled",  # legacy but still accepted
+        "voiceEnabled",
+        "wheelScrollAccelerationEnabled",
+        "workflowKeywordTriggerEnabled",
+        "workflowSizeGuideline",
         "worktree",
         "wslInheritsWindowsSettings",
-        # v4.0 (CC v2.1.150 alignment): top-level keys added since 2.1.126.
-        "allowAllClaudeAiMcps",  # 2.1.149 managed setting (not yet in public settings doc)
-        "claudeMd",
-        "disableAgentView",
-        "disableRemoteControl",
-        "gcpAuthRefresh",
-        "maxSkillDescriptionChars",
-        "parentSettingsBehavior",
-        "policyHelper",
-        "skillListingBudgetFraction",
-        "skillOverrides",
-        "strictPluginOnlyCustomization",
-        "syntaxHighlightingDisabled",
     }
 )
 
@@ -830,7 +925,7 @@ def _check_plugin_marketplace_format(project_dir: Path, result: DoctorResult) ->
 
 def _check_settings_key_validity(project_dir: Path, result: DoctorResult) -> None:
     """Check 17 (v3.1): every key in .claude/settings.json is in the pinned
-    CC v2.1.150 schema. Warn on unknown keys (typos, deprecated, or new in a
+    CC version's schema. Warn on unknown keys (typos, deprecated, or new in a
     later CC version cc-rig has not yet aligned with).
     """
     settings_path = project_dir / ".claude" / "settings.json"
@@ -843,11 +938,14 @@ def _check_settings_key_validity(project_dir: Path, result: DoctorResult) -> Non
         return
     if not isinstance(data, dict):
         return
-    unknown = sorted(k for k in data if k not in _VALID_SETTINGS_KEYS_V2_1_150)
+    unknown = sorted(k for k in data if k not in _VALID_SETTINGS_KEYS)
     if unknown:
         result.warnings.append(
-            f"settings.json has keys not in CC v2.1.150 schema: {', '.join(unknown)}. "
+            f"settings.json has keys not in CC v{PINNED_CC_VERSION_STR} schema: "
+            f"{', '.join(unknown)}. "
             "These may be typos, deprecated, or from a newer CC version. Verify intent."
         )
     else:
-        result.info.append(f"settings.json: {len(data)} keys all valid for CC v2.1.150")
+        result.info.append(
+            f"settings.json: {len(data)} keys all valid for CC v{PINNED_CC_VERSION_STR}"
+        )

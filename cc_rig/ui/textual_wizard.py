@@ -387,12 +387,12 @@ class WelcomeScreen(ModalScreen[Optional[dict]]):
                 "One command sets up your entire Claude Code environment:\n"
                 "  agents that review, test, and fix your code\n"
                 "  hooks that auto-format, lint-gate, and block mistakes\n"
-                "  a cache-optimized CLAUDE.md that saves 80%+ on tokens\n"
+                "  a lean CLAUDE.md that keeps the prompt cache stable\n"
                 "\n"
                 "Then /cc-rig guides you:\n"
                 "  /cc-rig          your dashboard: workflow, recipes, what's active\n"
                 "  /cc-rig recipes  step-by-step guides for bugs, features, refactors\n"
-                "  /cc-rig savings  how much cc-rig saved you on tokens\n",
+                "  /cc-rig tune     score the setup and fix what drifts\n",
                 classes="description",
             )
             yield Label("How would you like to start?", classes="screen-title")
@@ -666,14 +666,14 @@ def _format_value_summary(config: Any, output_dir: str = ".") -> str:
     ]
     lines.extend(
         [
-            "  Cache savings:  static-first CLAUDE.md + 4 cache guardrails",
+            "  Cache hygiene:  static-first CLAUDE.md + 4 cache guardrails",
             "",
             f"  Output: {output_dir}",
             "",
             "  After generation:",
             "    /cc-rig          see your dashboard, workflow, and quick recipes",
             "    /cc-rig recipes  step-by-step guides for common tasks",
-            "    /cc-rig savings  track how much cc-rig saves you on tokens",
+            "    /cc-rig tune     score the setup and fix what drifts",
         ]
     )
     return "\n".join(lines)
@@ -1429,8 +1429,10 @@ class WizardApp(App[Optional[dict]]):
 
             state.update(result)
 
-            # After template or tier change, recompute config
-            if screen_cls in (TemplateScreen, TierScreen):
+            # After a template, tier, or basics change, recompute config. Basics
+            # comes after the stack pick, so without this the typed name,
+            # description and output dir never reach the config.
+            if screen_cls in (TemplateScreen, TierScreen, BasicsScreen):
                 if "template" in state and "workflow" in state:
                     state = self._compute_config(state)
 

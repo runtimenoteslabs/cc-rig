@@ -146,6 +146,19 @@ class TestWorkflowFit:
         d = workflow_fit(_ctx(tmp_path, cm="# proj\n"))
         assert any("commands" in o.title.lower() for o in d.opportunities)
 
+    def test_commands_fix_offered_only_with_config(self, tmp_path):
+        """The fixer writes commands from .cc-rig.json; without it, no fix."""
+        from cc_rig.config.defaults import compute_defaults
+
+        def commands_opp(ctx):
+            return next(o for o in workflow_fit(ctx).opportunities if "Commands" in o.title)
+
+        bare = commands_opp(_ctx(tmp_path, cm="# proj\n"))
+        assert bare.fix_id is None and not bare.fixable
+        cfg = compute_defaults("fastapi", "standard", project_name="p")
+        configured = commands_opp(_ctx(tmp_path, cm="# proj\n", config=cfg))
+        assert configured.fix_id == "workflow.add_commands" and configured.fixable
+
     def test_format_hook_via_script_credited(self, tmp_path):
         from cc_rig.config.defaults import compute_defaults
 

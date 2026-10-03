@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 from typing import Optional
 
-from cc_rig.baseline.jsonl import DEFAULT_FAMILY, PRICING_PER_MILLION
+from cc_rig.pricing import CACHE_WRITE_1H, CACHE_WRITE_5M, DEFAULT_FAMILY, prices_for
 from cc_rig.tune.score import DimensionScore, Opportunity, TuneContext
 
 # A bare ISO date or a "last updated / as of" marker in the static prefix
@@ -83,18 +83,20 @@ def _static_zone(claude_md: str) -> list:
 def _every_session_break_cost(ctx: TuneContext, prefix_tokens: int) -> Optional[float]:
     """Estimated monthly cost of a finding that breaks the cache every session.
 
-    A break re-creates the cached prefix (5-min write, 1.25x base input)
-    instead of reading it (0.1x), so the extra cost per break is
-    prefix_tokens * 1.15 * base_input. Multiplied by the sessions observed in
-    the savings window (~30 days). Returns None when there's no session
-    history to ground the estimate, so we never fabricate a number.
+    A break re-writes the cached prefix instead of reading it. The write costs
+    1.25x base input on the 5-minute TTL and 2x on the 1-hour TTL (weighted by
+    the TTL mix seen in session history); the read it replaces costs the
+    model's cache-read rate. Multiplied by the sessions observed in the
+    savings window (~30 days). Returns None when there's no session history
+    to ground the estimate, so we never fabricate a number.
     """
     sv = ctx.savings
     if sv is None or sv.session_count <= 0:
         return None
-    family = sv.primary_family or DEFAULT_FAMILY
-    base_in = PRICING_PER_MILLION.get(family, PRICING_PER_MILLION[DEFAULT_FAMILY])[0]
-    per_break = prefix_tokens * 1.15 * base_in / 1_000_000.0
+    p_in, _, p_read = prices_for(sv.primary_model or sv.primary_family or DEFAULT_FAMILY)
+    share_1h = sv.cache_create_1h_tokens / sv.cache_create_tokens if sv.cache_create_tokens else 0.0
+    write_rate = p_in * (CACHE_WRITE_5M + (CACHE_WRITE_1H - CACHE_WRITE_5M) * share_1h)
+    per_break = prefix_tokens * (write_rate - p_read) / 1_000_000.0
     return round(per_break * sv.session_count, 2)
 
 
@@ -299,14 +301,17 @@ def workflow_fit(ctx: TuneContext) -> DimensionScore:
 
     if "## Commands" not in cm:
         score -= 30
+        # The fixer writes the commands from .cc-rig.json; without it there is
+        # nothing to write, so don't promise a fix.
+        has_config = ctx.config is not None
         opps.append(
             Opportunity(
                 title="Add a Commands section to CLAUDE.md",
                 dimension="workflow_fit",
                 detail="List build/test/lint commands so Claude uses the right tooling.",
                 severity="med",
-                fixable=True,
-                fix_id="workflow.add_commands",
+                fixable=has_config,
+                fix_id="workflow.add_commands" if has_config else None,
             )
         )
 
@@ -362,9 +367,9 @@ def currency(ctx: TuneContext) -> DimensionScore:
     score = 100.0
 
     # Settings keys valid for the pinned CC schema (single source of truth).
-    from cc_rig.doctor import _VALID_SETTINGS_KEYS_V2_1_150
+    from cc_rig.doctor import _VALID_SETTINGS_KEYS
 
-    unknown = sorted(k for k in ctx.settings if k not in _VALID_SETTINGS_KEYS_V2_1_150)
+    unknown = sorted(k for k in ctx.settings if k not in _VALID_SETTINGS_KEYS)
     if unknown:
         score -= 25
         opps.append(
