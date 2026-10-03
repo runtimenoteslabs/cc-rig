@@ -30,7 +30,6 @@ from cc_rig.ui.textual_wizard import (  # noqa: E402
     ExpertScreen,
     FeaturesScreen,
     HarnessScreen,
-    PackScreen,
     QuickWizardApp,
     ReviewScreen,
     SkillPacksScreen,
@@ -109,12 +108,10 @@ class TestBasicsScreen:
         app = WizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Advance past WelcomeScreen → TierScreen → PackScreen → TemplateScreen → BasicsScreen
+            # Advance past WelcomeScreen → TierScreen → TemplateScreen → BasicsScreen
             await pilot.click("#btn-next")  # Welcome → Tier
             await pilot.pause()
-            await pilot.click("#btn-next")  # Tier → Pack (standard shows pack screen)
-            await pilot.pause()
-            await pilot.click("#btn-next")  # Pack → Template
+            await pilot.click("#btn-next")  # Tier → Template
             await pilot.pause()
             await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
@@ -132,14 +129,12 @@ class TestBasicsScreen:
             await pilot.pause()
             await pilot.click("#btn-next")  # Welcome → Tier
             await pilot.pause()
-            await pilot.click("#btn-next")  # Tier → Pack (standard shows pack screen)
-            await pilot.pause()
-            await pilot.click("#btn-next")  # Pack → Template
+            await pilot.click("#btn-next")  # Tier → Template
             await pilot.pause()
             await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
             assert isinstance(app.screen, BasicsScreen)
-            # Press Back — Basics goes back to TemplateScreen (not WelcomeScreen)
+            # Press Back — Basics goes back to TemplateScreen
             await pilot.click("#btn-back")
             await pilot.pause()
             assert isinstance(app.screen, TemplateScreen)
@@ -201,7 +196,7 @@ class TestQuickWizardApp:
 class TestFullForwardFlow:
     @pytest.mark.asyncio
     async def test_quick_flow_complete(self):
-        """Quick flow: Tier → Pack → Template → Basics → Review → SkillPacks → Confirm."""
+        """Quick flow: Tier → Template → Basics → Review → SkillPacks → Confirm."""
         app = QuickWizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
@@ -209,27 +204,23 @@ class TestFullForwardFlow:
             assert isinstance(app.screen, WorkflowScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
-            # Screen 2: PackScreen — standard tier shows pack selector → Next (no pack)
-            assert isinstance(app.screen, PackScreen)
-            await pilot.click("#btn-next")
-            await pilot.pause()
-            # Screen 3: TemplateScreen — accept default → Next
+            # Screen 2: TemplateScreen — accept default → Next
             assert isinstance(app.screen, TemplateScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
-            # Screen 4: BasicsScreen — name already set
+            # Screen 3: BasicsScreen — name already set
             assert isinstance(app.screen, BasicsScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
-            # Screen 5: ReviewScreen — don't check customize
+            # Screen 4: ReviewScreen — don't check customize
             assert isinstance(app.screen, ReviewScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
-            # Screen 6: SkillPacksScreen — skip skill packs
+            # Screen 5: SkillPacksScreen — skip skill packs
             assert isinstance(app.screen, SkillPacksScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
-            # Screen 7: ConfirmScreen (Expert+Features skipped)
+            # Screen 6: ConfirmScreen (Expert+Features skipped)
             assert isinstance(app.screen, ConfirmScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
@@ -239,6 +230,32 @@ class TestFullForwardFlow:
         assert state.get("confirmed") is True
         assert state.get("template") == "generic"
         assert "config" in state
+
+    @pytest.mark.asyncio
+    async def test_typed_basics_reach_the_config(self):
+        """The config is built after the stack pick, before Basics; the name,
+        description and output dir typed there must still land in it."""
+        app = QuickWizardApp(initial_state=_make_state(name="", output_dir=Path(".")))
+        async with app.run_test(size=(120, 40)) as pilot:
+            await pilot.pause()
+            await pilot.click("#btn-next")  # Tier: default
+            await pilot.pause()
+            await pilot.click("#btn-next")  # Template: default
+            await pilot.pause()
+            assert isinstance(app.screen, BasicsScreen)
+            app.screen.query_one("#input-name").value = "typed-name"
+            app.screen.query_one("#input-desc").value = "Typed description"
+            app.screen.query_one("#input-output-dir").value = "/tmp/typed-out"
+            await pilot.click("#btn-next")
+            await pilot.pause()
+            for _ in range(3):  # Review, SkillPacks, Confirm
+                await pilot.click("#btn-next")
+                await pilot.pause()
+
+        config = app.return_value["config"]
+        assert config.project_name == "typed-name"
+        assert config.project_desc == "Typed description"
+        assert Path(config.output_dir) == Path("/tmp/typed-out").resolve()
 
 
 # ── Expert + Features flow ────────────────────────────────────────────
@@ -257,10 +274,6 @@ class TestExpertFeaturesFlow:
             await pilot.pause()
             # Tier (WorkflowScreen)
             assert isinstance(app.screen, WorkflowScreen)
-            await pilot.click("#btn-next")
-            await pilot.pause()
-            # Pack (standard tier shows pack screen)
-            assert isinstance(app.screen, PackScreen)
             await pilot.click("#btn-next")
             await pilot.pause()
             # Template
@@ -300,12 +313,10 @@ class TestExpertFeaturesFlow:
         app = WizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Welcome → Tier → Pack → Template → Basics → Review
+            # Welcome → Tier → Template → Basics → Review
             await pilot.click("#btn-next")  # Welcome → Tier
             await pilot.pause()
-            await pilot.click("#btn-next")  # Tier → Pack (standard shows pack screen)
-            await pilot.pause()
-            await pilot.click("#btn-next")  # Pack → Template
+            await pilot.click("#btn-next")  # Tier → Template
             await pilot.pause()
             await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
@@ -334,10 +345,8 @@ class TestSaveConfig:
         app = QuickWizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Tier → Pack → Template → Basics → Review → SkillPacks → Confirm
-            await pilot.click("#btn-next")  # Tier → Pack
-            await pilot.pause()
-            await pilot.click("#btn-next")  # Pack → Template
+            # Tier → Template → Basics → Review → SkillPacks → Confirm
+            await pilot.click("#btn-next")  # Tier → Template
             await pilot.pause()
             await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
@@ -363,10 +372,8 @@ class TestSaveConfig:
         app = QuickWizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Tier → Pack → Template → Basics → Review → SkillPacks → Confirm
-            await pilot.click("#btn-next")  # Tier → Pack
-            await pilot.pause()
-            await pilot.click("#btn-next")  # Pack → Template
+            # Tier → Template → Basics → Review → SkillPacks → Confirm
+            await pilot.click("#btn-next")  # Tier → Template
             await pilot.pause()
             await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
@@ -426,12 +433,10 @@ class TestExpertScreenTabs:
         app = WizardApp(initial_state=_make_state(force_expert=True))
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Navigate: Welcome → Tier → Pack → Template → Basics → Review → Expert
+            # Navigate: Welcome → Tier → Template → Basics → Review → Expert
             await pilot.click("#btn-next")  # Welcome → Tier
             await pilot.pause()
-            await pilot.click("#btn-next")  # Tier → Pack (standard shows pack screen)
-            await pilot.pause()
-            await pilot.click("#btn-next")  # Pack → Template
+            await pilot.click("#btn-next")  # Tier → Template
             await pilot.pause()
             await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
@@ -456,12 +461,10 @@ class TestExpertScreenTabs:
         app = WizardApp(initial_state=_make_state(force_expert=True))
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Navigate to ExpertScreen: Welcome → Tier → Pack → Template → Basics → Review → Expert
+            # Navigate to ExpertScreen: Welcome → Tier → Template → Basics → Review → Expert
             await pilot.click("#btn-next")  # Welcome → Tier
             await pilot.pause()
-            await pilot.click("#btn-next")  # Tier → Pack (standard shows pack screen)
-            await pilot.pause()
-            await pilot.click("#btn-next")  # Pack → Template
+            await pilot.click("#btn-next")  # Tier → Template
             await pilot.pause()
             await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
@@ -490,9 +493,7 @@ class TestExpertPluginsTab:
         await pilot.pause()
         await pilot.click("#btn-next")  # Welcome → Tier
         await pilot.pause()
-        await pilot.click("#btn-next")  # Tier → Pack (standard shows pack screen)
-        await pilot.pause()
-        await pilot.click("#btn-next")  # Pack → Template
+        await pilot.click("#btn-next")  # Tier → Template
         await pilot.pause()
         await pilot.click("#btn-next")  # Template → Basics
         await pilot.pause()
@@ -566,9 +567,7 @@ class TestHarnessRalphLoop:
         await pilot.pause()
         await pilot.click("#btn-next")  # Welcome → Tier
         await pilot.pause()
-        await pilot.click("#btn-next")  # Tier → Pack (standard shows pack screen)
-        await pilot.pause()
-        await pilot.click("#btn-next")  # Pack → Template
+        await pilot.click("#btn-next")  # Tier → Template
         await pilot.pause()
         await pilot.click("#btn-next")  # Template → Basics
         await pilot.pause()
@@ -709,10 +708,8 @@ class TestQuickFlowReviewAndExpert:
         app = QuickWizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Tier → Pack → Template → Basics → Review
-            await pilot.click("#btn-next")  # Tier → Pack (standard shows pack screen)
-            await pilot.pause()
-            await pilot.click("#btn-next")  # Pack → Template
+            # Tier → Template → Basics → Review
+            await pilot.click("#btn-next")  # Tier → Template
             await pilot.pause()
             await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()
@@ -727,10 +724,8 @@ class TestQuickFlowReviewAndExpert:
         app = QuickWizardApp(initial_state=_make_state())
         async with app.run_test(size=(120, 40)) as pilot:
             await pilot.pause()
-            # Tier → Pack → Template → Basics → Review
-            await pilot.click("#btn-next")  # Tier → Pack (standard shows pack screen)
-            await pilot.pause()
-            await pilot.click("#btn-next")  # Pack → Template
+            # Tier → Template → Basics → Review
+            await pilot.click("#btn-next")  # Tier → Template
             await pilot.pause()
             await pilot.click("#btn-next")  # Template → Basics
             await pilot.pause()

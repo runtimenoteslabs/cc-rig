@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+import pytest
+
 from cc_rig.baseline.jsonl import SessionSummary
 from cc_rig.baseline.savings import (
     CacheBreaker,
@@ -27,6 +29,7 @@ def _make_summary(
     output_tokens: int = 50,
     claudemd_edits: int = 0,
     model_switches: int = 0,
+    model_switch_cost_usd: float = 0.0,
     primary_family: str = "sonnet",
 ) -> SessionSummary:
     return SessionSummary(
@@ -44,6 +47,7 @@ def _make_summary(
         cost_uncached_usd=cost_uncached_usd,
         claudemd_edits=claudemd_edits,
         model_switches=model_switches,
+        model_switch_cost_usd=model_switch_cost_usd,
     )
 
 
@@ -248,8 +252,29 @@ def test_cache_breakers_count_model_switch_sessions():
     r = compute_savings_report(summaries, project_hash="h", project_name="p", now=now)
     sw = next(b for b in r.cache_breakers if "switch" in b.name.lower())
     assert sw.session_count == 1
-    # Switch cost estimate should be positive because the session had cache_read tokens.
-    assert sw.estimated_cost_usd > 0
+
+
+def test_model_switch_cost_is_the_measured_rewrite_not_the_sessions_reads():
+    """A switch re-caches once. It must not be charged every read in the session."""
+    now = datetime(2026, 5, 14, 12, 0, tzinfo=timezone.utc)
+    summaries = [
+        _make_summary(
+            ended_at="2026-05-12T10:00:00Z",
+            cost_usd=26.0,
+            cache_read_tokens=66_000_000,
+            model_switches=1,
+            model_switch_cost_usd=0.11,
+        ),
+        _make_summary(
+            ended_at="2026-05-13T10:00:00Z",
+            model_switches=1,
+            model_switch_cost_usd=0.04,
+        ),
+    ]
+    r = compute_savings_report(summaries, project_hash="h", project_name="p", now=now)
+    sw = next(b for b in r.cache_breakers if "switch" in b.name.lower())
+    assert sw.session_count == 2
+    assert sw.estimated_cost_usd == pytest.approx(0.15)
 
 
 # ---------- cross-project rank --------------------------------------------

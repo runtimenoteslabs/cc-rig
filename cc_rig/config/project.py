@@ -284,13 +284,6 @@ class ProjectConfig:
     claude_plan: str = "pro"
     model_overrides: dict[str, str] = field(default_factory=dict)
 
-    # Process skills (v2: workflow-specific community skills)
-    # process_pack: optional community pack name ("gstack", "aihero", etc.)
-    process_pack: str = ""
-    process_skills: list[str] = field(default_factory=list)
-    workflow_source: str = "cc-rig"
-    workflow_source_url: str = ""
-
     # Metadata
     cc_rig_version: str = ""
     created_at: str = ""
@@ -325,10 +318,6 @@ class ProjectConfig:
             "skill_packs": list(self.skill_packs),
             "claude_plan": self.claude_plan,
             "model_overrides": dict(self.model_overrides),
-            "process_pack": self.process_pack,
-            "process_skills": list(self.process_skills),
-            "workflow_source": self.workflow_source,
-            "workflow_source_url": self.workflow_source_url,
             "cc_rig_version": self.cc_rig_version,
             "created_at": self.created_at,
             "template_preset": self.template_preset,
@@ -376,10 +365,6 @@ class ProjectConfig:
             skill_packs=list(data.get("skill_packs", [])),
             claude_plan=data.get("claude_plan", "pro"),
             model_overrides=dict(data.get("model_overrides", {})),
-            process_pack=data.get("process_pack", ""),
-            process_skills=list(data.get("process_skills", [])),
-            workflow_source=data.get("workflow_source", "cc-rig"),
-            workflow_source_url=data.get("workflow_source_url", ""),
             cc_rig_version=data.get("cc_rig_version", ""),
             created_at=data.get("created_at", ""),
             template_preset=data.get("template_preset", ""),

@@ -24,7 +24,7 @@ class TestPluginCatalog:
 
     def test_catalog_has_expected_count(self):
         """Guard: update count when adding/removing plugins. Cap at 120 (v3.1)."""
-        assert len(PLUGIN_CATALOG) == 96
+        assert len(PLUGIN_CATALOG) == 87
         assert len(PLUGIN_CATALOG) <= 120, "Plugin catalog hard cap is 120"
 
     def test_all_plugins_have_name(self):
@@ -266,14 +266,11 @@ class TestV21PluginExpansion:
 
     def test_new_integration_plugins_exist(self):
         new_integ = [
-            "asana",
             "context7",
-            "discord",
             "greptile",
             "laravel-boost",
             "playwright",
             "serena",
-            "telegram",
         ]
         for name in new_integ:
             assert name in PLUGIN_CATALOG, f"Missing integration plugin {name!r}"
@@ -357,24 +354,19 @@ class TestV25PluginExpansion:
 
     def test_new_integration_plugins_exist(self):
         new_integ = [
-            "figma",
             "stripe",
             "aws",
             "gcp",
             "azure",
             "datadog",
-            "pagerduty",
             "grafana",
             "redis",
             "mongodb",
-            "twilio",
-            "sendgrid",
             "cloudflare",
             "docker",
             "terraform",
             "heroku",
             "railway",
-            "shopify",
         ]
         for name in new_integ:
             assert name in PLUGIN_CATALOG, f"Missing integration plugin {name!r}"

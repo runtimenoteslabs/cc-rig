@@ -36,10 +36,10 @@ class SkillPackSpec:
     suggested_templates: list[str] | None = None  # None = all, list = specific
 
 
-# ── All downloadable skills (78 unique) ────────────────────────────────
+# ── All downloadable skills (64 unique) ────────────────────────────────
 
 SKILL_CATALOG: dict[str, SkillSpec] = {
-    # obra/superpowers — 12 skills
+    # obra/superpowers — 11 skills
     "test-driven-development": SkillSpec(
         name="test-driven-development",
         repo="obra/superpowers",
@@ -263,112 +263,6 @@ SKILL_CATALOG: dict[str, SkillSpec] = {
         sdlc_phase="coding",
         description="Tailwind CSS v4 design system",
         download_mode="skill_md_only",
-    ),
-    # ── garrytan/gstack — 6 process skills ─────────────────────────────
-    "plan-ceo-review": SkillSpec(
-        name="plan-ceo-review",
-        repo="garrytan/gstack",
-        repo_path="plan-ceo-review",
-        sdlc_phase="planning",
-        description="Founder/CEO product review with 9 prime directives",
-    ),
-    "plan-eng-review": SkillSpec(
-        name="plan-eng-review",
-        repo="garrytan/gstack",
-        repo_path="plan-eng-review",
-        sdlc_phase="planning",
-        description="Engineering architecture lock, data flow, edge cases",
-    ),
-    "plan-design-review": SkillSpec(
-        name="plan-design-review",
-        repo="garrytan/gstack",
-        repo_path="plan-design-review",
-        sdlc_phase="review",
-        description="80-item design audit, AI slop detection",
-    ),
-    "gstack-review": SkillSpec(
-        name="gstack-review",
-        repo="garrytan/gstack",
-        repo_path="review",
-        sdlc_phase="review",
-        description="Two-pass staff engineer review (critical + informational)",
-        download_mode="full_tree",
-    ),
-    "ship": SkillSpec(
-        name="ship",
-        repo="garrytan/gstack",
-        repo_path="ship",
-        sdlc_phase="devops",
-        description="8-step release pipeline with preflight checks",
-    ),
-    "document-release": SkillSpec(
-        name="document-release",
-        repo="garrytan/gstack",
-        repo_path="document-release",
-        sdlc_phase="devops",
-        description="Post-launch documentation update",
-    ),
-    # mattpocock/skills — 7 process skills
-    "grill-me": SkillSpec(
-        name="grill-me",
-        repo="mattpocock/skills",
-        repo_path="grill-me",
-        sdlc_phase="planning",
-        description="Exhaustive requirements interview",
-    ),
-    "write-a-prd": SkillSpec(
-        name="write-a-prd",
-        repo="mattpocock/skills",
-        repo_path="write-a-prd",
-        sdlc_phase="planning",
-        description="PRD creation through interview and codebase exploration",
-    ),
-    "prd-to-issues": SkillSpec(
-        name="prd-to-issues",
-        repo="mattpocock/skills",
-        repo_path="prd-to-issues",
-        sdlc_phase="planning",
-        description="PRD to vertical slice GitHub issues",
-    ),
-    "mp-tdd": SkillSpec(
-        name="mp-tdd",
-        repo="mattpocock/skills",
-        repo_path="tdd",
-        sdlc_phase="testing",
-        description="Red-green-refactor with vertical slicing",
-        download_mode="full_tree",
-    ),
-    "improve-codebase-architecture": SkillSpec(
-        name="improve-codebase-architecture",
-        repo="mattpocock/skills",
-        repo_path="improve-codebase-architecture",
-        sdlc_phase="coding",
-        description="Module deepening refactors",
-        download_mode="full_tree",
-    ),
-    "triage-issue": SkillSpec(
-        name="triage-issue",
-        repo="mattpocock/skills",
-        repo_path="triage-issue",
-        sdlc_phase="coding",
-        description="Bug investigation and root cause analysis",
-    ),
-    "design-an-interface": SkillSpec(
-        name="design-an-interface",
-        repo="mattpocock/skills",
-        repo_path="design-an-interface",
-        sdlc_phase="coding",
-        description="Interface design using Ousterhout deep modules",
-    ),
-    # OthmanAdi/planning-with-files — 1 process skill
-    "planning-with-files": SkillSpec(
-        name="planning-with-files",
-        repo="OthmanAdi/planning-with-files",
-        repo_path="skills/planning-with-files",
-        sdlc_phase="planning",
-        description="Persistent task tracking with task_plan.md, findings.md, progress.md",
-        download_mode="full_tree",
-        branch="master",
     ),
     # ── Skill pack skills ──────────────────────────────────────────────
     # trailofbits/skills — security pack
@@ -865,55 +759,12 @@ WORKFLOW_SKILLS: dict[str, list[str]] = {
 # These are ADDITIONAL to WORKFLOW_SKILLS (cross-cutting security/review skills).
 
 WORKFLOW_PROCESS_SKILLS: dict[str, list[str]] = {
-    # Tiers (no process skills by default; packs provide them)
+    # Process packs were removed in v4.0, so tiers carry no process skills.
+    # Kept as a structure for the skill-pack overlap calc; .get(..., []) is
+    # safe for any (now tier-only) workflow name.
     "quick": [],
     "standard": [],
     "rigorous": [],
-    # Legacy workflow names (kept for backward compat in skill resolution)
-    "speedrun": [],
-    "gstack": [
-        "plan-ceo-review",
-        "plan-eng-review",
-        "plan-design-review",
-        "gstack-review",
-        "ship",
-        "document-release",
-    ],
-    "aihero": [
-        "grill-me",
-        "write-a-prd",
-        "prd-to-issues",
-        "mp-tdd",
-        "improve-codebase-architecture",
-        "triage-issue",
-        "design-an-interface",
-    ],
-    "spec-driven": [
-        "write-a-prd",
-        "prd-to-issues",
-        "writing-plans",
-        "executing-plans",
-    ],
-    "superpowers": [
-        "brainstorming",
-        "writing-plans",
-        "executing-plans",
-        "test-driven-development",
-        "systematic-debugging",
-        "requesting-code-review",
-        "receiving-code-review",
-        "verification-before-completion",
-        "subagent-driven-development",
-        "using-git-worktrees",
-        "finishing-a-development-branch",
-    ],
-    "gtd": [
-        "planning-with-files",
-        "writing-plans",
-        "executing-plans",
-    ],
-    "gtd-lite": [],
-    "verify-heavy": [],
 }
 
 

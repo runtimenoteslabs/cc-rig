@@ -2,6 +2,154 @@
 
 All notable changes to cc-rig will be documented in this file.
 
+## [4.0.0] - 2026-10-02 Config Tuner
+
+cc-rig gains a second pillar. Alongside generating a config, it now scores your
+Claude Code setup, ranks what to fix, and applies the safe fixes in one
+command. Generate it right with `cc-rig init`, keep it right with
+`cc-rig tune`. Both run on one engine: the generator is also the tuner's apply
+layer.
+
+### Added: `cc-rig tune`
+
+The headline of v4.0. A scored report on your config, with fixes.
+
+- **Score**: a composite 0-100 grade across six published, impact-weighted
+  dimensions: cache hygiene (30%), safety guards (20%), context discipline
+  (15%), workflow fit (15%), verification (10%), currency (10%). The weights
+  are public, so the number is auditable.
+- **Dollars, where measurable**: cache findings carry an estimated monthly
+  cost derived from your real session logs (the same engine behind
+  `cc-rig savings`), with zero extra LLM calls. Findings worth $1 a month or
+  more rank first, then the rest by severity. Within a severity, a smaller
+  measured cost yields to an unpriced finding, so a two-cent saving never
+  outranks a missing safety guard. With no session history, dollar figures
+  are left out rather than guessed.
+- **Fix**: `cc-rig tune --fix` applies safe, additive fixes (version pin,
+  guardrail and verification-gate additions), backs up CLAUDE.md via
+  FileTracker, shows a unified diff, and re-scores. `--fix-unsafe` also
+  relocates content (opt-in). The contract: never apply a fix that introduces
+  a worse problem than it removes.
+- **Gate and integrate**: `--ci` exits non-zero below `--min-score` (default
+  60), `--json` for tooling, `--badge` emits a Shields.io endpoint.
+- Detection reads hook script bodies, not just settings commands, so tools
+  wired inside `format.sh` and friends are not false-flagged. A freshly
+  generated project scores 100/100 on quick and standard for all 16 stacks,
+  and on rigorous for 13; rigorous Django, Go stdlib and Spring Boot score 98
+  because their CLAUDE.md runs past the size threshold.
+- The Commands-section fix is offered only when `.cc-rig.json` exists, since
+  that is where the fixer reads the commands from.
+- The report closes by pointing to Claude Code's own in-session tools: `/cost`
+  names the likely cause of each cache miss, `/doctor` trims CLAUDE.md and
+  `/skill-doctor` finds unused skills. `tune` scores the repo before a session
+  starts; those cover what happens inside one.
+- `/cc-rig tune` joins the generated playbook command, next to `savings` and
+  `audit`.
+
+### Changed: aligned to Claude Code 2.1.287
+
+- Version pin bumped from 2.1.126 to 2.1.287 (the generated CLAUDE.md identity
+  line and doctor messages follow automatically).
+- Doctor settings whitelist rebuilt from the official settings reference plus
+  the schemastore schema: 188 top-level keys, up from 94. It is add-only, so a
+  key dropped from the docs still validates for users who set it earlier.
+  Stops false-positive warnings on valid keys such as `promptCacheTtl`,
+  `autoCompactWindow` and `skillOverrides`.
+- Generated CLAUDE.md leaned to the evidence (essential tooling and critical
+  patterns only): standard drops from 127 to 120 lines, rigorous 157 to 142,
+  quick 87 to 82.
+
+### Fixed
+
+- **Every dollar figure was overstated.** On the same 30 days of real session
+  logs, 3.2.1 reports $10,521; 4.0.0 reports $1,068, within 1% of an
+  independent check. Two causes, both fixed:
+  - Claude Code writes one log line per content block, each repeating the
+    message's usage, so a message was counted two to three times. Usage is
+    now counted once per message id.
+  - Prices were retired Claude 3 rates (Opus at $15/$75 per million) with no
+    knowledge of Claude 5 models. A new module, `cc_rig/pricing.py`, prices
+    by model id across Fable, Opus, Sonnet and Haiku (5.x, 4.x and legacy),
+    with 1-hour cache writes at 2x input and 5-minute writes at 1.25x.
+- The three generated scripts that print costs (the session-telemetry and
+  budget-reminder hooks, and the autonomy loop's `loop.sh`) carried their own
+  stale price tables. They now embed a copy generated from
+  `cc_rig/pricing.py`, so regenerating a project fixes its numbers. `loop.sh`
+  prefers Claude Code's own `total_cost_usd` when present.
+- Session telemetry counted turns from `human` log entries, which current
+  Claude Code no longer writes. It now counts user prompts and skips tool
+  results.
+- `tune`'s cache-break estimate uses the model's real cache-read rate and the
+  observed 5-minute/1-hour write mix instead of a flat 1.15x of input, and
+  model-switch breaks are priced at the session's model instead of Sonnet.
+- Cached session summaries are re-parsed when prices change.
+- Interrupted sessions read as model switches. Claude Code logs an interrupt
+  or an API error as an assistant message with model `<synthetic>`, and the
+  parser counted it as a switch to Sonnet. One interrupt was enough to put a
+  phantom "Mid-session model switches" finding at the top of `tune`. Those
+  messages now carry no model: they no longer count as a switch or set the
+  session's model, in the parser and in the generated telemetry and
+  budget-reminder hooks.
+- A model switch was priced as if every cache read in the session had been
+  uncached input, so the estimate could exceed the session's entire spend: on
+  30 days of real logs, one phantom switch was priced at $92.32 against $26 of
+  total spend. A switch is now priced from what the log records: the cache
+  write on the new model's first turn, less what reading those tokens would
+  have cost. Switching back to a model whose cache is still warm costs
+  nothing. Cached session summaries from the old parser are re-parsed.
+- The guided wizard dropped the project name, description and output
+  directory typed on the Basics screen: the config was only recomputed after
+  the tier and stack screens. The generated CLAUDE.md now carries them.
+
+### Removed: third-party process packs
+
+- The four community process packs (aihero, gstack, gtd, superpowers) and
+  their wizard, config, and generator apparatus are removed. This reverses the
+  v3 "aggregate external items" direction in favor of a focused setup.
+- Backward compatible: legacy `--workflow <packname>` still resolves to its
+  tier, and existing `.cc-rig.json` files that name a pack load cleanly with
+  the pack ignored. Templates, the three workflow tiers, and the optional
+  skill packs are unchanged.
+
+### Changed: catalogs curated
+
+- Skills reduced from 78 to 64 across 14 source repos (down from 17): only the
+  14 orphaned process-pack skills were cut. The per-stack ECC skills and the
+  superpowers set are kept.
+- Plugins reduced from 96 to 87: nine non-dev-loop SaaS integrations removed
+  (asana, discord, telegram, figma, shopify, twilio, sendgrid, amplitude,
+  pagerduty). LSP, workflow, style, utility, autonomy, and the functional
+  integrations remain.
+
+### Changed: README and positioning
+
+- The pitch stops crediting cc-rig with savings. Claude Code caches prompts
+  on its own, and on Claude 5 pricing the cache breaks cc-rig prevents are
+  worth a few cents to several dollars a month. The README, the wizard's
+  Welcome and Confirm screens, the post-generation summary and the generated
+  playbook no longer claim cc-rig "saves 80%+ on tokens" or "saves you
+  money". They lead with the score, the safety guards and the fixes, and point
+  to `/cc-rig tune` instead of `/cc-rig savings`. The README's tune sample is
+  now real output instead of invented figures, and `docs/saving-tokens.md`
+  prices Claude 5 models.
+- README rewritten to the two-axis story: get it right with `init`, keep it
+  right with `tune`. Mission-led opening, cache hygiene framed as one of the
+  six things tune checks, all process-pack content removed, counts updated
+  (87 plugins, 14 repos, Claude Code 2.1.287).
+- Hero demo re-recorded on the tier-only wizard flow, plus a new `tune` demo
+  (score, `--fix` diff, re-score).
+
+### Internal
+
+- New package `cc_rig/tune/` (`score.py`, `dimensions.py`, `fixers.py`) plus
+  `cli_tune.py`, built as an additive layer over `doctor` and `baseline/`
+  rather than refactoring either.
+- 4451 tests green, ruff clean. Added 63 tune tests across `test_tune_score`,
+  `test_tune_dimensions`, `test_tune_fixers`, and `test_tune_cli`; removed the
+  process-pack test suite.
+- New `test_pricing.py`, plus functional tests that run the generated cost
+  hooks against a synthetic session log instead of checking their text.
+
 ## [3.2.1] - 2026-05-25
 
 ### Changed

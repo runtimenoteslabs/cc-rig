@@ -106,13 +106,12 @@ class TestSpecDrivenUnique:
 
 
 class TestGtdLiteUnique:
-    """gtd-lite resolves to the standard tier with a gtd process pack."""
+    """gtd-lite resolves to the standard tier."""
 
     def test_has_standard_tier_commands(self, tmp_path):
         """gtd-lite maps to standard tier; standard commands are present."""
         gtd_cfg, _, _ = _gen(tmp_path, "gtd-lite")
         assert gtd_cfg.workflow == "standard"
-        assert gtd_cfg.process_pack == "gtd"
         assert "remember" in gtd_cfg.commands
         assert "fix-issue" in gtd_cfg.commands
 

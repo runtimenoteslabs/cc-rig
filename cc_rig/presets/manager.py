@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import functools
 import json
 import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 _PRESETS_DIR = Path(__file__).parent
 
@@ -46,43 +45,39 @@ BUILTIN_TEMPLATES = [
 ]
 
 # ── Tier system (v3.0) ────────────────────────────────────────────
-# Three cc-rig-owned tiers replace the 7 community-branded workflows.
-# Community workflows become optional "process packs" that overlay
-# process_skills on top of a tier.
+# Three cc-rig-owned tiers. Old workflow names resolve to a tier via
+# _TIER_RESOLUTION for backward compatibility.
 
 BUILTIN_TIERS = ["quick", "standard", "rigorous"]
 
-BUILTIN_PACKS = ["gstack", "aihero", "superpowers", "gtd"]
-
-# The public-facing workflow list is now the 3 tiers.
+# The public-facing workflow list is the 3 tiers.
 # Old workflow names resolve via _TIER_RESOLUTION.
 BUILTIN_WORKFLOWS = BUILTIN_TIERS
 
 
 @dataclass
 class ResolvedWorkflow:
-    """Result of resolving a workflow name to a tier + optional pack."""
+    """Result of resolving a workflow name to a tier."""
 
     tier: str
-    pack: Optional[str] = None
 
 
-# Maps every known workflow name (old and new) to its tier + pack.
+# Maps every known workflow name (old and new) to its tier.
 _TIER_RESOLUTION: dict[str, ResolvedWorkflow] = {
-    # New tier names
+    # Tier names
     "quick": ResolvedWorkflow("quick"),
     "standard": ResolvedWorkflow("standard"),
     "rigorous": ResolvedWorkflow("rigorous"),
-    # Old workflow names → tier + auto-pack
+    # Legacy workflow names → tier
     "speedrun": ResolvedWorkflow("quick"),
-    "gstack": ResolvedWorkflow("standard", "gstack"),
-    "aihero": ResolvedWorkflow("standard", "aihero"),
+    "gstack": ResolvedWorkflow("standard"),
+    "aihero": ResolvedWorkflow("standard"),
     "spec-driven": ResolvedWorkflow("rigorous"),
-    "superpowers": ResolvedWorkflow("rigorous", "superpowers"),
-    "gtd": ResolvedWorkflow("standard", "gtd"),
+    "superpowers": ResolvedWorkflow("rigorous"),
+    "gtd": ResolvedWorkflow("standard"),
     # Legacy aliases
-    "gtd-lite": ResolvedWorkflow("standard", "gtd"),
-    "verify-heavy": ResolvedWorkflow("rigorous", "superpowers"),
+    "gtd-lite": ResolvedWorkflow("standard"),
+    "verify-heavy": ResolvedWorkflow("rigorous"),
 }
 
 # Map preset names to filenames (handles hyphens → underscores)
@@ -111,13 +106,6 @@ _WORKFLOW_FILES: dict[str, str] = {
     "quick": "quick.json",
     "standard": "standard.json",
     "rigorous": "rigorous.json",
-}
-
-_PACK_FILES: dict[str, str] = {
-    "gstack": "gstack.json",
-    "aihero": "aihero.json",
-    "superpowers": "superpowers.json",
-    "gtd": "gtd.json",
 }
 
 
@@ -156,7 +144,7 @@ def load_workflow(name: str) -> dict[str, Any]:
 
 
 def resolve_workflow(name: str) -> ResolvedWorkflow:
-    """Resolve any workflow name (old or new) to a tier + optional pack.
+    """Resolve any workflow name (old or new) to a tier.
 
     Accepts tier names (quick, standard, rigorous), old workflow names
     (speedrun, gstack, superpowers, etc.), and legacy aliases (gtd-lite,
@@ -165,26 +153,7 @@ def resolve_workflow(name: str) -> ResolvedWorkflow:
     resolved = _TIER_RESOLUTION.get(name)
     if resolved is not None:
         return resolved
-    raise ValueError(
-        f"Unknown workflow {name!r}. "
-        f"Available tiers: {', '.join(BUILTIN_TIERS)}. "
-        f"Process packs: {', '.join(BUILTIN_PACKS)}."
-    )
-
-
-@functools.lru_cache(maxsize=None)
-def load_pack(name: str) -> dict[str, Any]:
-    """Load a process pack by name. Returns dict with process_skills + metadata.
-
-    Raises ValueError if not found.
-    """
-    filename = _PACK_FILES.get(name)
-    if filename is None:
-        available = ", ".join(BUILTIN_PACKS)
-        raise ValueError(f"Unknown process pack {name!r}. Available: {available}")
-
-    path = _PRESETS_DIR / "packs" / filename
-    return json.loads(path.read_text())
+    raise ValueError(f"Unknown workflow {name!r}. Available tiers: {', '.join(BUILTIN_TIERS)}.")
 
 
 def list_presets(

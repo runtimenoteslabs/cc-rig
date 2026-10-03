@@ -17,6 +17,7 @@ from pathlib import Path
 from cc_rig.config.project import ProjectConfig
 from cc_rig.generators.fileops import FileTracker
 from cc_rig.generators.settings import _safe_cmd
+from cc_rig.pricing import MODEL_PRICING, hook_pricing_source
 
 # Harness levels in order of capability.
 _LEVELS = ("none", "lite", "standard", "autonomy")
@@ -553,13 +554,7 @@ def _generate_b3(
         "    if command -v python3 >/dev/null 2>&1; then\n"
         "        HAS_PYTHON3=true\n"
         '        COST_DATA=$(python3 -c "\n'
-        "import json, sys\n"
-        "PRICING = {\n"
-        "    'opus': (15.0, 75.0, 18.75, 1.50),\n"
-        "    'sonnet': (3.0, 15.0, 3.75, 0.30),\n"
-        "    'haiku': (0.80, 4.0, 1.0, 0.08),\n"
-        "}\n"
-        "try:\n"
+        "import json, sys\n" + hook_pricing_source() + "try:\n"
         "    data = json.load(open(sys.argv[1]))\n"
         "    # Try top-level usage first, then nested message.usage\n"
         "    u = data.get('usage') or data.get('message', {}).get('usage', {})\n"
@@ -568,10 +563,10 @@ def _generate_b3(
         "    t_cc = u.get('cache_creation_input_tokens', 0)\n"
         "    t_cr = u.get('cache_read_input_tokens', 0)\n"
         "    model_id = data.get('model') or data.get('message', {}).get('model', '')\n"
-        "    family = 'opus' if 'opus' in model_id "
-        "else 'haiku' if 'haiku' in model_id else 'sonnet'\n"
-        "    p_in, p_out, p_cc, p_cr = PRICING[family]\n"
-        "    cost = (t_in * p_in + t_out * p_out + t_cc * p_cc + t_cr * p_cr) / 1_000_000\n"
+        "    # Prefer Claude Code's own figure; price the usage only as a fallback.\n"
+        "    cost = data.get('total_cost_usd')\n"
+        "    if not isinstance(cost, (int, float)):\n"
+        "        cost = usage_cost(u, model_id)\n"
         "    print(f'{t_in} {t_out} {t_cc + t_cr} {cost:.4f}')\n"
         "except Exception:\n"
         "    print('0 0 0 0')\n"
@@ -928,10 +923,10 @@ def _generate_session_telemetry(
         "3. Dedup ratio (raw / deduped, 1.0 = no duplicates)\n"
         "4. Token breakdown: input, output, cache_creation, cache_read\n"
         "5. Cache read ratio: cache_read / (cache_read + cache_creation)\n"
-        "6. Estimated cost using per-million pricing:\n"
-        "   - Opus: ($15, $75, $18.75, $1.50)\n"
-        "   - Sonnet: ($3, $15, $3.75, $0.30)\n"
-        "   - Haiku: ($0.80, $4, $1.0, $0.08)\n"
+        "6. Estimated cost using per-million pricing (input, output, cache read):\n"
+        + _session_health_prices()
+        + "   Cache writes cost 1.25x input for 5-minute entries and 2x for 1-hour\n"
+        "   entries; usage.cache_creation splits the two.\n"
         "7. Turn count and tool call count\n"
         "\n"
         "Display as a clear summary with raw numbers.\n"
@@ -940,6 +935,20 @@ def _generate_session_telemetry(
     files.append(sh_rel)
 
     return files
+
+
+def _session_health_prices() -> str:
+    """Price lines for the session-health command, from cc_rig/pricing.py."""
+    rows = (
+        ("Opus 5.5", "claude-opus-5-5"),
+        ("Sonnet 5 / 5.5", "claude-sonnet-5"),
+        ("Haiku 4.5", "claude-haiku-4"),
+        ("Fable 5.1", "claude-fable-5-1"),
+    )
+    return "".join(
+        f"   - {name}: (${p_in:g}, ${p_out:g}, ${p_read:.2f})\n"
+        for name, (p_in, p_out, p_read) in ((n, MODEL_PRICING[k]) for n, k in rows)
+    )
 
 
 def _generate_quota_anchor(

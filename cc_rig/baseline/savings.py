@@ -23,7 +23,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from typing import Iterable, Optional
 
-from cc_rig.baseline.jsonl import SessionSummary, compute_cost
+from cc_rig.baseline.jsonl import SessionSummary
 from cc_rig.baseline.schema import Baseline, ProjectEntry, WeeklyRollup
 
 
@@ -72,6 +72,7 @@ class SavingsReport:
     input_tokens: int = 0
     cache_read_tokens: int = 0
     cache_create_tokens: int = 0
+    cache_create_1h_tokens: int = 0
     output_tokens: int = 0
     cost_usd: float = 0.0
     cost_uncached_usd: float = 0.0
@@ -81,6 +82,7 @@ class SavingsReport:
     cache_breakers: list = field(default_factory=list)  # list[CacheBreaker]
     cross_project_rank: Optional[tuple] = None  # (rank, total) or None
     primary_family: str = ""
+    primary_model: str = ""
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -166,12 +168,8 @@ def _cache_breakers(summaries: Iterable[SessionSummary]) -> list:
             claudemd_sessions += 1
         if s.model_switches > 0:
             switch_sessions += 1
-            # Rough proxy: a switch invalidates cache, so the worst case is the
-            # session's cache_read tokens cost as input on the new family. Use
-            # sonnet pricing as a neutral estimate.
-            switch_cost_estimate += compute_cost(
-                s.cache_read_tokens, 0, 0, 0, "sonnet"
-            ) - compute_cost(0, 0, 0, s.cache_read_tokens, "sonnet")
+            # Measured by the parser: the cache re-write after each switch.
+            switch_cost_estimate += s.model_switch_cost_usd
 
     breakers = []
     if claudemd_sessions:
@@ -263,6 +261,7 @@ def compute_savings_report(
     input_tokens = sum(s.input_tokens for s in windowed)
     cache_read = sum(s.cache_read_tokens for s in windowed)
     cache_create = sum(s.cache_create_tokens for s in windowed)
+    cache_create_1h = sum(s.cache_create_1h_tokens for s in windowed)
     output_tokens = sum(s.output_tokens for s in windowed)
     cache_total = cache_read + cache_create
     cache_read_ratio = cache_read / cache_total if cache_total else 0.0
@@ -274,6 +273,8 @@ def compute_savings_report(
 
     families = [s.primary_family for s in windowed if s.primary_family]
     primary_family = max(set(families), key=families.count) if families else ""
+    models = [s.primary_model for s in windowed if s.primary_model]
+    primary_model = max(set(models), key=models.count) if models else ""
 
     return SavingsReport(
         project_hash=project_hash,
@@ -283,6 +284,7 @@ def compute_savings_report(
         input_tokens=input_tokens,
         cache_read_tokens=cache_read,
         cache_create_tokens=cache_create,
+        cache_create_1h_tokens=cache_create_1h,
         output_tokens=output_tokens,
         cost_usd=round(cost, 4),
         cost_uncached_usd=round(uncached, 4),
@@ -292,6 +294,7 @@ def compute_savings_report(
         cache_breakers=breakers,
         cross_project_rank=rank,
         primary_family=primary_family,
+        primary_model=primary_model,
     )
 
 

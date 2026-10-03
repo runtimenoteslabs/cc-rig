@@ -11,8 +11,8 @@ breaker detection), timestamp (session boundaries). Missing fields default
 to zero rather than raising -- the JSONL schema drifts across CC versions
 and we want graceful degradation, not crashes.
 
-Pricing table is per-million dollars: (input, output, cache_create, cache_read).
-Source: Anthropic public pricing as of 2026-05; bump when prices change.
+Costs come from cc_rig.pricing, priced per model id with 1-hour cache writes
+split out from 5-minute ones.
 """
 
 from __future__ import annotations
@@ -23,54 +23,19 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 from cc_rig.baseline.paths import PARSE_CACHE_PATH
+from cc_rig.pricing import (
+    DEFAULT_FAMILY,
+    PRICING_VERIFIED_DATE,
+    compute_cost,
+    model_family,
+    split_cache_writes,
+)
 
-PRICING_PER_MILLION = {
-    # (input, output, cache_create, cache_read) in USD per million tokens
-    "opus": (15.0, 75.0, 18.75, 1.50),
-    "sonnet": (3.0, 15.0, 3.75, 0.30),
-    "haiku": (0.80, 4.0, 1.0, 0.08),
-}
-DEFAULT_FAMILY = "sonnet"
-
-# Pricing table last verified on this date; bump when Anthropic prices change.
-PRICING_VERIFIED_DATE = "2026-05-14"
-
-
-def model_family(model_id: str) -> str:
-    """Map a Claude model id to its pricing family.
-
-    Examples: 'claude-opus-4-6' -> 'opus', 'claude-sonnet-4-6' -> 'sonnet',
-    'claude-haiku-4-5-20251001' -> 'haiku'. Unknown ids fall back to sonnet
-    (the safe middle); we log this case by leaving the family literal there.
-    """
-    if not model_id:
-        return DEFAULT_FAMILY
-    m = model_id.lower()
-    if "opus" in m:
-        return "opus"
-    if "haiku" in m:
-        return "haiku"
-    if "sonnet" in m:
-        return "sonnet"
-    return DEFAULT_FAMILY
-
-
-def compute_cost(
-    input_tokens: int,
-    output_tokens: int,
-    cache_create_tokens: int,
-    cache_read_tokens: int,
-    family: str,
-) -> float:
-    """Estimate USD cost given token counts and a pricing family."""
-    p_in, p_out, p_cc, p_cr = PRICING_PER_MILLION.get(family, PRICING_PER_MILLION[DEFAULT_FAMILY])
-    total = (
-        input_tokens * p_in
-        + output_tokens * p_out
-        + cache_create_tokens * p_cc
-        + cache_read_tokens * p_cr
-    )
-    return total / 1_000_000.0
+# Bumped with pricing so cached summaries priced at old rates get reparsed.
+_PARSE_CACHE_PRICING_KEY = "pricing"
+# Bump when parse_session's output changes, so cached summaries get reparsed.
+_PARSE_CACHE_PARSER_KEY = "parser"
+_PARSER_VERSION = 2
 
 
 @dataclass
@@ -83,14 +48,17 @@ class SessionSummary:
     started_at: str = ""
     ended_at: str = ""
     primary_family: str = DEFAULT_FAMILY
+    primary_model: str = ""
     input_tokens: int = 0
     cache_read_tokens: int = 0
     cache_create_tokens: int = 0
+    cache_create_1h_tokens: int = 0
     output_tokens: int = 0
     cost_usd: float = 0.0
     cost_uncached_usd: float = 0.0
     claudemd_edits: int = 0
     model_switches: int = 0
+    model_switch_cost_usd: float = 0.0
     assistant_turns: int = 0
     models_seen: list = field(default_factory=list)
 
@@ -127,6 +95,19 @@ def _extract_usage(message: dict) -> dict:
     return usage if isinstance(usage, dict) else {}
 
 
+def _real_model(message: dict) -> str:
+    """The message's model id, or "" when it carries no model information.
+
+    Claude Code logs interrupts ("No response requested.") and API errors as
+    assistant messages with model "<synthetic>" and zero usage. They say
+    nothing about which model the session runs on.
+    """
+    model_id = message.get("model")
+    if not isinstance(model_id, str) or model_id.startswith("<"):
+        return ""
+    return model_id
+
+
 def _iter_tool_uses(message: dict) -> Iterable[dict]:
     """Yield each tool_use content block from an assistant message."""
     content = message.get("content")
@@ -160,7 +141,16 @@ def parse_session(path: Path) -> SessionSummary:
     )
 
     last_family: Optional[str] = None
-    cost_uncached_acc = 0.0
+    last_model = ""
+    # Claude Code writes one line per content block, each repeating the
+    # message's usage. Keep the last usage per message id so a message is
+    # counted once; lines without an id are counted as they come.
+    usage_by_message: dict = {}
+    anonymous_usage: list = []
+    # The first usage after each model switch, kept by message id like above.
+    switch_ids: set = set()
+    switch_anonymous: list = []
+    pending_switch = False
 
     with path.open("r", encoding="utf-8", errors="replace") as fp:
         for line in fp:
@@ -188,36 +178,68 @@ def parse_session(path: Path) -> SessionSummary:
             if not isinstance(message, dict):
                 continue
 
-            model_id = message.get("model") or ""
-            family = model_family(model_id)
-            if model_id and model_id not in summary.models_seen:
-                summary.models_seen.append(model_id)
-            if last_family is not None and family != last_family:
-                summary.model_switches += 1
-            last_family = family
+            model_id = _real_model(message)
+            if model_id:
+                family = model_family(model_id)
+                if model_id not in summary.models_seen:
+                    summary.models_seen.append(model_id)
+                if last_family is not None and family != last_family:
+                    summary.model_switches += 1
+                    pending_switch = True
+                last_family = family
+                last_model = model_id
 
             usage = _extract_usage(message)
-            t_in = int(usage.get("input_tokens") or 0)
-            t_out = int(usage.get("output_tokens") or 0)
-            t_cc = int(usage.get("cache_creation_input_tokens") or 0)
-            t_cr = int(usage.get("cache_read_input_tokens") or 0)
-
-            if t_in or t_out or t_cc or t_cr:
-                summary.assistant_turns += 1
-                summary.input_tokens += t_in
-                summary.output_tokens += t_out
-                summary.cache_create_tokens += t_cc
-                summary.cache_read_tokens += t_cr
-                summary.cost_usd += compute_cost(t_in, t_out, t_cc, t_cr, family)
-                # Uncached baseline: every cache_read counts as fresh input.
-                cost_uncached_acc += compute_cost(t_in + t_cr + t_cc, t_out, 0, 0, family)
+            if usage:
+                entry = (model_id or last_model or last_family or DEFAULT_FAMILY, usage)
+                msg_id = message.get("id")
+                if isinstance(msg_id, str) and msg_id:
+                    usage_by_message[msg_id] = entry
+                    if pending_switch:
+                        switch_ids.add(msg_id)
+                else:
+                    anonymous_usage.append(entry)
+                    if pending_switch:
+                        switch_anonymous.append(entry)
+                pending_switch = False
 
             for tu in _iter_tool_uses(message):
                 if _is_claudemd_edit(tu):
                     summary.claudemd_edits += 1
 
+    cost_uncached_acc = 0.0
+    for priced_as, usage in list(usage_by_message.values()) + anonymous_usage:
+        t_in = int(usage.get("input_tokens") or 0)
+        t_out = int(usage.get("output_tokens") or 0)
+        t_cc = int(usage.get("cache_creation_input_tokens") or 0)
+        t_cr = int(usage.get("cache_read_input_tokens") or 0)
+        if not (t_in or t_out or t_cc or t_cr):
+            continue
+        w5m, w1h = split_cache_writes(usage)
+        summary.assistant_turns += 1
+        summary.input_tokens += t_in
+        summary.output_tokens += t_out
+        summary.cache_create_tokens += t_cc
+        summary.cache_create_1h_tokens += w1h
+        summary.cache_read_tokens += t_cr
+        summary.cost_usd += compute_cost(t_in, t_out, w5m, t_cr, priced_as, w1h)
+        # Uncached baseline: every cache read and write counts as fresh input.
+        cost_uncached_acc += compute_cost(t_in + t_cr + t_cc, t_out, 0, 0, priced_as)
+
     summary.cost_uncached_usd = cost_uncached_acc
+
+    # The new model has no cache yet, so its first turn writes the prefix
+    # instead of reading it. That write, less what reading the same tokens
+    # would have cost, is the switch's price. It runs slightly high: the
+    # write also holds the turn's own new content. A switch back to a model
+    # whose cache is still warm writes nothing and costs nothing.
+    for priced_as, usage in [usage_by_message[i] for i in switch_ids] + switch_anonymous:
+        w5m, w1h = split_cache_writes(usage)
+        written = compute_cost(0, 0, w5m, 0, priced_as, w1h)
+        summary.model_switch_cost_usd += written - compute_cost(0, 0, 0, w5m + w1h, priced_as)
+
     summary.primary_family = last_family or DEFAULT_FAMILY
+    summary.primary_model = last_model
     return summary
 
 
@@ -268,7 +290,13 @@ def parse_sessions(
             continue
         key = str(p)
         cached = cache.get(key) if use_cache else None
-        if cached and cached.get("mtime") == mtime and "summary" in cached:
+        if (
+            cached
+            and cached.get("mtime") == mtime
+            and cached.get(_PARSE_CACHE_PRICING_KEY) == PRICING_VERIFIED_DATE
+            and cached.get(_PARSE_CACHE_PARSER_KEY) == _PARSER_VERSION
+            and "summary" in cached
+        ):
             try:
                 summaries.append(SessionSummary.from_dict(cached["summary"]))
                 continue
@@ -276,7 +304,12 @@ def parse_sessions(
                 pass  # stale cache entry shape; fall through to reparse
         summary = parse_session(p)
         summaries.append(summary)
-        cache[key] = {"mtime": mtime, "summary": summary.to_dict()}
+        cache[key] = {
+            "mtime": mtime,
+            _PARSE_CACHE_PRICING_KEY: PRICING_VERIFIED_DATE,
+            _PARSE_CACHE_PARSER_KEY: _PARSER_VERSION,
+            "summary": summary.to_dict(),
+        }
         dirty = True
 
     if use_cache and dirty:
@@ -294,7 +327,6 @@ def discover_session_files(projects_dir: Path) -> list:
 
 __all__ = [
     "DEFAULT_FAMILY",
-    "PRICING_PER_MILLION",
     "PRICING_VERIFIED_DATE",
     "SessionSummary",
     "compute_cost",
